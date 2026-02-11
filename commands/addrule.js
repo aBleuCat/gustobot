@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
-console.log(interaction.options._hoistedOptions);
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('autorolechange')
@@ -13,24 +13,20 @@ module.exports = {
         .addIntegerOption(o => o.setName('duration').setDescription('Hours').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-    async execute(interaction) {
+    async execute(interaction) { // <--- MAKE SURE ASYNC IS HERE
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         try {
-            // These MUST match the "name" fields in your log exactly
             const messager = interaction.options.getUser('messager');
-            const target = interaction.options.getUser('target_user'); // Fixed
+            const target = interaction.options.getUser('target_user');
             const channel = interaction.options.getChannel('channel');
-            const addRole = interaction.options.getRole('add_role');    // Fixed
-            const restoreRole = interaction.options.getRole('restore_role'); // Fixed
+            const addRole = interaction.options.getRole('add_role');
+            const restoreRole = interaction.options.getRole('restore_role');
             const duration = interaction.options.getInteger('duration');
 
-            // Log it to your console just to be sure
-            console.log(`Attempting to save: Messager: ${messager?.id}, Target: ${target?.id}`);
-
             if (!messager || !target || !channel || !addRole || !restoreRole) {
-                return interaction.editReply({ 
-                    content: '❌ Name mismatch detected! Check the bot logs for the correct option names.' 
+                return await interaction.editReply({ 
+                    content: '❌ Error: Failed to retrieve options.' 
                 });
             }
 
@@ -48,24 +44,14 @@ module.exports = {
             await newRule.save();
 
             await interaction.editReply({ 
-                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> in <#${channel.id}>.` 
-            });
-
-        } catch (error) {
-            console.error('Database Error:', error);
-            await interaction.editReply({ content: '❌ Database error! Is the Rule model defined in index.js?' });
-        }
-    }
-            await newRule.save();
-
-            // 3. Edit the original "thinking" message with the success info
-            await interaction.editReply({ 
-                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> in <#${channel.id}>.` 
+                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> to mention <@${target.id}> in <#${channel.id}>.` 
             });
 
         } catch (error) {
             console.error(error);
-            await interaction.editReply({ content: '❌ Database error! Check Koyeb logs.' });
+            if (interaction.deferred) {
+                await interaction.editReply({ content: '❌ Database error occurred.' });
+            }
         }
     }
 };
