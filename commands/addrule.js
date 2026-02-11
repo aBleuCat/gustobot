@@ -6,10 +6,10 @@ module.exports = {
         .setName('autorolechange')
         .setDescription('Add a role trigger rule')
         .addUserOption(o => o.setName('messager').setDescription('Trigger user').setRequired(true))
-        .addUserOption(o => o.setName('target').setDescription('User to swap').setRequired(true))
+        .addUserOption(o => o.setName('target_user').setDescription('User to swap').setRequired(true))
         .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(true))
-        .addRoleOption(o => o.setName('add').setDescription('Temporary role').setRequired(true))
-        .addRoleOption(o => o.setName('restore').setDescription('Role to return').setRequired(true))
+        .addRoleOption(o => o.setName('add_role').setDescription('Temporary role').setRequired(true))
+        .addRoleOption(o => o.setName('restore_role').setDescription('Role to return').setRequired(true))
         .addIntegerOption(o => o.setName('duration').setDescription('Hours').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
