@@ -1,59 +1,93 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const http = require('http');
+require('dotenv').config();
+const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('autorolechange')
-        .setDescription('Add a role trigger rule')
-        .addUserOption(o => o.setName('messager').setDescription('Trigger user').setRequired(true))
-        .addUserOption(o => o.setName('target_user').setDescription('User to swap').setRequired(true))
-        .addChannelOption(o => o.setName('channel').setDescription('Channel').setRequired(true))
-        .addRoleOption(o => o.setName('add_role').setDescription('Temporary role').setRequired(true))
-        .addRoleOption(o => o.setName('restore_role').setDescription('Role to return').setRequired(true))
-        .addIntegerOption(o => o.setName('duration').setDescription('Hours').setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+// --- 1. KOYEB HEALTH CHECK (Crucial for Port 8000) ---
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is online!');
+}).listen(8000, '0.0.0.0');
 
-    async execute(interaction) {
-        // 1. FIX: Tell Discord "I am thinking..." (This stops the "Not Responding" error)
-        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent, // REQUIRED for mentions
+        GatewayIntentBits.GuildMembers
+    ]
+});
 
-        try {
-            // 2. FIX: Use the exact names from your Koyeb logs
-            const messager = interaction.options.getUser('messager');
-            const target = interaction.options.getUser('target_user'); 
-            const channel = interaction.options.getChannel('channel');
-            const addRole = interaction.options.getRole('add_role');
-            const restoreRole = interaction.options.getRole('restore_role');
-            const duration = interaction.options.getInteger('duration');
+// --- 2. DATABASE CONNECTION & MODELS ---
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Connected to MongoDB Cloud'))
+    .catch(err => console.error('DB Connection Error:', err));
 
-            // 3. Safety Check
-            if (!messager || !target || !channel || !addRole || !restoreRole) {
-                return await interaction.editReply({ 
-                    content: '❌ One of the options was missing. Make sure you selected them from the menu!' 
-                });
+const ruleSchema = new mongoose.Schema({
+    ruleId: String, watchUser: String, targetUser: String,
+    channel: String, addRole: String, restoreRole: String, durationMs: Number
+});
+const Rule = mongoose.model('Rule', ruleSchema);
+
+const timeoutSchema = new mongoose.Schema({
+    targetUser: String, addRole: String, restoreRole: String, revertAt: Number
+});
+const Timeout = mongoose.model('Timeout', timeoutSchema);
+
+// --- 3. COMMAND LOADING ---
+client.commands = new Collection();
+const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
+for (const file of commandFiles) {
+    const command = require(`./commands/${file}`);
+    client.commands.set(command.data.name, command);
+}
+
+// --- 4. EXPIRED TIMEOUT CHECKER ---
+setInterval(async () => {
+    const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
+    for (const doc of expired) {
+        for (const guild of client.guilds.cache.values()) {
+            const member = await guild.members.fetch(doc.targetUser).catch(() => null);
+            if (member) {
+                await member.roles.remove(doc.addRole).catch(() => {});
+                await member.roles.add(doc.restoreRole).catch(() => {});
             }
+        }
+        await doc.deleteOne();
+    }
+}, 10000);
 
-            const Rule = mongoose.model('Rule');
-            const newRule = new Rule({
-                ruleId: Date.now().toString().slice(-6),
-                watchUser: messager.id,
-                targetUser: target.id,
-                channel: channel.id,
-                addRole: addRole.id,
-                restoreRole: restoreRole.id,
-                durationMs: duration * 60 * 60 * 1000
-            });
+// --- 5. INTERACTION HANDLER ---
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+    try { await command.execute(interaction); } catch (e) { console.error(e); }
+});
 
-            await newRule.save();
+// --- 6. SELECTIVE ROLE TRIGGER (Mention Only) ---
+client.on('messageCreate', async msg => {
+    if (msg.author.bot || !msg.guild) return;
 
-            // 4. Send the final success message
-            await interaction.editReply({ 
-                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> to mention <@${target.id}> in <#${channel.id}>.` 
-            });
+    const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
 
-        } catch (error) {
-            console.error(error);
-            await interaction.editReply({ content: '❌ Something went wrong with the database.' });
+    for (const rule of matchingRules) {
+        // ONLY triggers if the target is actually mentioned
+        if (msg.mentions.users.has(rule.targetUser)) {
+            try {
+                const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
+                if (member) {
+                    await member.roles.add(rule.addRole);
+                    await member.roles.remove(rule.restoreRole).catch(() => {});
+                    await new Timeout({
+                        targetUser: rule.targetUser, addRole: rule.addRole,
+                        restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs
+                    }).save();
+                }
+            } catch (e) { console.error(e); }
         }
     }
-};
+});
+
+client.login(process.env.TOKEN);
