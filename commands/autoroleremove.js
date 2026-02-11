@@ -4,7 +4,7 @@ const fs = require('fs');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('autoroleremove')
-        .setDescription('Remove a role trigger rule by its ID')
+        .setDescription('Remove an autorole trigger rule by its ID')
         .addStringOption(option => 
             option.setName('id')
                 .setDescription('The 6-digit ID of the rule')
@@ -30,4 +30,5 @@ module.exports = {
         fs.writeFileSync(path, JSON.stringify(rules, null, 2));
         await interaction.reply({ content: `Rule \`${id}\` has been removed successfully.`, ephemeral: true });
     }
+
 };
