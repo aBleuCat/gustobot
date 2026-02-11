@@ -1,9 +1,16 @@
 const http = require('http');
-// Create a tiny server that just says "OK" on port 8000
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Bot is alive!');
-}).listen(8000, '0.0.0.0'); 
+
+// This starts a basic server to satisfy Koyeb's health check
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Bot is online!');
+});
+
+// We listen on 0.0.0.0 (all interfaces) and port 8000
+const PORT = 8000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Health check server is running on port ${PORT}`);
+});
 
 console.log("Health check server is running on port 8000");
 require('dotenv').config();
