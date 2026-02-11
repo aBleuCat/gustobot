@@ -14,21 +14,24 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        // 1. Tell Discord to wait (Fixes "Interaction Failed")
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
-        console.log('Interaction Options:', JSON.stringify(interaction.options.data, null, 2));
 
         try {
+            // These MUST match the "name" fields in your log exactly
             const messager = interaction.options.getUser('messager');
-            const target = interaction.options.getUser('target_user');
+            const target = interaction.options.getUser('target_user'); // Fixed
             const channel = interaction.options.getChannel('channel');
-            const addRole = interaction.options.getRole('add_role');
-            const restoreRole = interaction.options.getRole('restore_role');
+            const addRole = interaction.options.getRole('add_role');    // Fixed
+            const restoreRole = interaction.options.getRole('restore_role'); // Fixed
             const duration = interaction.options.getInteger('duration');
 
-            // 2. Extra safety check
+            // Log it to your console just to be sure
+            console.log(`Attempting to save: Messager: ${messager?.id}, Target: ${target?.id}`);
+
             if (!messager || !target || !channel || !addRole || !restoreRole) {
-                return interaction.editReply({ content: '❌ Could not find all users/roles. Please try again.' });
+                return interaction.editReply({ 
+                    content: '❌ Name mismatch detected! Check the bot logs for the correct option names.' 
+                });
             }
 
             const Rule = mongoose.model('Rule');
@@ -42,6 +45,17 @@ module.exports = {
                 durationMs: duration * 60 * 60 * 1000
             });
 
+            await newRule.save();
+
+            await interaction.editReply({ 
+                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> in <#${channel.id}>.` 
+            });
+
+        } catch (error) {
+            console.error('Database Error:', error);
+            await interaction.editReply({ content: '❌ Database error! Is the Rule model defined in index.js?' });
+        }
+    }
             await newRule.save();
 
             // 3. Edit the original "thinking" message with the success info
