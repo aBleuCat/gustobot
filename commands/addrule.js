@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 
 module.exports = {
@@ -14,43 +14,43 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        // 1. Get the objects first
-        const messager = interaction.options.getUser('messager');
-        const target = interaction.options.getUser('target');
-        const channel = interaction.options.getChannel('channel');
-        const addRole = interaction.options.getRole('add');
-        const restoreRole = interaction.options.getRole('restore');
-        const duration = interaction.options.getInteger('duration');
-
-        // 2. Safety Check: Ensure nothing is null before reading .id
-        if (!messager || !target || !channel || !addRole || !restoreRole) {
-            return interaction.reply({ 
-                content: '❌ Error: One of the users, roles, or channels could not be found. Please try again.', 
-                ephemeral: true 
-            });
-        }
-
-        const Rule = mongoose.model('Rule');
-        
-        const newRule = new Rule({
-            ruleId: Date.now().toString().slice(-6),
-            watchUser: messager.id,
-            targetUser: target.id,
-            channel: channel.id,
-            addRole: addRole.id,
-            restoreRole: restoreRole.id,
-            durationMs: duration * 60 * 60 * 1000
-        });
+        // 1. Tell Discord to wait (Fixes "Interaction Failed")
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         try {
-            await newRule.save();
-            await interaction.reply({ 
-                content: `✅ **Rule Saved to Cloud!**\n**ID:** \`${newRule.ruleId}\`\n**Trigger:** <@${messager.id}> talking in <#${channel.id}>\n**Action:** Swapping <@${target.id}> to <@&${addRole.id}> for ${duration} hour(s).`, 
-                ephemeral: true 
+            const messager = interaction.options.getUser('messager');
+            const target = interaction.options.getUser('target');
+            const channel = interaction.options.getChannel('channel');
+            const addRole = interaction.options.getRole('add');
+            const restoreRole = interaction.options.getRole('restore');
+            const duration = interaction.options.getInteger('duration');
+
+            // 2. Extra safety check
+            if (!messager || !target || !channel || !addRole || !restoreRole) {
+                return interaction.editReply({ content: '❌ Could not find all users/roles. Please try again.' });
+            }
+
+            const Rule = mongoose.model('Rule');
+            const newRule = new Rule({
+                ruleId: Date.now().toString().slice(-6),
+                watchUser: messager.id,
+                targetUser: target.id,
+                channel: channel.id,
+                addRole: addRole.id,
+                restoreRole: restoreRole.id,
+                durationMs: duration * 60 * 60 * 1000
             });
+
+            await newRule.save();
+
+            // 3. Edit the original "thinking" message with the success info
+            await interaction.editReply({ 
+                content: `✅ **Rule Saved!** ID: \`${newRule.ruleId}\`\nWatching <@${messager.id}> in <#${channel.id}>.` 
+            });
+
         } catch (error) {
-            console.error('Database Save Error:', error);
-            await interaction.reply({ content: '❌ Failed to save rule to the database.', ephemeral: true });
+            console.error(error);
+            await interaction.editReply({ content: '❌ Database error! Check Koyeb logs.' });
         }
     }
 };
