@@ -1,3 +1,11 @@
+const http = require('http');
+// Create a tiny server that just says "OK" on port 8000
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot is alive!');
+}).listen(8000, '0.0.0.0'); 
+
+console.log("Health check server is running on port 8000");
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, Events } = require('discord.js');
 const mongoose = require('mongoose');
