@@ -20,10 +20,10 @@ module.exports = {
 
         try {
             const messager = interaction.options.getUser('messager');
-            const target = interaction.options.getUser('target');
+            const target = interaction.options.getUser('target_user');
             const channel = interaction.options.getChannel('channel');
-            const addRole = interaction.options.getRole('add');
-            const restoreRole = interaction.options.getRole('restore');
+            const addRole = interaction.options.getRole('add_role');
+            const restoreRole = interaction.options.getRole('restore_role');
             const duration = interaction.options.getInteger('duration');
 
             // 2. Extra safety check
