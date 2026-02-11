@@ -16,6 +16,7 @@ module.exports = {
     async execute(interaction) {
         // 1. Tell Discord to wait (Fixes "Interaction Failed")
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+        console.log('Interaction Options:', JSON.stringify(interaction.options.data, null, 2));
 
         try {
             const messager = interaction.options.getUser('messager');
