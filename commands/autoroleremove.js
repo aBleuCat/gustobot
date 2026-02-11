@@ -1,10 +1,10 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
+const mongoose = require('mongoose');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('autoroleremove')
-        .setDescription('Remove an autorole trigger rule by its ID')
+        .setDescription('Remove an autorole trigger by its ID')
         .addStringOption(option => 
             option.setName('id')
                 .setDescription('The 6-digit ID of the rule')
@@ -13,22 +13,23 @@ module.exports = {
 
     async execute(interaction) {
         const id = interaction.options.getString('id');
-        const path = './data/rules.json';
-
-        if (!fs.existsSync(path)) return interaction.reply({ content: 'No rules exist to remove.', ephemeral: true });
-
-        let rules = JSON.parse(fs.readFileSync(path, 'utf8'));
-        const originalLength = rules.length;
         
-        // Keep everything EXCEPT the one with the matching ID
-        rules = rules.filter(r => r.id !== id);
+        // Access the Rule model we defined in index.js
+        const Rule = mongoose.model('Rule');
 
-        if (rules.length === originalLength) {
-            return interaction.reply({ content: `Could not find a rule with ID \`${id}\`.`, ephemeral: true });
+        // Try to delete the rule from MongoDB
+        const result = await Rule.deleteOne({ ruleId: id });
+
+        if (result.deletedCount === 0) {
+            return interaction.reply({ 
+                content: `Could not find a rule with ID \`${id}\` in the database.`, 
+                ephemeral: true 
+            });
         }
 
-        fs.writeFileSync(path, JSON.stringify(rules, null, 2));
-        await interaction.reply({ content: `Rule \`${id}\` has been removed successfully.`, ephemeral: true });
+        await interaction.reply({ 
+            content: `Rule \`${id}\` has been removed from the cloud database.`, 
+            ephemeral: true 
+        });
     }
-
 };
