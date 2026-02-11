@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
-
+console.log(interaction.options._hoistedOptions);
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('autorolechange')
