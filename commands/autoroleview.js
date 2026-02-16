@@ -13,6 +13,7 @@ module.exports = {
         if (rules.length === 0) return interaction.reply('No rules found in cloud.');
 
         let list = rules.map(r => `ID: \`${r.ruleId}\` | <@${r.watchUser}> triggers on <@${r.targetUser}>`).join('\n');
-        await interaction.reply({ content: `**Cloud Rules:**\n${list}`, ephemeral: true });
+        await interaction.reply({ content: `**Rules:**\n${list}` });
     }
 };
+
