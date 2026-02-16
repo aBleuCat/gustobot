@@ -120,10 +120,20 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     // Button Logic (Catch Me)
+    client.on(Events.InteractionCreate, async interaction => {
+    // 1. Slash Commands
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
+        try { await command.execute(interaction); } catch (e) { console.error(e); }
+    }
+
+    // 2. Button Logic (Extracts targetId for the modal)
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
-        const [, correctAnswer, boldText] = interaction.customId.split('::');
+        const [, ans, bold, targetId] = interaction.customId.split('::');
+        
         const modal = new ModalBuilder()
-            .setCustomId(`modal::${correctAnswer}::${boldText}`)
+            .setCustomId(`modal::${ans}::${bold}::${targetId}`)
             .setTitle('Catch the Countryball');
         
         const answerInput = new TextInputBuilder()
@@ -136,19 +146,36 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.showModal(modal);
     }
 
-    // Modal Submission Logic
+    // 3. Modal Submission Logic
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
-        const [, correctAnswer, boldText] = interaction.customId.split('::');
+        const [, correctAnswer, boldText, targetId] = interaction.customId.split('::');
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
 
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
-            const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}** (${boldText})!`;
-            await interaction.reply({ content: successMsg });
-            
-            // LOG THE CATCH
-            await logToModChannel(interaction.guild, `Countryball Caught: ${successMsg}`);
+            try {
+                // Fetch the user we want to impersonate
+                const targetUser = await client.users.fetch(targetId);
+                
+                // Create the "Catch Confirmation" Webhook
+                const catchWebhook = await interaction.channel.createWebhook({
+                    name: targetUser.username,
+                    avatar: targetUser.displayAvatarURL(),
+                });
+
+                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**!\nThis is a **${boldText}** that has been added to your collection!`;
+
+                await catchWebhook.send({ content: successMsg });
+                await catchWebhook.delete();
+
+                // Acknowledge the interaction so it doesn't spin
+                await interaction.deferUpdate(); 
+                
+                await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
+            } catch (err) {
+                console.error("Webhook catch error:", err);
+            }
         } else {
-            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
+            await interaction.reply({ content: `Wrong name!`});
         }
     }
 });
