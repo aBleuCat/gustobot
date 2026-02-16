@@ -33,7 +33,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     }
 })();
 
-// --- 1. KOYEB HEALTH CHECK ---
+// for koyeb
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
@@ -48,7 +48,7 @@ const client = new Client({
     ]
 });
 
-// --- 2. DATABASE CONNECTION & MODELS ---
+// mongols database
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
@@ -70,7 +70,7 @@ const modChannelSchema = new mongoose.Schema({
 });
 const ModChannel = mongoose.model('ModChannel', modChannelSchema);
 
-// --- Helper Function for Logging ---
+// logging function
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -80,10 +80,10 @@ async function logToModChannel(guild, message) {
         await channel.send(`[LOG]: ${message}`);
     }
 }
-// Exporting for use in command files if needed
+// if needed
 client.logToModChannel = logToModChannel;
 
-// --- 3. COMMAND LOADING ---
+// logging
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
@@ -91,7 +91,7 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// --- 4. EXPIRED TIMEOUT CHECKER ---
+// timeout checker
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -106,9 +106,9 @@ setInterval(async () => {
     }
 }, 10000);
 
-// --- 5. INTERACTION HANDLER (Commands, Buttons, Modals) ---
+// interactions
 client.on(Events.InteractionCreate, async interaction => {
-    // A. Slash Commands
+    // Slash Commands
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
@@ -120,7 +120,7 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
-    // B. Button Logic (Extracts targetId for the modal)
+    // Button
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, targetId] = interaction.customId.split('::');
         
@@ -138,7 +138,7 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.showModal(modal);
     }
 
-    // C. Modal Submission Logic
+    // Modal Submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, targetId] = interaction.customId.split('::');
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
@@ -152,10 +152,17 @@ client.on(Events.InteractionCreate, async interaction => {
                     avatar: targetUser.displayAvatarURL(),
                 });
 
-                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**!\n \n \`(#6463FAC, +5%/+13%)\` This is a **${boldText}** that has been added to your collection!`;
+                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** that has been added to your collection!`;
 
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
+
+                // DISABLE THE BUTTON
+                if (interaction.message) {
+                    const row = ActionRowBuilder.from(interaction.message.components[0]);
+                    row.components.forEach(c => c.setDisabled(true));
+                    await interaction.message.edit({ components: [row] });
+                }
 
                 await interaction.deferUpdate().catch(() => {}); 
                 
@@ -164,14 +171,14 @@ client.on(Events.InteractionCreate, async interaction => {
                 console.error("Webhook catch error:", err);
             }
         } else {
-            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
+            await interaction.reply({ content: `${interaction.user.tag} Wrong name!`});
         }
     }
 });
 
-// --- 6. SELECTIVE ROLE TRIGGER ---
+// role trigger
 client.on('messageCreate', async msg => {
-    // Ignores only THIS bot. Other bots will trigger rules.
+    // ignore this bot only
     if (msg.author.id === client.user.id || !msg.guild) return;
 
     const matchingRules = await Rule.find({ 
@@ -179,7 +186,7 @@ client.on('messageCreate', async msg => {
         channel: msg.channel.id 
     });
 
-    // DEBUG: Log when a bot posts in a channel with rules
+    // logging
     if (msg.author.bot && matchingRules.length > 0) {
         let debugInfo = `message from ${msg.author.tag} (${msg.author.id})\n`;
         debugInfo += `Found ${matchingRules.length} rule(s)\n`;
@@ -199,13 +206,12 @@ client.on('messageCreate', async msg => {
         let isMentioned = false;
         let mentionSource = '';
         
-        // 1. Check msg.mentions collection (normal text mentions)
+        // mentions
         if (msg.mentions.users.has(rule.targetUser)) {
             isMentioned = true;
             mentionSource = 'msg.mentions';
         }
         
-        // 2. Check message content directly (catches all text-based mentions)
         if (!isMentioned && msg.content) {
             const mentionPattern1 = `<@${rule.targetUser}>`;
             const mentionPattern2 = `<@!${rule.targetUser}>`;
@@ -215,7 +221,7 @@ client.on('messageCreate', async msg => {
             }
         }
         
-        // 3. Check embeds (all fields)
+        // embeds
         if (!isMentioned && msg.embeds.length > 0) {
             for (const embed of msg.embeds) {
                 const parts = [
@@ -238,7 +244,7 @@ client.on('messageCreate', async msg => {
             }
         }
 
-        // DEBUG: Log detection result for bots
+        // logging
         if (msg.author.bot) {
             await logToModChannel(
                 msg.guild, 
