@@ -24,7 +24,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('Started refreshing application (/) commands.');
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID), // Make sure CLIENT_ID is in your Koyeb Env Vars
+            Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands },
         );
         console.log('Successfully reloaded application (/) commands.');
@@ -117,7 +117,7 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (e) { 
             console.error(e); 
         }
-        return; // Exit here so it doesn't try to run button logic
+        return;
     }
 
     // B. Button Logic (Extracts targetId for the modal)
@@ -145,10 +145,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
-                // Fetch the user we want to impersonate
                 const targetUser = await client.users.fetch(targetId);
                 
-                // Create the "Catch Confirmation" Webhook
                 const catchWebhook = await interaction.channel.createWebhook({
                     name: targetUser.username,
                     avatar: targetUser.displayAvatarURL(),
@@ -159,7 +157,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
-                // Acknowledge the interaction
                 await interaction.deferUpdate().catch(() => {}); 
                 
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
@@ -182,16 +179,71 @@ client.on('messageCreate', async msg => {
         channel: msg.channel.id 
     });
 
-    for (const rule of matchingRules) {
-        // Check for Mention in Text
-        let isMentioned = msg.mentions.users.has(rule.targetUser);
+    // DEBUG: Log when a bot posts in a channel with rules
+    if (msg.author.bot && matchingRules.length > 0) {
+        let debugInfo = `message from ${msg.author.tag} (${msg.author.id})\n`;
+        debugInfo += `Found ${matchingRules.length} rule(s)\n`;
+        debugInfo += `Content: "${msg.content.substring(0, 100)}"\n`;
+        debugInfo += `Embeds: ${msg.embeds.length}`;
         
-        // Check for Mentions in Embeds (Fixed to use proper mention format)
-        if (!isMentioned && msg.embeds.length > 0) {
-            isMentioned = msg.embeds.some(embed => {
-                const searchArea = (embed.description || "") + (embed.title || "");
-                return searchArea.includes(`<@${rule.targetUser}>`);
+        if (msg.embeds.length > 0) {
+            msg.embeds.forEach((embed, i) => {
+                debugInfo += `\nEmbed ${i} description: "${embed.description?.substring(0, 100) || 'none'}"`;
             });
+        }
+        
+        await logToModChannel(msg.guild, debugInfo);
+    }
+
+    for (const rule of matchingRules) {
+        let isMentioned = false;
+        let mentionSource = '';
+        
+        // 1. Check msg.mentions collection (normal text mentions)
+        if (msg.mentions.users.has(rule.targetUser)) {
+            isMentioned = true;
+            mentionSource = 'msg.mentions';
+        }
+        
+        // 2. Check message content directly (catches all text-based mentions)
+        if (!isMentioned && msg.content) {
+            const mentionPattern1 = `<@${rule.targetUser}>`;
+            const mentionPattern2 = `<@!${rule.targetUser}>`;
+            if (msg.content.includes(mentionPattern1) || msg.content.includes(mentionPattern2)) {
+                isMentioned = true;
+                mentionSource = 'msg.content';
+            }
+        }
+        
+        // 3. Check embeds (all fields)
+        if (!isMentioned && msg.embeds.length > 0) {
+            for (const embed of msg.embeds) {
+                const parts = [
+                    embed.description || '',
+                    embed.title || '',
+                    embed.author?.name || '',
+                    embed.footer?.text || '',
+                    ...(embed.fields || []).map(f => `${f.name} ${f.value}`)
+                ];
+                
+                const searchArea = parts.join(' ');
+                const mentionPattern1 = `<@${rule.targetUser}>`;
+                const mentionPattern2 = `<@!${rule.targetUser}>`;
+                
+                if (searchArea.includes(mentionPattern1) || searchArea.includes(mentionPattern2)) {
+                    isMentioned = true;
+                    mentionSource = 'embed';
+                    break;
+                }
+            }
+        }
+
+        // DEBUG: Log detection result for bots
+        if (msg.author.bot) {
+            await logToModChannel(
+                msg.guild, 
+                `Rule ${rule.ruleId}: Target=<@${rule.targetUser}>, Mentioned=${isMentioned}, Source=${mentionSource || 'none'}`
+            );
         }
 
         if (isMentioned) {
@@ -208,9 +260,12 @@ client.on('messageCreate', async msg => {
                         revertAt: Date.now() + rule.durationMs
                     }).save();
                     
-                    await logToModChannel(msg.guild, `Role swap: ${member.user.tag} given <@&${rule.addRole}> (Triggered by ${msg.author.tag})`);
+                    await logToModChannel(msg.guild, `**Role swap triggered!** (via ${mentionSource})\nRole swap: ${member.user.tag} given <@&${rule.addRole}> (Triggered by ${msg.author.tag})`);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error('Role swap error:', e);
+                await logToModChannel(msg.guild, `**Role swap ERROR**: ${e.message}`);
+            }
         }
     }
 });
