@@ -8,6 +8,31 @@ const {
 const mongoose = require('mongoose');
 const fs = require('fs');
 
+const { REST, Routes } = require('discord.js');
+
+const commands = [];
+const commandFilesForDeploy = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+for (const file of commandFilesForDeploy) {
+    const command = require(`./commands/${file}`);
+    commands.push(command.data.toJSON());
+}
+
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+        await rest.put(
+            Routes.applicationCommands(process.env.CLIENT_ID), // Make sure CLIENT_ID is in your Koyeb Env Vars
+            { body: commands },
+        );
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
 // --- 1. KOYEB HEALTH CHECK ---
 http.createServer((req, res) => {
     res.writeHead(200);
