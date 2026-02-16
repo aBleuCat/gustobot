@@ -1,20 +1,24 @@
 const http = require('http');
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
+const { 
+    Client, GatewayIntentBits, Collection, Events, 
+    ModalBuilder, TextInputBuilder, TextInputStyle, 
+    ActionRowBuilder, MessageFlags 
+} = require('discord.js');
 const mongoose = require('mongoose');
 const fs = require('fs');
 
-// --- 1. KOYEB HEALTH CHECK (Crucial for Port 8000) ---
+// --- 1. KOYEB HEALTH CHECK ---
 http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('Bot is online!');
+    res.writeHead(200);
+    res.end('Bot is online!');
 }).listen(8000, '0.0.0.0');
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent, // REQUIRED for mentions
+        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers
     ]
 });
@@ -35,7 +39,6 @@ const timeoutSchema = new mongoose.Schema({
 });
 const Timeout = mongoose.model('Timeout', timeoutSchema);
 
-// --- Mod Channel Schema ---
 const modChannelSchema = new mongoose.Schema({
     guildId: String,
     channelId: String
@@ -52,6 +55,8 @@ async function logToModChannel(guild, message) {
         await channel.send(`[LOG]: ${message}`);
     }
 }
+// Exporting for use in command files if needed
+client.logToModChannel = logToModChannel;
 
 // --- 3. COMMAND LOADING ---
 client.commands = new Collection();
@@ -76,18 +81,55 @@ setInterval(async () => {
     }
 }, 10000);
 
-// --- 5. INTERACTION HANDLER ---
+// --- 5. INTERACTION HANDLER (Commands, Buttons, Modals) ---
 client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-    try { await command.execute(interaction); } catch (e) { console.error(e); }
+    // Slash Commands
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
+        try { 
+            await command.execute(interaction); 
+        } catch (e) { 
+            console.error(e); 
+        }
+    }
+
+    // Button Logic (Catch Me)
+    if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
+        const [, correctAnswer, boldText] = interaction.customId.split('::');
+        const modal = new ModalBuilder()
+            .setCustomId(`modal::${correctAnswer}::${boldText}`)
+            .setTitle('Catch the Countryball');
+        
+        const answerInput = new TextInputBuilder()
+            .setCustomId('user_answer')
+            .setLabel("Name of this countryball")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
+        await interaction.showModal(modal);
+    }
+
+    // Modal Submission Logic
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
+        const [, correctAnswer, boldText] = interaction.customId.split('::');
+        const userAnswer = interaction.fields.getTextInputValue('user_answer');
+
+        if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
+            const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}** (${boldText})!`;
+            await interaction.reply({ content: successMsg });
+            
+            // LOG THE CATCH
+            await logToModChannel(interaction.guild, `Countryball Caught: ${successMsg}`);
+        } else {
+            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
+        }
+    }
 });
 
-// --- 6. SELECTIVE ROLE TRIGGER (Mention Only) ---
+// --- 6. SELECTIVE ROLE TRIGGER ---
 client.on('messageCreate', async msg => {
-    // 1. ONLY ignore Gustobot himself (prevents infinite loops)
-    // We allow other bots to trigger the rule now.
     if (msg.author.id === client.user.id || !msg.guild) return;
 
     const matchingRules = await Rule.find({ 
@@ -96,8 +138,17 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        // 2. Check if the bot message actually mentions the target
-        if (msg.mentions.users.has(rule.targetUser)) {
+        // Check for Mention in Text OR Embeds
+        let isMentioned = msg.mentions.users.has(rule.targetUser);
+        
+        if (!isMentioned && msg.embeds.length > 0) {
+            isMentioned = msg.embeds.some(embed => {
+                const searchArea = (embed.description || "") + (embed.title || "");
+                return searchArea.includes(rule.targetUser);
+            });
+        }
+
+        if (isMentioned) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
                 if (member) {
@@ -111,12 +162,9 @@ client.on('messageCreate', async msg => {
                         revertAt: Date.now() + rule.durationMs
                     }).save();
                     
-                    console.log(`✅ Rule triggered by bot: ${msg.author.tag}`);
-                    await logToModChannel(msg.guild, `${member.user.tag} was given <@&${rule.addRole}> because ${msg.author.tag} mentioned them.`);
+                    await logToModChannel(msg.guild, `Role swap: ${member.user.tag} given <@&${rule.addRole}> (Triggered by ${msg.author.tag})`);
                 }
-            } catch (e) { 
-                console.error(e); 
-            }
+            } catch (e) { console.error(e); }
         }
     }
 });
