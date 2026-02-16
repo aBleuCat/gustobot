@@ -68,24 +68,36 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // --- 6. SELECTIVE ROLE TRIGGER (Mention Only) ---
 client.on('messageCreate', async msg => {
-    if (msg.author.bot || !msg.guild) return;
+    // 1. ONLY ignore Gustobot himself (prevents infinite loops)
+    // We allow other bots to trigger the rule now.
+    if (msg.author.id === client.user.id || !msg.guild) return;
 
-    const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
+    const matchingRules = await Rule.find({ 
+        watchUser: msg.author.id, 
+        channel: msg.channel.id 
+    });
 
     for (const rule of matchingRules) {
-        // ONLY triggers if the target is actually mentioned
+        // 2. Check if the bot message actually mentions the target
         if (msg.mentions.users.has(rule.targetUser)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
                 if (member) {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
+                    
                     await new Timeout({
-                        targetUser: rule.targetUser, addRole: rule.addRole,
-                        restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs
+                        targetUser: rule.targetUser, 
+                        addRole: rule.addRole,
+                        restoreRole: rule.restoreRole, 
+                        revertAt: Date.now() + rule.durationMs
                     }).save();
+                    
+                    console.log(`✅ Rule triggered by bot: ${msg.author.tag}`);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e); 
+            }
         }
     }
 });
