@@ -45,6 +45,12 @@ module.exports = {
         });
 
         await webhook.delete();
+
+        // --- LOGGING ---
+        await interaction.client.logToModChannel(interaction.guild, 
+            `🎭 **Impersonation Spawn**: ${interaction.user.tag} spawned a **${bold}** (${ans}) impersonating ${target.tag} in <#${interaction.channel.id}>.`
+        );
+
         await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
     },
 };
