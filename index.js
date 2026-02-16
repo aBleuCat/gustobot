@@ -154,7 +154,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     avatar: targetUser.displayAvatarURL(),
                 });
 
-                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**!\nThis is a **${boldText}** that has been added to your collection!`;
+                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**!\n \n This is a **${boldText}** that has been added to your collection!`;
 
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
