@@ -1,23 +1,13 @@
-const { 
-    SlashCommandBuilder, 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    PermissionFlagsBits 
-} = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('deximpersonate')
         .setDescription('Impersonate a user to spawn a countryball')
-        .addUserOption(option => 
-            option.setName('target').setDescription('User to impersonate').setRequired(true))
-        .addAttachmentOption(option => 
-            option.setName('image').setDescription('The image to display').setRequired(true))
-        .addStringOption(option => 
-            option.setName('formanswer').setDescription('The correct answer').setRequired(true))
-        .addStringOption(option => 
-            option.setName('boldtext').setDescription('The rarity/type text').setRequired(true))
+        .addUserOption(o => o.setName('target').setDescription('User to impersonate').setRequired(true))
+        .addAttachmentOption(o => o.setName('image').setDescription('The image to display').setRequired(true))
+        .addStringOption(o => o.setName('formanswer').setDescription('The correct answer').setRequired(true))
+        .addStringOption(o => o.setName('boldtext').setDescription('The rarity/type text').setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
@@ -31,9 +21,10 @@ module.exports = {
             avatar: target.displayAvatarURL(),
         });
 
+        // We store the target.id at the end of the customId
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId(`catch::${ans}::${bold}`) 
+                .setCustomId(`catch::${ans}::${bold}::${target.id}`) 
                 .setLabel('Catch me')
                 .setStyle(ButtonStyle.Primary),
         );
@@ -45,12 +36,10 @@ module.exports = {
         });
 
         await webhook.delete();
-
-        // --- LOGGING ---
-        await interaction.client.logToModChannel(interaction.guild, 
-            `🎭 **Impersonation Spawn**: ${interaction.user.tag} spawned a **${bold}** (${ans}) impersonating ${target.tag} in <#${interaction.channel.id}>.`
-        );
-
+        
+        // Log the spawn to your mod channel
+        await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag}.`);
+        
         await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
     },
 };
