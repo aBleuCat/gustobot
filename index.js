@@ -186,11 +186,11 @@ client.on('messageCreate', async msg => {
         // Check for Mention in Text
         let isMentioned = msg.mentions.users.has(rule.targetUser);
         
-        // Check for Mentions in Embeds (Optional, but included just in case)
+        // Check for Mentions in Embeds (Fixed to use proper mention format)
         if (!isMentioned && msg.embeds.length > 0) {
             isMentioned = msg.embeds.some(embed => {
                 const searchArea = (embed.description || "") + (embed.title || "");
-                return searchArea.includes(rule.targetUser);
+                return searchArea.includes(`<@${rule.targetUser}>`);
             });
         }
 
