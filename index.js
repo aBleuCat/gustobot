@@ -108,7 +108,7 @@ setInterval(async () => {
 
 // --- 5. INTERACTION HANDLER (Commands, Buttons, Modals) ---
 client.on(Events.InteractionCreate, async interaction => {
-    // Slash Commands
+    // A. Slash Commands
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
@@ -117,18 +117,10 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (e) { 
             console.error(e); 
         }
+        return; // Exit here so it doesn't try to run button logic
     }
 
-    // Button Logic (Catch Me)
-    client.on(Events.InteractionCreate, async interaction => {
-    // 1. Slash Commands
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        try { await command.execute(interaction); } catch (e) { console.error(e); }
-    }
-
-    // 2. Button Logic (Extracts targetId for the modal)
+    // B. Button Logic (Extracts targetId for the modal)
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, targetId] = interaction.customId.split('::');
         
@@ -146,7 +138,7 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.showModal(modal);
     }
 
-    // 3. Modal Submission Logic
+    // C. Modal Submission Logic
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, targetId] = interaction.customId.split('::');
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
@@ -167,21 +159,22 @@ client.on(Events.InteractionCreate, async interaction => {
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
-                // Acknowledge the interaction so it doesn't spin
-                await interaction.deferUpdate(); 
+                // Acknowledge the interaction
+                await interaction.deferUpdate().catch(() => {}); 
                 
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
             } catch (err) {
                 console.error("Webhook catch error:", err);
             }
         } else {
-            await interaction.reply({ content: `Wrong name!`});
+            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
         }
     }
 });
 
 // --- 6. SELECTIVE ROLE TRIGGER ---
 client.on('messageCreate', async msg => {
+    // Ignores only THIS bot. Other bots will trigger rules.
     if (msg.author.id === client.user.id || !msg.guild) return;
 
     const matchingRules = await Rule.find({ 
@@ -190,9 +183,10 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        // Check for Mention in Text OR Embeds
+        // Check for Mention in Text
         let isMentioned = msg.mentions.users.has(rule.targetUser);
         
+        // Check for Mentions in Embeds (Optional, but included just in case)
         if (!isMentioned && msg.embeds.length > 0) {
             isMentioned = msg.embeds.some(embed => {
                 const searchArea = (embed.description || "") + (embed.title || "");
