@@ -35,6 +35,24 @@ const timeoutSchema = new mongoose.Schema({
 });
 const Timeout = mongoose.model('Timeout', timeoutSchema);
 
+// --- Mod Channel Schema ---
+const modChannelSchema = new mongoose.Schema({
+    guildId: String,
+    channelId: String
+});
+const ModChannel = mongoose.model('ModChannel', modChannelSchema);
+
+// --- Helper Function for Logging ---
+async function logToModChannel(guild, message) {
+    const config = await ModChannel.findOne({ guildId: guild.id });
+    if (!config) return;
+
+    const channel = await guild.channels.fetch(config.channelId).catch(() => null);
+    if (channel) {
+        await channel.send(`[LOG]: ${message}`);
+    }
+}
+
 // --- 3. COMMAND LOADING ---
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
@@ -94,6 +112,7 @@ client.on('messageCreate', async msg => {
                     }).save();
                     
                     console.log(`✅ Rule triggered by bot: ${msg.author.tag}`);
+                    await logToModChannel(msg.guild, `${member.user.tag} was given <@&${rule.addRole}> because ${msg.author.tag} mentioned them.`);
                 }
             } catch (e) { 
                 console.error(e); 
