@@ -3,7 +3,7 @@ require('dotenv').config();
 const { 
     Client, GatewayIntentBits, Collection, Events, 
     ModalBuilder, TextInputBuilder, TextInputStyle, 
-    ActionRowBuilder, MessageFlags 
+    ActionRowBuilder, MessageFlags, ButtonBuilder 
 } = require('discord.js');
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -159,8 +159,10 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 // DISABLE THE BUTTON
                 if (interaction.message) {
-                    const row = ActionRowBuilder.from(interaction.message.components[0]);
-                    row.components.forEach(c => c.setDisabled(true));
+                    const row = new ActionRowBuilder();
+                    interaction.message.components[0].components.forEach(c => {
+                        row.addComponents(ButtonBuilder.from(c).setDisabled(true));
+                    });
                     await interaction.message.edit({ components: [row] });
                 }
 
@@ -171,7 +173,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 console.error("Webhook catch error:", err);
             }
         } else {
-            await interaction.reply({ content: `${interaction.user.tag} Wrong name!`});
+            await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`});
         }
     }
 });
@@ -206,12 +208,13 @@ client.on('messageCreate', async msg => {
         let isMentioned = false;
         let mentionSource = '';
         
-        // mentions
+        // direct mentions
         if (msg.mentions.users.has(rule.targetUser)) {
             isMentioned = true;
             mentionSource = 'msg.mentions';
         }
         
+        // fallback to content string
         if (!isMentioned && msg.content) {
             const mentionPattern1 = `<@${rule.targetUser}>`;
             const mentionPattern2 = `<@!${rule.targetUser}>`;
@@ -221,7 +224,7 @@ client.on('messageCreate', async msg => {
             }
         }
         
-        // embeds
+        // fallback to embeds
         if (!isMentioned && msg.embeds.length > 0) {
             for (const embed of msg.embeds) {
                 const parts = [
