@@ -80,7 +80,6 @@ async function logToModChannel(guild, message) {
         await channel.send(`[LOG]: ${message}`);
     }
 }
-// if needed
 client.logToModChannel = logToModChannel;
 
 // logging
@@ -108,37 +107,27 @@ setInterval(async () => {
 
 // interactions
 client.on(Events.InteractionCreate, async interaction => {
-    // Slash Commands
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
-        try { 
-            await command.execute(interaction); 
-        } catch (e) { 
-            console.error(e); 
-        }
+        try { await command.execute(interaction); } catch (e) { console.error(e); }
         return;
     }
 
-    // Button
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, targetId] = interaction.customId.split('::');
-        
         const modal = new ModalBuilder()
             .setCustomId(`modal::${ans}::${bold}::${targetId}`)
             .setTitle('Catch the Countryball');
-        
         const answerInput = new TextInputBuilder()
             .setCustomId('user_answer')
             .setLabel("Name of this countryball")
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
-
         modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
         await interaction.showModal(modal);
     }
 
-    // Modal Submission
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, targetId] = interaction.customId.split('::');
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
@@ -146,18 +135,14 @@ client.on(Events.InteractionCreate, async interaction => {
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
                 const targetUser = await client.users.fetch(targetId);
-                
                 const catchWebhook = await interaction.channel.createWebhook({
                     name: targetUser.username,
                     avatar: targetUser.displayAvatarURL(),
                 });
-
                 const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** that has been added to your collection!`;
-
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
-                // DISABLE THE BUTTON
                 if (interaction.message) {
                     const row = new ActionRowBuilder();
                     interaction.message.components[0].components.forEach(c => {
@@ -165,13 +150,9 @@ client.on(Events.InteractionCreate, async interaction => {
                     });
                     await interaction.message.edit({ components: [row] });
                 }
-
                 await interaction.deferUpdate().catch(() => {}); 
-                
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
-            } catch (err) {
-                console.error("Webhook catch error:", err);
-            }
+            } catch (err) { console.error("Webhook catch error:", err); }
         } else {
             await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`});
         }
@@ -180,7 +161,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // role trigger
 client.on('messageCreate', async msg => {
-    // ignore this bot only
     if (msg.author.id === client.user.id || !msg.guild) return;
 
     const matchingRules = await Rule.find({ 
@@ -189,59 +169,16 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        let isMentioned = false;
-        let mentionSource = '';
+        // --- THE PLAIN TEXT ID SEARCH ---
+        // We combine content and all embed data into one giant string to search
+        const embedData = msg.embeds.map(e => `${e.title} ${e.description} ${e.footer?.text} ${e.author?.name}`).join(' ');
+        const allText = `${msg.content} ${embedData} ${msg.interaction?.user?.id || ''}`.toLowerCase();
         
-        // 1. Direct mentions (Discord Collection)
-        if (msg.mentions.users.has(rule.targetUser)) {
-            isMentioned = true;
-            mentionSource = 'msg.mentions';
-        }
-        
-        // 2. Bruteforce Regex Content Search (Matches even if content looks empty to Discord)
-        if (!isMentioned) {
-            const idPattern = new RegExp(rule.targetUser);
-            if (idPattern.test(msg.content)) {
-                isMentioned = true;
-                mentionSource = 'regex_content';
-            }
-        }
-        
-        // 3. Fallback to embeds
-        if (!isMentioned && msg.embeds.length > 0) {
-            for (const embed of msg.embeds) {
-                const parts = [
-                    embed.description || '',
-                    embed.title || '',
-                    embed.author?.name || '',
-                    embed.footer?.text || '',
-                    ...(embed.fields || []).map(f => `${f.name} ${f.value}`)
-                ];
-                
-                const searchArea = parts.join(' ');
-                const idPattern = new RegExp(rule.targetUser);
-                
-                if (idPattern.test(searchArea)) {
-                    isMentioned = true;
-                    mentionSource = 'embed_scan';
-                    break;
-                }
-            }
-        }
+        // Search for the ID itself in the text
+        const isMentioned = allText.includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser);
 
-        // 4. Interaction User Check (Specific to Ballsdex)
-        if (!isMentioned && msg.interaction && msg.interaction.user.id === rule.targetUser) {
-            isMentioned = true;
-            mentionSource = 'interaction_user';
-        }
-
-        // --- ENHANCED LOGGING ---
         if (msg.author.bot) {
-            let scanLog = `Rule ${rule.ruleId}: Target=<@${rule.targetUser}>, Mentioned=${isMentioned}, Source=${mentionSource || 'none'}`;
-            scanLog += `\n**Content Scanned**: "${msg.content || '(Empty)'}"`;
-            if (msg.embeds.length > 0) scanLog += `\n**Embed Scanned**: "${msg.embeds[0].description || '(No Description)'}"`;
-            
-            await logToModChannel(msg.guild, scanLog);
+            await logToModChannel(msg.guild, `Scanning Bot Msg... ID: ${rule.targetUser} | Found: ${isMentioned}\nContent: "${msg.content || 'Empty'}"`);
         }
 
         if (isMentioned) {
@@ -250,20 +187,15 @@ client.on('messageCreate', async msg => {
                 if (member) {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
-                    
                     await new Timeout({
                         targetUser: rule.targetUser, 
                         addRole: rule.addRole,
                         restoreRole: rule.restoreRole, 
                         revertAt: Date.now() + rule.durationMs
                     }).save();
-                    
-                    await logToModChannel(msg.guild, `**Role swap triggered!** (via ${mentionSource})\nRole swap: ${member.user.tag} given <@&${rule.addRole}> (Triggered by ${msg.author.tag})`);
+                    await logToModChannel(msg.guild, `**Role swap triggered!** ID Search Success for ${member.user.tag}`);
                 }
-            } catch (e) { 
-                console.error('Role swap error:', e);
-                await logToModChannel(msg.guild, `**Role swap ERROR**: ${e.message}`);
-            }
+            } catch (e) { console.error('Role swap error:', e); }
         }
     }
 });
