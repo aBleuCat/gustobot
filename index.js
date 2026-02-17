@@ -70,19 +70,14 @@ const modChannelSchema = new mongoose.Schema({
 });
 const ModChannel = mongoose.model('ModChannel', modChannelSchema);
 
-// logging function
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
-
     const channel = await guild.channels.fetch(config.channelId).catch(() => null);
-    if (channel) {
-        await channel.send(`[LOG]: ${message}`);
-    }
+    if (channel) await channel.send(`[LOG]: ${message}`);
 }
 client.logToModChannel = logToModChannel;
 
-// logging
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
@@ -90,7 +85,6 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// timeout checker
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -105,7 +99,18 @@ setInterval(async () => {
     }
 }, 10000);
 
-// interactions
+// Helper to disable buttons on a message
+async function disableMessageButtons(message, label = 'Disabled') {
+    const fetched = await message.fetch().catch(() => null);
+    if (!fetched || !fetched.components.length) return;
+    
+    const row = new ActionRowBuilder();
+    fetched.components[0].components.forEach(c => {
+        row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
+    });
+    await fetched.edit({ components: [row] }).catch(() => {});
+}
+
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
@@ -139,29 +144,31 @@ client.on(Events.InteractionCreate, async interaction => {
                     name: targetUser.username,
                     avatar: targetUser.displayAvatarURL(),
                 });
-                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** that has been added to your collection!`;
+                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \n \nThis is a **${boldText}** added to your collection!`;
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
+                // 1. DISABLE BUTTON IMMEDIATELY ON SUCCESS
                 if (interaction.message) {
-                    const row = new ActionRowBuilder();
-                    interaction.message.components[0].components.forEach(c => {
-                        row.addComponents(ButtonBuilder.from(c).setDisabled(true));
-                    });
-                    await interaction.message.edit({ components: [row] });
+                    await disableMessageButtons(interaction.message, 'Caught!');
                 }
+
                 await interaction.deferUpdate().catch(() => {}); 
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
-            } catch (err) { console.error("Webhook catch error:", err); }
+            } catch (err) { console.error(err); }
         } else {
-            await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`});
+            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
         }
     }
 });
 
-// role trigger
 client.on('messageCreate', async msg => {
     if (msg.author.id === client.user.id || !msg.guild) return;
+
+    // 2. DISABLE BUTTON AFTER 2 MINUTES (AUTO-EXPIRY)
+    if (msg.author.id === client.user.id && msg.components.length > 0) {
+        setTimeout(() => disableMessageButtons(msg, 'Expired'), 120000);
+    }
 
     const matchingRules = await Rule.find({ 
         watchUser: msg.author.id, 
@@ -169,16 +176,16 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        // --- THE PLAIN TEXT ID SEARCH ---
-        // We combine content and all embed data into one giant string to search
-        const embedData = msg.embeds.map(e => `${e.title} ${e.description} ${e.footer?.text} ${e.author?.name}`).join(' ');
-        const allText = `${msg.content} ${embedData} ${msg.interaction?.user?.id || ''}`.toLowerCase();
+        // --- DEEP JSON SCAN (UNFILTERED ACCESS) ---
+        // This converts the entire message object to a string. 
+        // If the ID is anywhere—hidden or visible—it will be found.
+        const rawDataString = JSON.stringify(msg.toJSON()).toLowerCase();
+        const targetId = rule.targetUser.toLowerCase();
         
-        // Search for the ID itself in the text
-        const isMentioned = allText.includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser);
+        const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
 
         if (msg.author.bot) {
-            await logToModChannel(msg.guild, `Scanning Bot Msg... ID: ${rule.targetUser} | Found: ${isMentioned}\nContent: "${msg.content || 'Empty'}"`);
+            await logToModChannel(msg.guild, `Deep Scan [Rule ${rule.ruleId}]: Found=${isMentioned}\nTarget ID: ${targetId}`);
         }
 
         if (isMentioned) {
@@ -188,14 +195,12 @@ client.on('messageCreate', async msg => {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
                     await new Timeout({
-                        targetUser: rule.targetUser, 
-                        addRole: rule.addRole,
-                        restoreRole: rule.restoreRole, 
-                        revertAt: Date.now() + rule.durationMs
+                        targetUser: rule.targetUser, addRole: rule.addRole,
+                        restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs
                     }).save();
-                    await logToModChannel(msg.guild, `**Role swap triggered!** ID Search Success for ${member.user.tag}`);
+                    await logToModChannel(msg.guild, `**Success!** Triggered via Deep Scan for ${member.user.tag}`);
                 }
-            } catch (e) { console.error('Role swap error:', e); }
+            } catch (e) { console.error(e); }
         }
     }
 });
