@@ -99,16 +99,18 @@ setInterval(async () => {
     }
 }, 10000);
 
-// Helper to disable buttons on a message
-async function disableMessageButtons(message, label = 'Disabled') {
-    const fetched = await message.fetch().catch(() => null);
-    if (!fetched || !fetched.components.length) return;
-    
-    const row = new ActionRowBuilder();
-    fetched.components[0].components.forEach(c => {
-        row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
-    });
-    await fetched.edit({ components: [row] }).catch(() => {});
+// Helper to disable buttons
+async function disableButtons(message, label = 'Disabled') {
+    try {
+        const fetched = await message.channel.messages.fetch(message.id).catch(() => null);
+        if (!fetched || !fetched.components.length) return;
+        
+        const row = new ActionRowBuilder();
+        fetched.components[0].components.forEach(c => {
+            row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
+        });
+        await fetched.edit({ components: [row] });
+    } catch (e) { console.error("Error disabling buttons:", e); }
 }
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -144,13 +146,15 @@ client.on(Events.InteractionCreate, async interaction => {
                     name: targetUser.username,
                     avatar: targetUser.displayAvatarURL(),
                 });
-                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \n \nThis is a **${boldText}** added to your collection!`;
+                
+                // RESTORED STATS LOGIC
+                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** added to your collection!`;
+                
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
-                // 1. DISABLE BUTTON IMMEDIATELY ON SUCCESS
                 if (interaction.message) {
-                    await disableMessageButtons(interaction.message, 'Caught!');
+                    await disableButtons(interaction.message, 'Caught!');
                 }
 
                 await interaction.deferUpdate().catch(() => {}); 
@@ -165,9 +169,9 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (msg.author.id === client.user.id || !msg.guild) return;
 
-    // 2. DISABLE BUTTON AFTER 2 MINUTES (AUTO-EXPIRY)
+    // AUTO-EXPIRY: 2 Minutes (120,000ms)
     if (msg.author.id === client.user.id && msg.components.length > 0) {
-        setTimeout(() => disableMessageButtons(msg, 'Expired'), 120000);
+        setTimeout(() => disableButtons(msg, 'Expired'), 120000);
     }
 
     const matchingRules = await Rule.find({ 
@@ -176,16 +180,14 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        // --- DEEP JSON SCAN (UNFILTERED ACCESS) ---
-        // This converts the entire message object to a string. 
-        // If the ID is anywhere—hidden or visible—it will be found.
-        const rawDataString = JSON.stringify(msg.toJSON()).toLowerCase();
+        // ULTIMATE DETECTION: Scans the literal raw JSON structure
+        const rawDataString = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
         
         const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
 
         if (msg.author.bot) {
-            await logToModChannel(msg.guild, `Deep Scan [Rule ${rule.ruleId}]: Found=${isMentioned}\nTarget ID: ${targetId}`);
+            await logToModChannel(msg.guild, `Scan: Found=${isMentioned} | Target: ${targetId}`);
         }
 
         if (isMentioned) {
@@ -198,7 +200,7 @@ client.on('messageCreate', async msg => {
                         targetUser: rule.targetUser, addRole: rule.addRole,
                         restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs
                     }).save();
-                    await logToModChannel(msg.guild, `**Success!** Triggered via Deep Scan for ${member.user.tag}`);
+                    await logToModChannel(msg.guild, `**Triggered!** Role swap for ${member.user.tag}`);
                 }
             } catch (e) { console.error(e); }
         }
