@@ -33,11 +33,11 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     }
 })();
 
-// for koyeb
+// for koyeb / render
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
-}).listen(8000, '0.0.0.0');
+}).listen(process.env.PORT || 8000, '0.0.0.0');
 
 const client = new Client({
     intents: [
@@ -122,9 +122,9 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
-        const [, ans, bold, targetId] = interaction.customId.split('::');
+        const [, ans, bold, type, targetId] = interaction.customId.split('::');
         const modal = new ModalBuilder()
-            .setCustomId(`modal::${ans}::${bold}::${targetId}`)
+            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}`)
             .setTitle('Catch the Countryball');
         const answerInput = new TextInputBuilder()
             .setCustomId('user_answer')
@@ -136,7 +136,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
-        const [, correctAnswer, boldText, targetId] = interaction.customId.split('::');
+        const [, correctAnswer, boldText, type, targetId] = interaction.customId.split('::');
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
 
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
@@ -147,21 +147,42 @@ client.on(Events.InteractionCreate, async interaction => {
                     avatar: targetUser.displayAvatarURL(),
                 });
                 
-                // RESTORED STATS LOGIC
-                const successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** added to your collection!`;
+                let successMsg;
+                if (type === 'fulltext') {
+                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \n${boldText}`;
+                } else {
+                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`(#6463FAC, +5%/+13%)\` \n \nThis is a **${boldText}** added to your collection!`;
+                }
                 
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
 
+                // SUCCESS: Manually disable buttons immediately
                 if (interaction.message) {
-                    await disableButtons(interaction.message, 'Caught!');
+                    const row = new ActionRowBuilder();
+                    interaction.message.components[0].components.forEach(c => {
+                        row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel('Caught!'));
+                    });
+                    await interaction.message.edit({ components: [row] }).catch(() => {});
                 }
 
                 await interaction.deferUpdate().catch(() => {}); 
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
             } catch (err) { console.error(err); }
         } else {
-            await interaction.reply({ content: `Wrong name!`, flags: [MessageFlags.Ephemeral] });
+            // FAILURE: Webhook impersonation for "Wrong name!"
+            try {
+                const failWebhook = await interaction.channel.createWebhook({
+                    name: interaction.user.username,
+                    avatar: interaction.user.displayAvatarURL(),
+                });
+                await failWebhook.send({ content: `<@${interaction.user.tag}> Wrong name!` });
+                await failWebhook.delete();
+                await interaction.deferUpdate().catch(() => {});
+            } catch (err) {
+                console.error(err);
+                await interaction.reply({ content: `<@${interaction.user.tag}> Wrong name!`});
+            }
         }
     }
 });
@@ -169,7 +190,6 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (msg.author.id === client.user.id || !msg.guild) return;
 
-    // AUTO-EXPIRY: 2 Minutes (120,000ms)
     if (msg.author.id === client.user.id && msg.components.length > 0) {
         setTimeout(() => disableButtons(msg, 'Expired'), 120000);
     }
@@ -180,7 +200,6 @@ client.on('messageCreate', async msg => {
     });
 
     for (const rule of matchingRules) {
-        // ULTIMATE DETECTION: Scans the literal raw JSON structure
         const rawDataString = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
         
