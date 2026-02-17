@@ -8,6 +8,12 @@ module.exports = {
         .addAttachmentOption(o => o.setName('image').setDescription('The image to display').setRequired(true))
         .addStringOption(o => o.setName('formanswer').setDescription('The correct answer').setRequired(true))
         .addStringOption(o => o.setName('boldtext').setDescription('The rarity/type text').setRequired(true))
+        // Added textType parameter
+        .addStringOption(o => o.setName('texttype').setDescription('Format of the success message').setRequired(true)
+            .addChoices(
+                { name: 'Bold Text (Standard)', value: 'boldtext' },
+                { name: 'Full Text (Custom)', value: 'fulltext' }
+            ))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
@@ -15,16 +21,17 @@ module.exports = {
         const image = interaction.options.getAttachment('image');
         const ans = interaction.options.getString('formanswer');
         const bold = interaction.options.getString('boldtext');
+        const type = interaction.options.getString('texttype');
 
         const webhook = await interaction.channel.createWebhook({
             name: target.username,
             avatar: target.displayAvatarURL(),
         });
 
-        // We store the target.id at the end of the customId
+        // customId format: catch::answer::boldText::textType::targetId
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId(`catch::${ans}::${bold}::${target.id}`) 
+                .setCustomId(`catch::${ans}::${bold}::${type}::${target.id}`) 
                 .setLabel('Catch me')
                 .setStyle(ButtonStyle.Primary),
         );
@@ -37,8 +44,7 @@ module.exports = {
 
         await webhook.delete();
         
-        // Log the spawn to your mod channel
-        await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag}.`);
+        await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag} (${type}).`);
         
         await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
     },
