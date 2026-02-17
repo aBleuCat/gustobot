@@ -188,43 +188,26 @@ client.on('messageCreate', async msg => {
         channel: msg.channel.id 
     });
 
-    // logging
-    if (msg.author.bot && matchingRules.length > 0) {
-        let debugInfo = `message from ${msg.author.tag} (${msg.author.id})\n`;
-        debugInfo += `Found ${matchingRules.length} rule(s)\n`;
-        debugInfo += `Content: "${msg.content.substring(0, 100)}"\n`;
-        debugInfo += `Embeds: ${msg.embeds.length}`;
-        
-        if (msg.embeds.length > 0) {
-            msg.embeds.forEach((embed, i) => {
-                debugInfo += `\nEmbed ${i} description: "${embed.description?.substring(0, 100) || 'none'}"`;
-            });
-        }
-        
-        await logToModChannel(msg.guild, debugInfo);
-    }
-
     for (const rule of matchingRules) {
         let isMentioned = false;
         let mentionSource = '';
         
-        // direct mentions
+        // 1. Direct mentions (Discord Collection)
         if (msg.mentions.users.has(rule.targetUser)) {
             isMentioned = true;
             mentionSource = 'msg.mentions';
         }
         
-        // fallback to content string
-        if (!isMentioned && msg.content) {
-            const mentionPattern1 = `<@${rule.targetUser}>`;
-            const mentionPattern2 = `<@!${rule.targetUser}>`;
-            if (msg.content.includes(mentionPattern1) || msg.content.includes(mentionPattern2)) {
+        // 2. Bruteforce Regex Content Search (Matches even if content looks empty to Discord)
+        if (!isMentioned) {
+            const idPattern = new RegExp(rule.targetUser);
+            if (idPattern.test(msg.content)) {
                 isMentioned = true;
-                mentionSource = 'msg.content';
+                mentionSource = 'regex_content';
             }
         }
         
-        // fallback to embeds
+        // 3. Fallback to embeds
         if (!isMentioned && msg.embeds.length > 0) {
             for (const embed of msg.embeds) {
                 const parts = [
@@ -236,23 +219,29 @@ client.on('messageCreate', async msg => {
                 ];
                 
                 const searchArea = parts.join(' ');
-                const mentionPattern1 = `<@${rule.targetUser}>`;
-                const mentionPattern2 = `<@!${rule.targetUser}>`;
+                const idPattern = new RegExp(rule.targetUser);
                 
-                if (searchArea.includes(mentionPattern1) || searchArea.includes(mentionPattern2)) {
+                if (idPattern.test(searchArea)) {
                     isMentioned = true;
-                    mentionSource = 'embed';
+                    mentionSource = 'embed_scan';
                     break;
                 }
             }
         }
 
-        // logging
+        // 4. Interaction User Check (Specific to Ballsdex)
+        if (!isMentioned && msg.interaction && msg.interaction.user.id === rule.targetUser) {
+            isMentioned = true;
+            mentionSource = 'interaction_user';
+        }
+
+        // --- ENHANCED LOGGING ---
         if (msg.author.bot) {
-            await logToModChannel(
-                msg.guild, 
-                `Rule ${rule.ruleId}: Target=<@${rule.targetUser}>, Mentioned=${isMentioned}, Source=${mentionSource || 'none'}`
-            );
+            let scanLog = `Rule ${rule.ruleId}: Target=<@${rule.targetUser}>, Mentioned=${isMentioned}, Source=${mentionSource || 'none'}`;
+            scanLog += `\n**Content Scanned**: "${msg.content || '(Empty)'}"`;
+            if (msg.embeds.length > 0) scanLog += `\n**Embed Scanned**: "${msg.embeds[0].description || '(No Description)'}"`;
+            
+            await logToModChannel(msg.guild, scanLog);
         }
 
         if (isMentioned) {
