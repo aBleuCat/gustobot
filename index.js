@@ -25,7 +25,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
         console.log('Started refreshing application (/) commands.');
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commands },
+            { body: commands }
         );
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
@@ -154,7 +154,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     avatar: targetUser.displayAvatarURL(),
                 });
                 
-                const statString = (customStats === "DEFAULT") ? "(#6463FAC, +5%/+13%)" : customStats;
+                const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
                 
                 let successMsg;
                 if (type === 'fulltext') {
@@ -179,6 +179,7 @@ client.on(Events.InteractionCreate, async interaction => {
             } catch (err) { console.error(err); }
         } else {
             try {
+                // FIXED: Fetching targetUser so the "Wrong name" webhook actually works
                 const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({
                     name: targetUser.username,
@@ -189,7 +190,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.deferUpdate().catch(() => {});
             } catch (err) {
                 console.error(err);
-                await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!` });
+                // Fallback if webhook fails
+                await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {});
             }
         }
     }
