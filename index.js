@@ -48,7 +48,7 @@ const client = new Client({
     ]
 });
 
-// mongols database
+// database connection
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
@@ -85,6 +85,7 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
+// Global Reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -99,12 +100,16 @@ setInterval(async () => {
     }
 }, 10000);
 
-// Helper to disable buttons
-async function disableButtons(message, label = 'Disabled') {
+// Helper to disable buttons (Now uses fresh fetch to bypass cache issues)
+async function disableButtons(channelId, messageId, label = 'Disabled') {
     try {
-        const fetched = await message.channel.messages.fetch(message.id).catch(() => null);
+        const channel = await client.channels.fetch(channelId).catch(() => null);
+        if (!channel) return;
+        const fetched = await channel.messages.fetch(messageId).catch(() => null);
         if (!fetched || !fetched.components.length) return;
         
+        if (fetched.components[0].components[0].disabled) return;
+
         const row = new ActionRowBuilder();
         fetched.components[0].components.forEach(c => {
             row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
@@ -156,8 +161,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
-
-                // SUCCESS: Manually disable buttons immediately
+                
+                // --- IMMEDIATE DISABLE WHEN CAUGHT ---
                 if (interaction.message) {
                     const row = new ActionRowBuilder();
                     interaction.message.components[0].components.forEach(c => {
@@ -170,29 +175,33 @@ client.on(Events.InteractionCreate, async interaction => {
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
             } catch (err) { console.error(err); }
         } else {
-            // FAILURE: Webhook impersonation for "Wrong name!"
+            // --- WEBHOOK IMPERSONATION FOR WRONG NAME ---
             try {
+                const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({
-                    name: interaction.user.username,
-                    avatar: interaction.user.displayAvatarURL(),
+                    name: targetUser.username,
+                    avatar: targetUser.displayAvatarURL(),
                 });
-                await failWebhook.send({ content: `<@${interaction.user.tag}> Wrong name!` });
+                await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
             } catch (err) {
                 console.error(err);
-                await interaction.reply({ content: `<@${interaction.user.tag}> Wrong name!`});
+                await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!` });
             }
         }
     }
 });
 
 client.on('messageCreate', async msg => {
-    if (msg.author.id === client.user.id || !msg.guild) return;
+    if (!msg.guild) return;
 
-    if (msg.author.id === client.user.id && msg.components.length > 0) {
-        setTimeout(() => disableButtons(msg, 'Expired'), 120000);
+    // --- 2-MINUTE EXPIRY LOGIC (CATCHES WEBHOOK MESSAGES) ---
+    if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
+        setTimeout(() => disableButtons(msg.channel.id, msg.id, 'Expired'), 120000);
     }
+
+    if (msg.author.id === client.user.id) return;
 
     const matchingRules = await Rule.find({ 
         watchUser: msg.author.id, 
@@ -202,11 +211,10 @@ client.on('messageCreate', async msg => {
     for (const rule of matchingRules) {
         const rawDataString = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
-        
         const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
 
         if (msg.author.bot) {
-            await logToModChannel(msg.guild, `Scan: Found=${isMentioned} | Target: ${targetId}`);
+            await logToModChannel(msg.guild, `Scan: Found=${isMentioned}, Target: ${targetId}`);
         }
 
         if (isMentioned) {
