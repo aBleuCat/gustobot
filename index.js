@@ -9,41 +9,68 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 
-// ... (Keep command deployment and server logic exactly as you had it)
+// --- Command Deployment ---
 const commands = [];
 const commandFilesForDeploy = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
 for (const file of commandFilesForDeploy) {
     const command = require(`./commands/${file}`);
     commands.push(command.data.toJSON());
 }
+
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
-        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+        await rest.put(
+            Routes.applicationCommands(process.env.CLIENT_ID),
+            { body: commands },
+        );
         console.log('Successfully reloaded application (/) commands.');
-    } catch (error) { console.error(error); }
+    } catch (error) {
+        console.error(error);
+    }
 })();
 
+// Health check for Render
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
 });
 
+// --- Database Connections ---
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
 
-// Schemas
-const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
-const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
-const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
-const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
+const Rule = mongoose.model('Rule', new mongoose.Schema({ 
+    ruleId: String, watchUser: String, targetUser: String, 
+    channel: String, addRole: String, restoreRole: String, durationMs: Number 
+}));
 
+const Advice = mongoose.model('Advice', new mongoose.Schema({ 
+    content: String, authorId: String 
+}));
+
+const Timeout = mongoose.model('Timeout', new mongoose.Schema({ 
+    targetUser: String, addRole: String, restoreRole: String, revertAt: Number 
+}));
+
+const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ 
+    guildId: String, channelId: String 
+}));
+
+// --- Helpers ---
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -59,6 +86,7 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
+// Global Reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -80,6 +108,7 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
         const fetched = await channel.messages.fetch(messageId).catch(() => null);
         if (!fetched || !fetched.components.length) return;
         if (fetched.components[0].components[0].disabled) return;
+
         const row = new ActionRowBuilder();
         fetched.components[0].components.forEach(c => {
             row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
@@ -88,6 +117,7 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
     } catch (e) { console.error("Error disabling buttons:", e); }
 }
 
+// --- Interaction Handler ---
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
@@ -97,16 +127,17 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
-        // Now parsing 6 parts: catch, ans, bold, type, targetId, customStats
-        const [, ans, bold, type, targetId, customStats] = interaction.customId.split('::');
+        const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
-            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${customStats}`)
+            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}`)
             .setTitle('Catch the Countryball');
+        
         const answerInput = new TextInputBuilder()
             .setCustomId('user_answer')
             .setLabel("Name of this countryball")
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
+
         modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
         await interaction.showModal(modal);
     }
@@ -123,7 +154,6 @@ client.on(Events.InteractionCreate, async interaction => {
                     avatar: targetUser.displayAvatarURL(),
                 });
                 
-                // Logic for stats: if DEFAULT, use your standard string. Else use the input.
                 const statString = (customStats === "DEFAULT") ? "(#6463FAC, +5%/+13%)" : customStats;
                 
                 let successMsg;
@@ -165,11 +195,14 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
+// --- Message Scanner ---
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
+
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         setTimeout(() => disableButtons(msg.channel.id, msg.id, 'Expired'), 120000);
     }
+
     if (msg.author.id === client.user.id) return;
 
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
@@ -177,16 +210,23 @@ client.on('messageCreate', async msg => {
         const rawDataString = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
         const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
+        
         if (msg.author.bot) {
             await logToModChannel(msg.guild, `Scan: Found=${isMentioned}, Target: ${targetId}`);
         }
+
         if (isMentioned) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
                 if (member) {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
-                    await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
+                    await new Timeout({ 
+                        targetUser: rule.targetUser, 
+                        addRole: rule.addRole, 
+                        restoreRole: rule.restoreRole, 
+                        revertAt: Date.now() + rule.durationMs 
+                    }).save();
                     await logToModChannel(msg.guild, `**Triggered!** Role swap for ${member.user.tag}`);
                 }
             } catch (e) { console.error(e); }
