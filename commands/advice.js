@@ -25,7 +25,7 @@ module.exports = {
         const randomAdvice = allAdvice[Math.floor(Math.random() * allAdvice.length)];
 
         const embed = new EmbedBuilder()
-            .setTitle(`The Oracle Provides...')
+            .setTitle(`The Oracle Provides...`)
             .setColor('#6463FA')
             .addFields(
                 { name: 'Your Question:', value: question },
