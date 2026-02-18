@@ -59,6 +59,12 @@ const ruleSchema = new mongoose.Schema({
 });
 const Rule = mongoose.model('Rule', ruleSchema);
 
+const adviceSchema = new mongoose.Schema({
+    content: String,
+    authorId: String
+});
+const Advice = mongoose.model('Advice', adviceSchema);
+
 const timeoutSchema = new mongoose.Schema({
     targetUser: String, addRole: String, restoreRole: String, revertAt: Number
 });
