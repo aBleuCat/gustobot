@@ -11,7 +11,7 @@ module.exports = {
         .addStringOption(option => 
             option.setName('message')
                 .setDescription('The message to send')
-                .setRequired(true))
+                .setRequired(true)), 
 
     async execute(interaction) {
         const targetUser = interaction.options.getUser('user');
