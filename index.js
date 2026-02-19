@@ -117,7 +117,10 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
     } catch (e) { console.error("Error disabling buttons:", e); }
 }
 
-// --- Interaction Handler ---
+// Store active spawns to disable them when caught
+const activeSpawns = new Map(); // key: messageId, value: { channelId, timeoutId }
+
+
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
@@ -129,7 +132,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
-            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}`)
+            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`) // ADD MESSAGE ID
             .setTitle('Catch the Countryball');
         
         const answerInput = new TextInputBuilder()
@@ -143,14 +146,14 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
-        const [, correctAnswer, boldText, type, targetId, customStats] = interaction.customId.split('::');
+        const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); // EXTRACT MESSAGE ID
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
 
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const catchWebhook = await interaction.channel.createWebhook({
-                    name: targetUser.username,
+                    name: targetUser.displayName,
                     avatar: targetUser.displayAvatarURL(),
                 });
                 
@@ -158,20 +161,23 @@ client.on(Events.InteractionCreate, async interaction => {
                 
                 let successMsg;
                 if (type === 'fulltext') {
-                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`;
+                    successMsg = `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`;
                 } else {
-                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** added to your collection!`;
+                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
                 }
                 
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
                 
-                if (interaction.message) {
-                    const row = new ActionRowBuilder();
-                    interaction.message.components[0].components.forEach(c => {
-                        row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel('Caught!'));
-                    });
-                    await interaction.message.edit({ components: [row] }).catch(() => {});
+                // Disable buttons using the messageId from customId
+                if (messageId) {
+                    await disableButtons(interaction.channel.id, messageId, 'Caught!');
+                    
+                    // Clear the timeout if it exists
+                    if (activeSpawns.has(messageId)) {
+                        clearTimeout(activeSpawns.get(messageId).timeoutId);
+                        activeSpawns.delete(messageId);
+                    }
                 }
 
                 await interaction.deferUpdate().catch(() => {}); 
@@ -179,10 +185,9 @@ client.on(Events.InteractionCreate, async interaction => {
             } catch (err) { console.error(err); }
         } else {
             try {
-                // FIXED: Fetching targetUser so the "Wrong name" webhook actually works
                 const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({
-                    name: targetUser.username,
+                    name: targetUser.displayName,
                     avatar: targetUser.displayAvatarURL(),
                 });
                 await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
@@ -190,7 +195,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.deferUpdate().catch(() => {});
             } catch (err) {
                 console.error(err);
-                // Fallback if webhook fails
                 await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {});
             }
         }
@@ -201,8 +205,14 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
 
+    // Set up auto-disable for bot/webhook messages with buttons
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
-        setTimeout(() => disableButtons(msg.channel.id, msg.id, 'Expired'), 120000);
+        const timeoutId = setTimeout(() => {
+            disableButtons(msg.channel.id, msg.id, 'Expired');
+            activeSpawns.delete(msg.id);
+        }, 120000);
+        
+        activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
     if (msg.author.id === client.user.id) return;
