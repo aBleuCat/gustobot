@@ -23,6 +23,10 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
+        
+        // clears all global commands before registering the new ones (hopefully)
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+        
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
@@ -33,7 +37,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     }
 })();
 
-// Health check for Render
+// for render
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
@@ -48,7 +52,7 @@ const client = new Client({
     ]
 });
 
-// --- Database Connections ---
+// database
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
@@ -70,7 +74,6 @@ const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({
     guildId: String, channelId: String 
 }));
 
-// --- Helpers ---
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -117,7 +120,6 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
     } catch (e) { console.error("Error disabling buttons:", e); }
 }
 
-// Store active spawns to disable them when caught
 const activeSpawns = new Map(); // key: messageId, value: { channelId, timeoutId }
 
 
@@ -132,7 +134,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
-            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`) // ADD MESSAGE ID
+            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`) 
             .setTitle('Catch the Countryball');
         
         const answerInput = new TextInputBuilder()
@@ -146,7 +148,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
-        const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); // EXTRACT MESSAGE ID
+        const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); 
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
 
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
@@ -169,11 +171,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
                 
-                // Disable buttons using the messageId from customId
                 if (messageId) {
                     await disableButtons(interaction.channel.id, messageId, 'Caught!');
-                    
-                    // Clear the timeout if it exists
                     if (activeSpawns.has(messageId)) {
                         clearTimeout(activeSpawns.get(messageId).timeoutId);
                         activeSpawns.delete(messageId);
@@ -201,11 +200,23 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
-// --- Message Scanner ---
+// message scanning
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
 
-    // Set up auto-disable for bot/webhook messages with buttons
+    // lol and ts pmo when @everyone
+    const content = msg.content.toLowerCase();
+    
+    // Checks if "lol" is a whole word
+    if (/\blol\b/.test(content)) {
+        msg.channel.send("lol");
+    }
+
+    if (msg.content.includes("@everyone")) {
+        msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+    }
+
+    // ts not working
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => {
             disableButtons(msg.channel.id, msg.id, 'Expired');
