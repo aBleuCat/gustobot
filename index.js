@@ -23,10 +23,8 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
-        
-        // clears all global commands before registering the new ones (hopefully)
+        // clears all global commands before registering the new ones
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
-        
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
@@ -120,8 +118,7 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
     } catch (e) { console.error("Error disabling buttons:", e); }
 }
 
-const activeSpawns = new Map(); // key: messageId, value: { channelId, timeoutId }
-
+const activeSpawns = new Map(); 
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
@@ -204,19 +201,7 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
 
-    // lol and ts pmo when @everyone
-    const content = msg.content.toLowerCase();
-    
-    // Checks if "lol" is a whole word
-    if (/\blol\b/.test(content)) {
-        msg.channel.send("lol");
-    }
-
-    if (msg.content.includes("@everyone")) {
-        msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-    }
-
-    // ts not working
+    // 1. First, handle button tracking (this must happen for bot/webhook messages)
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => {
             disableButtons(msg.channel.id, msg.id, 'Expired');
@@ -226,8 +211,22 @@ client.on('messageCreate', async msg => {
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
+    // 2. SAFETY: Stop here if the message is from the bot itself to prevent infinite loops
     if (msg.author.id === client.user.id) return;
 
+    // 3. Reactions to specific text
+    const content = msg.content.toLowerCase();
+    
+    // Checks if "lol" is a whole word (prevents triggering on "lollipop")
+    if (/\blol\b/.test(content)) {
+        msg.channel.send("lol");
+    }
+
+    if (msg.content.includes("@everyone")) {
+        msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+    }
+
+    // 4. Role Rules Scanning
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         const rawDataString = JSON.stringify(msg).toLowerCase();
