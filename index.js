@@ -71,9 +71,19 @@ const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({
     guildId: String, channelId: String 
 }));
 
-// New model for mutelol
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ 
     channelId: String 
+}));
+
+// MongoDB Model for Lol Stats
+const LolStats = mongoose.model('LolStats', new mongoose.Schema({
+    id: { type: String, default: "global_stats" },
+    allTime: { type: Number, default: 0 },
+    weekly: { type: Number, default: 0 },
+    daily: { type: Number, default: 0 },
+    lastTimestamp: { type: Number, default: 0 },
+    lastDay: { type: String, default: "" },
+    lastWeek: { type: Number, default: 0 }
 }));
 
 async function logToModChannel(guild, message) {
@@ -124,24 +134,34 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
 
 const activeSpawns = new Map(); 
 
-// JSON Helper for tspmo
-function updateLolStats() {
-    const filePath = './tspmo.json';
-    let stats = { count: 0, lastTimestamp: 0 };
-    if (fs.existsSync(filePath)) {
-        try { stats = JSON.parse(fs.readFileSync(filePath)); } catch (e) { stats = { count: 0, lastTimestamp: 0 }; }
+// Persistent Stats Helper
+async function updateLolStatsDB() {
+    let stats = await LolStats.findOne({ id: "global_stats" });
+    if (!stats) stats = new LolStats({ id: "global_stats" });
+
+    const now = new Date();
+    const todayStr = now.toDateString();
+    
+    // Week Calculation
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const weekNum = Math.ceil((((now - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+
+    if (stats.lastDay !== todayStr) {
+        stats.daily = 0;
+        stats.lastDay = todayStr;
     }
-    const now = Date.now();
-    // Reset if it's been more than 30 minutes (you can change this number)
-    if (now - stats.lastTimestamp > 1800000) {
-        stats.count = 1;
-    } else {
-        stats.count += 1;
+    if (stats.lastWeek !== weekNum) {
+        stats.weekly = 0;
+        stats.lastWeek = weekNum;
     }
-    stats.lastTimestamp = now;
-    stats.lastDate = new Date().toLocaleString();
-    fs.writeFileSync(filePath, JSON.stringify(stats, null, 2));
-    return stats.count;
+
+    stats.allTime += 1;
+    stats.weekly += 1;
+    stats.daily += 1;
+    stats.lastTimestamp = Date.now();
+
+    await stats.save();
+    return stats;
 }
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -225,13 +245,12 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
 
-    // 1. Cat logic (Before self-ignore so bot can see messages, but it won't trigger itself because of step 2)
+    // 1. Random Cat (1 in 100)
     const randomNum = Math.floor(Math.random() * 100) + 1;
     if (randomNum === 64) {
         msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
     }
 
-    // Button tracking for bot messages
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => {
             disableButtons(msg.channel.id, msg.id, 'Expired');
@@ -240,30 +259,30 @@ client.on('messageCreate', async msg => {
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
-    // 2. Ignore self
     if (msg.author.id === client.user.id) return;
 
-    // 3. LOL Logic
+    // 2. LOL Logic
     const content = msg.content.toLowerCase();
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
         if (!isMuted) {
             msg.channel.send("lol");
-            const count = updateLolStats();
-            if (count === 20) {
+            const stats = await updateLolStatsDB();
+            
+            if (stats.daily === 20) {
                 msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-            } else if (count === 40) {
+            } else if (stats.daily === 40) {
                 msg.channel.send("Do you not have *anything* better to do");
             }
         }
     }
 
-    // 4. Everyone trigger
+    // 3. Everyone trigger
     if (msg.content.includes("@everyone")) {
         msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     }
 
-    // 5. Role Rules
+    // 4. Role Rules
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         const rawDataString = JSON.stringify(msg).toLowerCase();
