@@ -23,7 +23,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
-        // clears all global commands before registering the new ones
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
@@ -70,6 +69,11 @@ const Timeout = mongoose.model('Timeout', new mongoose.Schema({
 
 const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ 
     guildId: String, channelId: String 
+}));
+
+// New model for mutelol
+const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ 
+    channelId: String 
 }));
 
 async function logToModChannel(guild, message) {
@@ -119,6 +123,26 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
 }
 
 const activeSpawns = new Map(); 
+
+// JSON Helper for tspmo
+function updateLolStats() {
+    const filePath = './tspmo.json';
+    let stats = { count: 0, lastTimestamp: 0 };
+    if (fs.existsSync(filePath)) {
+        try { stats = JSON.parse(fs.readFileSync(filePath)); } catch (e) { stats = { count: 0, lastTimestamp: 0 }; }
+    }
+    const now = Date.now();
+    // Reset if it's been more than 30 minutes (you can change this number)
+    if (now - stats.lastTimestamp > 1800000) {
+        stats.count = 1;
+    } else {
+        stats.count += 1;
+    }
+    stats.lastTimestamp = now;
+    stats.lastDate = new Date().toLocaleString();
+    fs.writeFileSync(filePath, JSON.stringify(stats, null, 2));
+    return stats.count;
+}
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
@@ -201,32 +225,45 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on('messageCreate', async msg => {
     if (!msg.guild) return;
 
-    // 1. First, handle button tracking (this must happen for bot/webhook messages)
+    // 1. Cat logic (Before self-ignore so bot can see messages, but it won't trigger itself because of step 2)
+    const randomNum = Math.floor(Math.random() * 100) + 1;
+    if (randomNum === 64) {
+        msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
+    }
+
+    // Button tracking for bot messages
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => {
             disableButtons(msg.channel.id, msg.id, 'Expired');
             activeSpawns.delete(msg.id);
         }, 120000);
-        
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
-    // 2. SAFETY: Stop here if the message is from the bot itself to prevent infinite loops
+    // 2. Ignore self
     if (msg.author.id === client.user.id) return;
 
-    // 3. Reactions to specific text
+    // 3. LOL Logic
     const content = msg.content.toLowerCase();
-    
-    // Checks if "lol" is a whole word (prevents triggering on "lollipop")
     if (/\blol\b/.test(content)) {
-        msg.channel.send("lol");
+        const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
+        if (!isMuted) {
+            msg.channel.send("lol");
+            const count = updateLolStats();
+            if (count === 20) {
+                msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+            } else if (count === 40) {
+                msg.channel.send("Do you not have *anything* better to do");
+            }
+        }
     }
 
+    // 4. Everyone trigger
     if (msg.content.includes("@everyone")) {
         msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     }
 
-    // 4. Role Rules Scanning
+    // 5. Role Rules
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         const rawDataString = JSON.stringify(msg).toLowerCase();
