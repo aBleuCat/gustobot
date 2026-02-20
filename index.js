@@ -277,6 +277,7 @@ client.on('messageCreate', async msg => {
             // Logic for multiples of 20, 40, 60
             if (count % 60 === 0) {
                 msg.channel.send(":pensivekms:");
+                msg.channel.send("people are starving in africa because of ts");
             } else if (count % 40 === 0) {
                 msg.channel.send("Do you not have *anything* better to do");
             } else if (count % 20 === 0) {
