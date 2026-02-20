@@ -22,13 +22,18 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
-        console.log('Started refreshing application (/) commands.');
+        console.log('Refreshing commands...');
+        
+        // 1. CLEAR GLOBAL COMMANDS
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+        
+        // 2. REGISTER GUILD COMMANDS
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID),
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
             { body: commands }
         );
-        console.log('Successfully reloaded application (/) commands.');
+        
+        console.log('Successfully reloaded Guild (/) commands.');
     } catch (error) {
         console.error(error);
     }
@@ -142,7 +147,6 @@ async function updateLolStatsDB() {
     const now = new Date();
     const todayStr = now.toDateString();
     
-    // Week Calculation
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil((((now - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
 
@@ -268,11 +272,15 @@ client.on('messageCreate', async msg => {
         if (!isMuted) {
             msg.channel.send("lol");
             const stats = await updateLolStatsDB();
+            const count = stats.daily;
             
-            if (stats.daily === 20) {
-                msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-            } else if (stats.daily === 40) {
+            // Logic for multiples of 20, 40, 60
+            if (count % 60 === 0) {
+                msg.channel.send(":pensivekms:");
+            } else if (count % 40 === 0) {
                 msg.channel.send("Do you not have *anything* better to do");
+            } else if (count % 20 === 0) {
+                msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
             }
         }
     }
