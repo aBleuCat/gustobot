@@ -275,7 +275,7 @@ client.on('messageCreate', async msg => {
     // 67 triggers
     const trigger67 = /\b67\b|six seven|six-seven/;
     if (trigger67.test(content)) {
-        const responses = ["grown man btw,", "top 2% of students btw,", "ok pack it up time to do your learning log"];
+        const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log"];
         const picked = responses[Math.floor(Math.random() * responses.length)];
         msg.reply(picked);
     }
