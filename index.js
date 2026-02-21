@@ -206,6 +206,16 @@ client.on(Events.InteractionCreate, async interaction => {
             if (command) return await command.execute(interaction);
         }
 
+        if (interaction.commandName === 'purgeadvicefromuser') {
+            const command = client.commands.get('purgeadvicefromuser');
+            if (command) return await command.execute(interaction);
+        }
+
+        if (interaction.commandName === 'totaladvice') {
+            const command = client.commands.get('totaladvice');
+            if (command) return await command.execute(interaction);
+        }
+
         if (interaction.commandName === 'advicebanlist') {
             const bans = await AdviceBan.find({});
             if (!bans.length) return interaction.reply("No one is currently banned from giving advice.");
