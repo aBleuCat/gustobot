@@ -201,6 +201,11 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
 
+        if (interaction.commandName === 'clearadvicedupes') {
+            const command = client.commands.get('clearadvicedupes');
+            if (command) return await command.execute(interaction);
+        }
+
         if (interaction.commandName === 'advicebanlist') {
             const bans = await AdviceBan.find({});
             if (!bans.length) return interaction.reply("No one is currently banned from giving advice.");
