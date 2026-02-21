@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 
-// --- Command Deployment ---
+// deploy global commands
 const commands = [];
 const commandFilesForDeploy = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
@@ -24,16 +24,16 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('Refreshing commands...');
         
-        // 1. CLEAR GLOBAL COMMANDS (Cleans up old global versions)
-        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+        // wipe guild commands
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] });
         
-        // 2. REGISTER GUILD COMMANDS (Instant updates in your server)
+        // register global commands
         await rest.put(
-            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
         );
         
-        console.log('Successfully reloaded Guild (/) commands.');
+        console.log('Successfully reloaded global (/) commands.');
     } catch (error) {
         console.error(error);
     }
@@ -80,7 +80,6 @@ const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({
     channelId: String 
 }));
 
-// MongoDB Model for Lol Stats
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     id: { type: String, default: "global_stats" },
     allTime: { type: Number, default: 0 },
@@ -106,7 +105,7 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// Global Reverter
+// global reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -139,7 +138,7 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
 
 const activeSpawns = new Map(); 
 
-// Persistent Stats Helper
+// persistent stats helper
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
@@ -171,6 +170,22 @@ async function updateLolStatsDB() {
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
+        
+        // manual command handling for impregnate and abortbaby
+        if (interaction.commandName === 'impregnate') {
+            const target = interaction.options.getMember('user');
+            const roleId = '1473123914531213532';
+            if (!target) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
+            await target.roles.add(roleId).catch(e => console.error(e));
+            return interaction.reply(`Impregnated ${target.user.username}.`);
+        }
+
+        if (interaction.commandName === 'abortbaby') {
+            const roleId = '1473123914531213532';
+            await interaction.member.roles.remove(roleId).catch(e => console.error(e));
+            return interaction.reply({ content: 'Baby aborted' });
+        }
+
         if (!command) return;
         try { await command.execute(interaction); } catch (e) { console.error(e); }
         return;
@@ -210,7 +225,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (type === 'fulltext') {
                     successMsg = `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`;
                 } else {
-                    successMsg = `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
+                    successMsg = `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
                 }
                 
                 await catchWebhook.send({ content: successMsg });
@@ -247,12 +262,22 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // message scanning
 client.on('messageCreate', async msg => {
-    if (!msg.guild) return;
+    if (!msg.guild || msg.author.bot) return;
 
-    // 1. Random Cat (1 in 100)
-    const randomNum = Math.floor(Math.random() * 100) + 1;
+    const content = msg.content.toLowerCase();
+
+    // random cat
+    const randomNum = Math.floor(Math.random() * 500) + 1;
     if (randomNum === 64) {
         msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
+    }
+
+    // 67 triggers
+    const trigger67 = /\b67\b|six seven|six-seven/;
+    if (trigger67.test(content)) {
+        const responses = ["grown man btw,", "top 2% of students btw,", "ok pack it up time to do your learning log"];
+        const picked = responses[Math.floor(Math.random() * responses.length)];
+        msg.reply(picked);
     }
 
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
@@ -265,8 +290,7 @@ client.on('messageCreate', async msg => {
 
     if (msg.author.id === client.user.id) return;
 
-    // 2. LOL Logic
-    const content = msg.content.toLowerCase();
+    // lol logic
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
         if (!isMuted) {
@@ -274,34 +298,29 @@ client.on('messageCreate', async msg => {
             const stats = await updateLolStatsDB();
             const count = stats.daily;
             
-            // Logic for multiples of 20, 40, 60
             if (count % 60 === 0) {
-                msg.channel.send(":pensivekms:");
-                msg.channel.send("people are starving in africa because of ts");
+                msg.channel.send("<:PensiveKMS:1474277252546957400>");
+                msg.channel.send("People are starving in Africa because of ts");
             } else if (count % 40 === 0) {
-                msg.channel.send("Do you not have *anything* better to do");
+                msg.channel.send("Do you not have *anything* better to do?");
             } else if (count % 20 === 0) {
                 msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
             }
         }
     }
 
-    // 3. Everyone trigger
+    // everyone trigger
     if (msg.content.includes("@everyone")) {
         msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     }
 
-    // 4. Role Rules
+    // role rules
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         const rawDataString = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
         const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
         
-        if (msg.author.bot) {
-            await logToModChannel(msg.guild, `Scan: Found=${isMentioned}, Target: ${targetId}`);
-        }
-
         if (isMentioned) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
@@ -314,7 +333,7 @@ client.on('messageCreate', async msg => {
                         restoreRole: rule.restoreRole, 
                         revertAt: Date.now() + rule.durationMs 
                     }).save();
-                    await logToModChannel(msg.guild, `**Triggered!** Role swap for ${member.user.tag}`);
+                    await logToModChannel(msg.guild, `**Triggered**: Role swap for ${member.user.tag}.`);
                 }
             } catch (e) { console.error(e); }
         }
