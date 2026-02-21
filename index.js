@@ -216,12 +216,27 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.reply({ content: `**Banned from Advice:**\n${list}`, flags: [MessageFlags.Ephemeral] });
         }
 
-        if (interaction.commandName === 'impregnate') {
-            const target = interaction.options.getMember('user');
-            const roleId = '1473123914531213532';
-            if (!target) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
-            await target.roles.add(roleId).catch(e => console.error(e));
-            return interaction.reply(`imprenated ${target.user.username}.`);
+       if (interaction.commandName === 'impregnate') {
+    // Get the user ID from the options
+        const user = interaction.options.getUser('user');
+        const roleId = '1473123914531213532';
+
+           if (!user) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
+
+           try {
+        // Fetch the member from the guild to ensure they aren't null
+               const target = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+                if (!target) {
+                    return interaction.reply({ content: 'Could not find that member in this server.', flags: [MessageFlags.Ephemeral] });
+                }
+
+                await target.roles.add(roleId);
+                return interaction.reply(`impregnated ${target.user.username}.`);
+            } catch (e) {
+                console.error(e);
+                return interaction.reply({ content: 'Failed to add the role. Check my permissions.', flags: [MessageFlags.Ephemeral] });
+            }
         }
 
         if (interaction.commandName === 'abortbaby') {
