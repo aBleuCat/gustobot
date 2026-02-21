@@ -190,15 +190,8 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
         if (interaction.commandName === 'banadvice') {
-            const target = interaction.options.getUser('user');
-            const exists = await AdviceBan.findOne({ userId: target.id });
-            if (exists) {
-                await AdviceBan.deleteOne({ userId: target.id });
-                return interaction.reply(`Unbanned **${target.username}** from giving advice.`);
-            } else {
-                await new AdviceBan({ userId: target.id }).save();
-                return interaction.reply(`Banned **${target.username}** from giving advice.`);
-            }
+            const command = client.commands.get('banadvice');
+            if (command) return await command.execute(interaction);
         }
 
         if (interaction.commandName === 'clearadvicedupes') {
