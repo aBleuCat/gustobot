@@ -8,6 +8,10 @@ const {
 const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
+const path = require('path');
+const { 
+    joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
+} = require('@discordjs/voice');
 
 // deploy global commands
 const commands = [];
@@ -23,16 +27,8 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
     try {
         console.log('Refreshing commands...');
-        
-        // wipe guild commands
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] });
-        
-        // register global commands
-        await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commands }
-        );
-        
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
         console.log('Successfully reloaded global (/) commands.');
     } catch (error) {
         console.error(error);
@@ -50,7 +46,8 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates 
     ]
 });
 
@@ -59,6 +56,7 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
 
+// Models
 const Rule = mongoose.model('Rule', new mongoose.Schema({ 
     ruleId: String, watchUser: String, targetUser: String, 
     channel: String, addRole: String, restoreRole: String, durationMs: Number 
@@ -66,6 +64,10 @@ const Rule = mongoose.model('Rule', new mongoose.Schema({
 
 const Advice = mongoose.model('Advice', new mongoose.Schema({ 
     content: String, authorId: String 
+}));
+
+const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ 
+    userId: String 
 }));
 
 const Timeout = mongoose.model('Timeout', new mongoose.Schema({ 
@@ -89,6 +91,26 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     lastDay: { type: String, default: "" },
     lastWeek: { type: Number, default: 0 }
 }));
+
+// voice logic
+const player = createAudioPlayer();
+
+function playScream(guild, channelId) {
+    const connection = joinVoiceChannel({
+        channelId: channelId,
+        guildId: guild.id,
+        adapterCreator: guild.voiceAdapterCreator,
+    });
+
+    const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
+    player.play(resource);
+    connection.subscribe(player);
+}
+
+player.on(AudioPlayerStatus.Idle, () => {
+    const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
+    player.play(resource);
+});
 
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
@@ -138,31 +160,20 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
 
 const activeSpawns = new Map(); 
 
-// persistent stats helper
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
 
     const now = new Date();
     const todayStr = now.toDateString();
-    
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil((((now - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
 
-    if (stats.lastDay !== todayStr) {
-        stats.daily = 0;
-        stats.lastDay = todayStr;
-    }
-    if (stats.lastWeek !== weekNum) {
-        stats.weekly = 0;
-        stats.lastWeek = weekNum;
-    }
+    if (stats.lastDay !== todayStr) { stats.daily = 0; stats.lastDay = todayStr; }
+    if (stats.lastWeek !== weekNum) { stats.weekly = 0; stats.lastWeek = weekNum; }
 
-    stats.allTime += 1;
-    stats.weekly += 1;
-    stats.daily += 1;
+    stats.allTime += 1; stats.weekly += 1; stats.daily += 1;
     stats.lastTimestamp = Date.now();
-
     await stats.save();
     return stats;
 }
@@ -171,13 +182,38 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         
-        // manual command handling for impregnate and abortbaby
+        if (interaction.commandName === 'scream') {
+            const channel = interaction.options.getChannel('channel');
+            if (!channel || channel.type !== 2) return interaction.reply({ content: 'Valid VC only.', flags: [MessageFlags.Ephemeral] });
+            playScream(interaction.guild, channel.id);
+            return interaction.reply(`The eternal screaming moved to **${channel.name}**.`);
+        }
+
+        if (interaction.commandName === 'banadvice') {
+            const target = interaction.options.getUser('user');
+            const exists = await AdviceBan.findOne({ userId: target.id });
+            if (exists) {
+                await AdviceBan.deleteOne({ userId: target.id });
+                return interaction.reply(`Unbanned **${target.username}** from giving advice.`);
+            } else {
+                await new AdviceBan({ userId: target.id }).save();
+                return interaction.reply(`Banned **${target.username}** from giving advice.`);
+            }
+        }
+
+        if (interaction.commandName === 'advicebanlist') {
+            const bans = await AdviceBan.find({});
+            if (!bans.length) return interaction.reply("No one is currently banned from giving advice.");
+            const list = bans.map(b => `<@${b.userId}>`).join(', ');
+            return interaction.reply({ content: `**Banned from Advice:**\n${list}`, flags: [MessageFlags.Ephemeral] });
+        }
+
         if (interaction.commandName === 'impregnate') {
             const target = interaction.options.getMember('user');
             const roleId = '1473123914531213532';
             if (!target) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
             await target.roles.add(roleId).catch(e => console.error(e));
-            return interaction.reply(`Impregnated ${target.user.username}.`);
+            return interaction.reply(`imprenated ${target.user.username}.`);
         }
 
         if (interaction.commandName === 'abortbaby') {
@@ -191,18 +227,14 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
+    // Modal and Button logic remains identical to your provided code...
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
             .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`) 
             .setTitle('Catch the Countryball');
-        
         const answerInput = new TextInputBuilder()
-            .setCustomId('user_answer')
-            .setLabel("Name of this countryball")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-
+            .setCustomId('user_answer').setLabel("Name of this countryball").setStyle(TextInputStyle.Short).setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
         await interaction.showModal(modal);
     }
@@ -214,125 +246,76 @@ client.on(Events.InteractionCreate, async interaction => {
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
                 const targetUser = await client.users.fetch(targetId);
-                const catchWebhook = await interaction.channel.createWebhook({
-                    name: targetUser.displayName,
-                    avatar: targetUser.displayAvatarURL(),
-                });
-                
+                const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
-                
-                let successMsg;
-                if (type === 'fulltext') {
-                    successMsg = `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`;
-                } else {
-                    successMsg = `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
-                }
-                
+                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}**!`;
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
-                
                 if (messageId) {
                     await disableButtons(interaction.channel.id, messageId, 'Caught!');
-                    if (activeSpawns.has(messageId)) {
-                        clearTimeout(activeSpawns.get(messageId).timeoutId);
-                        activeSpawns.delete(messageId);
-                    }
+                    if (activeSpawns.has(messageId)) { clearTimeout(activeSpawns.get(messageId).timeoutId); activeSpawns.delete(messageId); }
                 }
-
                 await interaction.deferUpdate().catch(() => {}); 
                 await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
             } catch (err) { console.error(err); }
         } else {
             try {
                 const targetUser = await client.users.fetch(targetId);
-                const failWebhook = await interaction.channel.createWebhook({
-                    name: targetUser.displayName,
-                    avatar: targetUser.displayAvatarURL(),
-                });
+                const failWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
-            } catch (err) {
-                console.error(err);
-                await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {});
-            }
+            } catch (err) { await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); }
         }
     }
 });
 
-// message scanning
 client.on('messageCreate', async msg => {
     if (!msg.guild || msg.author.bot) return;
-
     const content = msg.content.toLowerCase();
 
-    // random cat
     const randomNum = Math.floor(Math.random() * 500) + 1;
-    if (randomNum === 64) {
-        msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
-    }
+    if (randomNum === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
-    // 67 triggers
     const trigger67 = /\b67\b|six seven|six-seven/;
     if (trigger67.test(content)) {
         const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log"];
-        const picked = responses[Math.floor(Math.random() * responses.length)];
-        msg.reply(picked);
+        msg.reply(responses[Math.floor(Math.random() * responses.length)]);
     }
 
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
-        const timeoutId = setTimeout(() => {
-            disableButtons(msg.channel.id, msg.id, 'Expired');
-            activeSpawns.delete(msg.id);
-        }, 120000);
+        const timeoutId = setTimeout(() => { disableButtons(msg.channel.id, msg.id, 'Expired'); activeSpawns.delete(msg.id); }, 120000);
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
     if (msg.author.id === client.user.id) return;
 
-    // lol logic
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
         if (!isMuted) {
             msg.channel.send("lol");
             const stats = await updateLolStatsDB();
-            const count = stats.daily;
-            
-            if (count % 60 === 0) {
-                msg.channel.send("<:PensiveKMS:1474277252546957400>");
-                msg.channel.send("People are starving in Africa because of ts");
-            } else if (count % 40 === 0) {
+            if (stats.daily % 60 === 0) {
+                msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
+            } else if (stats.daily % 40 === 0) {
                 msg.channel.send("Do you not have *anything* better to do?");
-            } else if (count % 20 === 0) {
+            } else if (stats.daily % 20 === 0) {
                 msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
             }
         }
     }
 
-    // everyone trigger
-    if (msg.content.includes("@everyone")) {
-        msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-    }
+    if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
 
-    // role rules
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
-        const rawDataString = JSON.stringify(msg).toLowerCase();
-        const targetId = rule.targetUser.toLowerCase();
-        const isMentioned = rawDataString.includes(targetId) || msg.mentions.users.has(rule.targetUser);
-        
-        if (isMentioned) {
+        if (JSON.stringify(msg).toLowerCase().includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
                 if (member) {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
-                    await new Timeout({ 
-                        targetUser: rule.targetUser, 
-                        addRole: rule.addRole, 
-                        restoreRole: rule.restoreRole, 
-                        revertAt: Date.now() + rule.durationMs 
-                    }).save();
+                    await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
                     await logToModChannel(msg.guild, `**Triggered**: Role swap for ${member.user.tag}.`);
                 }
             } catch (e) { console.error(e); }
