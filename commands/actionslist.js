@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const mongoose = require('mongoose');
 
 module.exports = {
@@ -15,23 +15,49 @@ module.exports = {
 
         if (!actions.length) return interaction.reply("I haven't learned any actions yet.");
 
-        let header = "**Learned Actions:**\n";
-        let footer = "\n**... and more (too many actions)**";
-        let list = "";
-        let truncated = false;
+        const generateEmbed = (page) => {
+            const start = page * 10;
+            const current = actions.slice(start, start + 10);
+            
+            const embed = new EmbedBuilder()
+                .setTitle(`🛠 Learned Actions (Page ${page + 1}/${Math.ceil(actions.length / 10)})`)
+                .setColor(0xFFA500)
+                .setDescription(current.map(act => `• **${act.trigger}** → ${act.response}`).join('\n'));
 
-        for (const act of actions) {
-            let entry = `• **${act.trigger}** → ${act.response}\n`;
-            if ((header + list + entry + footer).length > 2000) {
-                truncated = true;
-                break;
-            }
-            list += entry;
-        }
+            return embed;
+        };
 
-        return interaction.reply({ 
-            content: header + list + (truncated ? footer : ""), 
-            ephemeral: true 
+        const generateButtons = (page) => {
+            return new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`act_prev_${page}`)
+                    .setLabel('⬅️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(page === 0),
+                new ButtonBuilder()
+                    .setCustomId(`act_next_${page}`)
+                    .setLabel('➡️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled((page + 1) * 10 >= actions.length)
+            );
+        };
+
+        const response = await interaction.reply({
+            embeds: [generateEmbed(0)],
+            components: [generateButtons(0)],
+            ephemeral: true
+        });
+
+        const collector = response.createMessageComponentCollector({ time: 60000 });
+
+        collector.on('collect', async i => {
+            const [, direction, currentPage] = i.customId.split('_');
+            const newPage = direction === 'next' ? parseInt(currentPage) + 1 : parseInt(currentPage) - 1;
+            
+            await i.update({
+                embeds: [generateEmbed(newPage)],
+                components: [generateButtons(newPage)]
+            });
         });
     }
 };
