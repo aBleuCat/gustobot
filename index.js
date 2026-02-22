@@ -62,6 +62,11 @@ const Rule = mongoose.model('Rule', new mongoose.Schema({
     channel: String, addRole: String, restoreRole: String, durationMs: Number 
 }));
 
+const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({
+    trigger: String, 
+    response: String 
+}));
+
 const Advice = mongoose.model('Advice', new mongoose.Schema({ 
     content: String, authorId: String 
 }));
