@@ -13,23 +13,25 @@ const {
     joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
 } = require('@discordjs/voice');
 
-// deploy global commands
-const commands = [];
-const commandFilesForDeploy = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const guildCommands = [];
+const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
 
-for (const file of commandFilesForDeploy) {
-    const command = require(`./commands/${file}`);
-    commands.push(command.data.toJSON());
+for (const file of guildCommandFiles) {
+    const command = require(`./guild_commands/${file}`);
+    guildCommands.push(command.data.toJSON());
+    client.commands.set(command.data.name, command); // Add to client collection
 }
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
         console.log('Refreshing commands...');
-        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] });
+        // Global Commands
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
-        console.log('Successfully reloaded global (/) commands.');
+        
+        // Guild Only Commands
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommands });
+        
+        console.log('Successfully reloaded all commands.');
     } catch (error) {
         console.error(error);
     }
