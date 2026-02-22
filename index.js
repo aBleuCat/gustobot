@@ -13,6 +13,16 @@ const {
     joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
 } = require('@discordjs/voice');
 
+client.commands = new Collection();
+
+const globalCommands = [];
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+    const command = require(`./commands/${file}`);
+    globalCommands.push(command.data.toJSON());
+    client.commands.set(command.data.name, command);
+}
+
 const guildCommands = [];
 const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
 
