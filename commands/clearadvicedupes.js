@@ -4,34 +4,24 @@ const mongoose = require('mongoose');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clearadvicedupes')
-        .setDescription('Cleans the database of duplicate advice entries')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('Cleans the database of duplicate advice entries'),
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        // Owner Check
+        if (interaction.user.id !== '934290747623096381') {
+            return interaction.reply({ content: "Only the owner can scrub the database.", ephemeral: true });
+        }
 
+        await interaction.deferReply({ ephemeral: true });
         const Advice = mongoose.model('Advice');
 
         try {
-            // Finding duplicates based on the 'content' field
             const duplicates = await Advice.aggregate([
-                {
-                    $group: {
-                        _id: { content: "$content" },
-                        dupes: { $push: "$_id" },
-                        count: { $sum: 1 }
-                    }
-                },
-                {
-                    $match: {
-                        count: { $gt: 1 }
-                    }
-                }
+                { $group: { _id: { content: "$content" }, dupes: { $push: "$_id" }, count: { $sum: 1 } } },
+                { $match: { count: { $gt: 1 } } }
             ]);
 
             let totalDeleted = 0;
-
             for (const doc of duplicates) {
-                // Keep the first one, delete the rest
                 const idsToDelete = doc.dupes.slice(1);
                 await Advice.deleteMany({ _id: { $in: idsToDelete } });
                 totalDeleted += idsToDelete.length;
