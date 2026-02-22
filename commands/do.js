@@ -15,7 +15,7 @@ module.exports = {
         const matched = allActions.find(entry => actionInput.includes(entry.trigger.toLowerCase()));
 
         if (matched) {
-            return interaction.reply(matched.response);
+            return interaction.reply(`> **Request:** ${actionInput}\n${matched.response}`);
         }
 
         // Default dumb reasons
@@ -27,10 +27,12 @@ module.exports = {
             "You're a fucking racist, get away from me",
             "I'm on strike rn, no can do",
             "I would, but actually no, I wouldn't, would never, go away, never come back",
-            "Nah you got that"
+            "Nah you got that",
+            "Too busy not doing my learning log",
+            "I would, but it's too far away"
         ];
         
         const randomReason = dumbReasons[Math.floor(Math.random() * dumbReasons.length)];
-        return interaction.reply(randomReason);
+        return interaction.reply(`> **Request:** ${actionInput}\n${randomReason}`);
     }
 };
