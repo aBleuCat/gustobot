@@ -13,34 +13,47 @@ const {
     joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
 } = require('@discordjs/voice');
 
+// intializie client
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates 
+    ]
+});
+
 client.commands = new Collection();
 
-const globalCommands = [];
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
+const globalCommandsData = [];
+const globalCommandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+for (const file of globalCommandFiles) {
     const command = require(`./commands/${file}`);
-    globalCommands.push(command.data.toJSON());
+    globalCommandsData.push(command.data.toJSON());
     client.commands.set(command.data.name, command);
 }
 
-const guildCommands = [];
+const guildCommandsData = [];
 const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
 
 for (const file of guildCommandFiles) {
     const command = require(`./guild_commands/${file}`);
-    guildCommands.push(command.data.toJSON());
-    client.commands.set(command.data.name, command); // Add to client collection
+    guildCommandsData.push(command.data.toJSON());
+    client.commands.set(command.data.name, command);
 }
+
+// DEPLOY
+const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
         console.log('Refreshing commands...');
-        // Global Commands
-        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
-        
-        // Guild Only Commands
-        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommands });
-        
+        // Global
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
+        // Guild Only
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
         console.log('Successfully reloaded all commands.');
     } catch (error) {
         console.error(error);
@@ -52,16 +65,6 @@ http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildVoiceStates 
-    ]
-});
 
 // database
 mongoose.connect(process.env.MONGO_URI)
