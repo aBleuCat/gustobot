@@ -26,27 +26,27 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// --- COMMAND LOADING ---
+// Load Global Commands
 const globalCommandsData = [];
 const globalCommandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
 for (const file of globalCommandFiles) {
     const command = require(`./commands/${file}`);
     globalCommandsData.push(command.data.toJSON());
     client.commands.set(command.data.name, command);
 }
 
+// Load Guild Commands
 const guildCommandsData = [];
 const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
-
 for (const file of guildCommandFiles) {
     const command = require(`./guild_commands/${file}`);
     guildCommandsData.push(command.data.toJSON());
     client.commands.set(command.data.name, command);
 }
 
-// deploy
+// Deploy to Discord
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
 (async () => {
     try {
         console.log('Refreshing commands...');
@@ -58,48 +58,27 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     }
 })();
 
-// for render
+// --- WEB SERVER & DB ---
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('Bot is online!');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
-// database
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB Cloud'))
     .catch(err => console.error('DB Connection Error:', err));
 
-// Models
+// --- MODELS ---
 const Rule = mongoose.model('Rule', new mongoose.Schema({ 
     ruleId: String, watchUser: String, targetUser: String, 
     channel: String, addRole: String, restoreRole: String, durationMs: Number 
 }));
-
-const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({
-    trigger: String, 
-    response: String 
-}));
-
-const Advice = mongoose.model('Advice', new mongoose.Schema({ 
-    content: String, authorId: String 
-}));
-
-const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ 
-    userId: String 
-}));
-
-const Timeout = mongoose.model('Timeout', new mongoose.Schema({ 
-    targetUser: String, addRole: String, restoreRole: String, revertAt: Number 
-}));
-
-const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ 
-    guildId: String, channelId: String 
-}));
-
-const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ 
-    channelId: String 
-}));
-
+const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
+const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
+const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ userId: String }));
+const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
+const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
+const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     id: { type: String, default: "global_stats" },
     allTime: { type: Number, default: 0 },
@@ -110,21 +89,14 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     lastWeek: { type: Number, default: 0 }
 }));
 
-// voice logic
+// --- VOICE & LOGGING ---
 const player = createAudioPlayer();
-
 function playScream(guild, channelId) {
-    const connection = joinVoiceChannel({
-        channelId: channelId,
-        guildId: guild.id,
-        adapterCreator: guild.voiceAdapterCreator,
-    });
-
+    const connection = joinVoiceChannel({ channelId: channelId, guildId: guild.id, adapterCreator: guild.voiceAdapterCreator });
     const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
     player.play(resource);
     connection.subscribe(player);
 }
-
 player.on(AudioPlayerStatus.Idle, () => {
     const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
     player.play(resource);
@@ -138,7 +110,7 @@ async function logToModChannel(guild, message) {
 }
 client.logToModChannel = logToModChannel;
 
-// global reverter
+// --- REVERTER ---
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -153,14 +125,13 @@ setInterval(async () => {
     }
 }, 10000);
 
+// --- UTILS ---
 async function disableButtons(channelId, messageId, label = 'Disabled') {
     try {
         const channel = await client.channels.fetch(channelId).catch(() => null);
         if (!channel) return;
         const fetched = await channel.messages.fetch(messageId).catch(() => null);
         if (!fetched || !fetched.components.length) return;
-        
-        // BUG FIX: Only edit if we are the author.
         if (fetched.author.id !== client.user.id) return;
         if (fetched.components[0].components[0].disabled) return;
 
@@ -169,9 +140,7 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
             row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
         });
         await fetched.edit({ components: [row] });
-    } catch (e) { 
-        if (e.code !== 50005) console.error("Error disabling buttons:", e); 
-    }
+    } catch (e) { if (e.code !== 50005) console.error("Error disabling buttons:", e); }
 }
 
 const activeSpawns = new Map(); 
@@ -179,25 +148,24 @@ const activeSpawns = new Map();
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
-
     const now = new Date();
     const todayStr = now.toDateString();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil((((now - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
-
     if (stats.lastDay !== todayStr) { stats.daily = 0; stats.lastDay = todayStr; }
     if (stats.lastWeek !== weekNum) { stats.weekly = 0; stats.lastWeek = weekNum; }
-
     stats.allTime += 1; stats.weekly += 1; stats.daily += 1;
     stats.lastTimestamp = Date.now();
     await stats.save();
     return stats;
 }
 
+// --- INTERACTIONS ---
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         
+        // Manual override for scream
         if (interaction.commandName === 'scream') {
             const channel = interaction.options.getChannel('channel');
             if (!channel || channel.type !== 2) return interaction.reply({ content: 'Valid VC only.', flags: [MessageFlags.Ephemeral] });
@@ -238,10 +206,8 @@ client.on(Events.InteractionCreate, async interaction => {
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
                 let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your collection!`;
-                
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
-                
                 if (messageId) {
                     await disableButtons(interaction.channel.id, messageId, 'Caught!');
                     if (activeSpawns.has(messageId)) { clearTimeout(activeSpawns.get(messageId).timeoutId); activeSpawns.delete(messageId); }
@@ -263,45 +229,44 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
+// --- MESSAGES ---
 client.on(Events.MessageCreate, async msg => {
-    // BUG FIX: Only ignore yourself. Allow other bots to trigger rules.
     if (!msg.guild || msg.author.id === client.user.id) return;
-    
     const content = msg.content.toLowerCase();
 
-    const randomNum = Math.floor(Math.random() * 500) + 1;
-    if (randomNum === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
+    // Random Cat
+    if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
-    const trigger67 = /\b67\b|six seven|six-seven/;
-    if (trigger67.test(content)) {
+    // Trigger 67
+    if (/\b67\b|six seven|six-seven/.test(content)) {
         const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
         msg.reply(responses[Math.floor(Math.random() * responses.length)]);
     }
 
+    // Spawn expiration
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => { disableButtons(msg.channel.id, msg.id, 'Expired'); activeSpawns.delete(msg.id); }, 120000);
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
+    // Lol Stats
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
         if (!isMuted) {
             msg.channel.send("lol");
             const stats = await updateLolStatsDB();
-            if (stats.daily % 60 === 0) {
-                msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
-            } else if (stats.daily % 40 === 0) {
-                msg.channel.send("Do you not have *anything* better to do?");
-            } else if (stats.daily % 20 === 0) {
-                msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-            }
+            if (stats.daily % 60 === 0) msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
+            else if (stats.daily % 40 === 0) msg.channel.send("Do you not have *anything* better to do?");
+            else if (stats.daily % 20 === 0) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
         }
     }
 
     if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
 
+    // Autorole Rules
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
+        // Keeping JSON.stringify as requested
         if (JSON.stringify(msg).toLowerCase().includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
