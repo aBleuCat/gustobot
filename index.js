@@ -13,7 +13,7 @@ const {
     joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
 } = require('@discordjs/voice');
 
-// intializie client
+// initialize client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -44,15 +44,13 @@ for (const file of guildCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// deoloy
+// deploy
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
         console.log('Refreshing commands...');
-        // Global
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
-        // Guild Only
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
         console.log('Successfully reloaded all commands.');
     } catch (error) {
@@ -112,7 +110,7 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     lastWeek: { type: Number, default: 0 }
 }));
 
-// voice logic (broken, too lazy to fix)
+// voice logic
 const player = createAudioPlayer();
 
 function playScream(guild, channelId) {
@@ -140,13 +138,6 @@ async function logToModChannel(guild, message) {
 }
 client.logToModChannel = logToModChannel;
 
-client.commands = new Collection();
-const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
-for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-    client.commands.set(command.data.name, command);
-}
-
 // global reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
@@ -168,6 +159,9 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
         if (!channel) return;
         const fetched = await channel.messages.fetch(messageId).catch(() => null);
         if (!fetched || !fetched.components.length) return;
+        
+        // BUG FIX: Only edit if we are the author.
+        if (fetched.author.id !== client.user.id) return;
         if (fetched.components[0].components[0].disabled) return;
 
         const row = new ActionRowBuilder();
@@ -175,7 +169,9 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
             row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
         });
         await fetched.edit({ components: [row] });
-    } catch (e) { console.error("Error disabling buttons:", e); }
+    } catch (e) { 
+        if (e.code !== 50005) console.error("Error disabling buttons:", e); 
+    }
 }
 
 const activeSpawns = new Map(); 
@@ -209,66 +205,18 @@ client.on(Events.InteractionCreate, async interaction => {
             return interaction.reply(`The eternal screaming moved to **${channel.name}**.`);
         }
 
-        if (interaction.commandName === 'banadvice') {
-            const command = client.commands.get('banadvice');
-            if (command) return await command.execute(interaction);
-        }
-
-        if (interaction.commandName === 'clearadvicedupes') {
-            const command = client.commands.get('clearadvicedupes');
-            if (command) return await command.execute(interaction);
-        }
-
-        if (interaction.commandName === 'purgeadvicefromuser') {
-            const command = client.commands.get('purgeadvicefromuser');
-            if (command) return await command.execute(interaction);
-        }
-
-        if (interaction.commandName === 'totaladvice') {
-            const command = client.commands.get('totaladvice');
-            if (command) return await command.execute(interaction);
-        }
-
-        if (interaction.commandName === 'advicebanlist') {
-            const bans = await AdviceBan.find({});
-            if (!bans.length) return interaction.reply("No one is currently banned from giving advice.");
-            const list = bans.map(b => `<@${b.userId}>`).join(', ');
-            return interaction.reply({ content: `**Banned from Advice:**\n${list}`, flags: [MessageFlags.Ephemeral] });
-        }
-
-       if (interaction.commandName === 'impregnate') {
-    // get user
-        const user = interaction.options.getUser('user');
-        const roleId = '1473123914531213532';
-
-           if (!user) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
-
-           try {
-               const target = await interaction.guild.members.fetch(user.id).catch(() => null);
-
-                if (!target) {
-                    return interaction.reply({ content: 'Could not find that member in this server.', flags: [MessageFlags.Ephemeral] });
-                }
-
-                await target.roles.add(roleId);
-                return interaction.reply(`impregnated ${target.user.username}.`);
-            } catch (e) {
-                console.error(e);
-                return interaction.reply({ content: 'Failed to add the role. Check my permissions.', flags: [MessageFlags.Ephemeral] });
+        if (!command) return;
+        try { 
+            await command.execute(interaction); 
+        } catch (e) { 
+            console.error(e);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: 'Command failed.', flags: [MessageFlags.Ephemeral] }).catch(() => {});
             }
         }
-
-        if (interaction.commandName === 'abortbaby') {
-            const roleId = '1473123914531213532';
-            await interaction.member.roles.remove(roleId).catch(e => console.error(e));
-            return interaction.reply({ content: 'Baby aborted' });
-        }
-
-        if (!command) return;
-        try { await command.execute(interaction); } catch (e) { console.error(e); }
         return;
     }
-    // button modal stuff
+
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
@@ -290,8 +238,10 @@ client.on(Events.InteractionCreate, async interaction => {
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
                 let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your collection!`;
+                
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
+                
                 if (messageId) {
                     await disableButtons(interaction.channel.id, messageId, 'Caught!');
                     if (activeSpawns.has(messageId)) { clearTimeout(activeSpawns.get(messageId).timeoutId); activeSpawns.delete(messageId); }
@@ -306,13 +256,17 @@ client.on(Events.InteractionCreate, async interaction => {
                 await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
-            } catch (err) { await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); }
+            } catch (err) { 
+                if (!interaction.replied) await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); 
+            }
         }
     }
 });
 
-client.on('', async msg => {
+client.on(Events.MessageCreate, async msg => {
+    // BUG FIX: Only ignore yourself. Allow other bots to trigger rules.
     if (!msg.guild || msg.author.id === client.user.id) return;
+    
     const content = msg.content.toLowerCase();
 
     const randomNum = Math.floor(Math.random() * 500) + 1;
@@ -328,8 +282,6 @@ client.on('', async msg => {
         const timeoutId = setTimeout(() => { disableButtons(msg.channel.id, msg.id, 'Expired'); activeSpawns.delete(msg.id); }, 120000);
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
-
-    if (msg.author.id === client.user.id) return;
 
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
