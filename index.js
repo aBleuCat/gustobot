@@ -10,10 +10,10 @@ const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 const path = require('path');
 const { 
-    joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus 
+    joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, getVoiceConnection 
 } = require('@discordjs/voice');
 
-// initialize client
+// init client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -26,8 +26,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// --- COMMAND LOADING ---
-// Load Global Commands
+// load global commands
 const globalCommandsData = [];
 const globalCommandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of globalCommandFiles) {
@@ -36,7 +35,7 @@ for (const file of globalCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// Load Guild Commands
+// load guild commands
 const guildCommandsData = [];
 const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
 for (const file of guildCommandFiles) {
@@ -45,63 +44,74 @@ for (const file of guildCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// Deploy to Discord
+// deploy commands
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
     try {
-        console.log('Refreshing commands...');
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
-        console.log('Successfully reloaded all commands.');
-    } catch (error) {
-        console.error(error);
-    }
+    } catch (error) { console.error(error); }
 })();
 
-// --- WEB SERVER & DB ---
+// web server
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('Bot is online!');
+    res.end('online');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
+// database
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Connected to MongoDB Cloud'))
-    .catch(err => console.error('DB Connection Error:', err));
+    .then(() => console.log('db connected'))
+    .catch(err => console.error(err));
 
-// --- MODELS ---
-const Rule = mongoose.model('Rule', new mongoose.Schema({ 
-    ruleId: String, watchUser: String, targetUser: String, 
-    channel: String, addRole: String, restoreRole: String, durationMs: Number 
-}));
-const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
-const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
-const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ userId: String }));
+// models
+const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
 const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
 const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
-const LolStats = mongoose.model('LolStats', new mongoose.Schema({
-    id: { type: String, default: "global_stats" },
-    allTime: { type: Number, default: 0 },
-    weekly: { type: Number, default: 0 },
-    daily: { type: Number, default: 0 },
-    lastTimestamp: { type: Number, default: 0 },
-    lastDay: { type: String, default: "" },
-    lastWeek: { type: Number, default: 0 }
-}));
+const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 
-// --- VOICE & LOGGING ---
+// voice state
 const player = createAudioPlayer();
-function playScream(guild, channelId) {
-    const connection = joinVoiceChannel({ channelId: channelId, guildId: guild.id, adapterCreator: guild.voiceAdapterCreator });
+let screamCount = 0;
+const maxScreams = 5;
+
+// play scream logic
+client.playScream = function(guild, channelId) {
+    screamCount = 1;
+    const connection = joinVoiceChannel({
+        channelId: channelId,
+        guildId: guild.id,
+        adapterCreator: guild.voiceAdapterCreator,
+    });
     const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
     player.play(resource);
     connection.subscribe(player);
-}
+};
+
+// scream loop and leave
 player.on(AudioPlayerStatus.Idle, () => {
-    const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
-    player.play(resource);
+    if (screamCount < maxScreams) {
+        screamCount++;
+        player.play(createAudioResource(path.join(__dirname, 'scream.mp3')));
+    } else {
+        const connections = client.guilds.cache.map(g => getVoiceConnection(g.id)).filter(c => c);
+        connections.forEach(c => c.destroy());
+        screamCount = 0;
+    }
 });
 
+// watch vc joins
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+    const botMember = newState.guild.members.me;
+    if (!botMember.voice.channelId) return;
+    const joined = (!oldState.channelId && newState.channelId) || (oldState.channelId !== newState.channelId);
+    if (joined && newState.channelId === botMember.voice.channelId && newState.id !== client.user.id) {
+        client.playScream(newState.guild, newState.channelId);
+    }
+});
+
+// mod logging
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -110,7 +120,7 @@ async function logToModChannel(guild, message) {
 }
 client.logToModChannel = logToModChannel;
 
-// --- REVERTER ---
+// role reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -125,26 +135,24 @@ setInterval(async () => {
     }
 }, 10000);
 
-// --- UTILS ---
+// disable buttons
 async function disableButtons(channelId, messageId, label = 'Disabled') {
     try {
         const channel = await client.channels.fetch(channelId).catch(() => null);
         if (!channel) return;
         const fetched = await channel.messages.fetch(messageId).catch(() => null);
-        if (!fetched || !fetched.components.length) return;
-        if (fetched.author.id !== client.user.id) return;
-        if (fetched.components[0].components[0].disabled) return;
-
+        if (!fetched || !fetched.components.length || fetched.author.id !== client.user.id) return;
         const row = new ActionRowBuilder();
         fetched.components[0].components.forEach(c => {
             row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
         });
         await fetched.edit({ components: [row] });
-    } catch (e) { if (e.code !== 50005) console.error("Error disabling buttons:", e); }
+    } catch (e) { if (e.code !== 50005) console.error(e); }
 }
 
 const activeSpawns = new Map(); 
 
+// lol stats db
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
@@ -160,52 +168,34 @@ async function updateLolStatsDB() {
     return stats;
 }
 
-// --- INTERACTIONS ---
+// interactions
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
-        
-        // Manual override for scream
-        if (interaction.commandName === 'scream') {
-            const channel = interaction.options.getChannel('channel');
-            if (!channel || channel.type !== 2) return interaction.reply({ content: 'Valid VC only.', flags: [MessageFlags.Ephemeral] });
-            playScream(interaction.guild, channel.id);
-            return interaction.reply(`The eternal screaming moved to **${channel.name}**.`);
-        }
-
         if (!command) return;
-        try { 
-            await command.execute(interaction); 
-        } catch (e) { 
-            console.error(e);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: 'Command failed.', flags: [MessageFlags.Ephemeral] }).catch(() => {});
-            }
-        }
+        try { await command.execute(interaction); } catch (e) { console.error(e); }
         return;
     }
 
+    // countryball catch button
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
-        const modal = new ModalBuilder()
-            .setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`) 
-            .setTitle('Catch the Countryball');
-        const answerInput = new TextInputBuilder()
-            .setCustomId('user_answer').setLabel("Name of this countryball").setStyle(TextInputStyle.Short).setRequired(true);
+        const modal = new ModalBuilder().setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`).setTitle('Catch the Countryball');
+        const answerInput = new TextInputBuilder().setCustomId('user_answer').setLabel("Name of this countryball").setStyle(TextInputStyle.Short).setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
         await interaction.showModal(modal);
     }
 
+    // countryball catch modal
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); 
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
-
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
-                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your collection!`;
+                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nthis is a **${boldText}** added to collection`;
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
                 if (messageId) {
@@ -213,43 +203,41 @@ client.on(Events.InteractionCreate, async interaction => {
                     if (activeSpawns.has(messageId)) { clearTimeout(activeSpawns.get(messageId).timeoutId); activeSpawns.delete(messageId); }
                 }
                 await interaction.deferUpdate().catch(() => {}); 
-                await logToModChannel(interaction.guild, `**Catch**: ${interaction.user.tag} caught **${correctAnswer}**.`);
+                await logToModChannel(interaction.guild, `${interaction.user.tag} caught ${correctAnswer}`);
             } catch (err) { console.error(err); }
         } else {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
-                await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
+                await failWebhook.send({ content: `<@${interaction.user.id}> wrong name` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
-            } catch (err) { 
-                if (!interaction.replied) await interaction.reply({ content: `<@${interaction.user.id}> Wrong name!`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); 
-            }
+            } catch (err) { if (!interaction.replied) await interaction.reply({ content: `wrong`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); }
         }
     }
 });
 
-// --- MESSAGES ---
+// messages
 client.on(Events.MessageCreate, async msg => {
     if (!msg.guild || msg.author.id === client.user.id) return;
     const content = msg.content.toLowerCase();
 
-    // Random Cat
+    // random cat
     if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
-    // Trigger 67
+    // 67 trigger
     if (/\b67\b|six seven|six-seven/.test(content)) {
         const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
         msg.reply(responses[Math.floor(Math.random() * responses.length)]);
     }
 
-    // Spawn expiration
+    // spawn timer
     if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
         const timeoutId = setTimeout(() => { disableButtons(msg.channel.id, msg.id, 'Expired'); activeSpawns.delete(msg.id); }, 120000);
         activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
     }
 
-    // Lol Stats
+    // lol tracking
     if (/\blol\b/.test(content)) {
         const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
         if (!isMuted) {
@@ -263,10 +251,9 @@ client.on(Events.MessageCreate, async msg => {
 
     if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
 
-    // Autorole Rules
+    // autorole check
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
-        // Keeping JSON.stringify as requested
         if (JSON.stringify(msg).toLowerCase().includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
@@ -274,7 +261,7 @@ client.on(Events.MessageCreate, async msg => {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
                     await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
-                    await logToModChannel(msg.guild, `**Triggered**: Role swap for ${member.user.tag}.`);
+                    await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
                 }
             } catch (e) { console.error(e); }
         }
