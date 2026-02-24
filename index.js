@@ -44,7 +44,7 @@ for (const file of guildCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// DEPLOY
+// deoloy
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
@@ -112,7 +112,7 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({
     lastWeek: { type: Number, default: 0 }
 }));
 
-// voice logic
+// voice logic (broken, too lazy to fix)
 const player = createAudioPlayer();
 
 function playScream(guild, channelId) {
@@ -237,14 +237,13 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
        if (interaction.commandName === 'impregnate') {
-    // Get the user ID from the options
+    // get user
         const user = interaction.options.getUser('user');
         const roleId = '1473123914531213532';
 
            if (!user) return interaction.reply({ content: 'User not found.', flags: [MessageFlags.Ephemeral] });
 
            try {
-        // Fetch the member from the guild to ensure they aren't null
                const target = await interaction.guild.members.fetch(user.id).catch(() => null);
 
                 if (!target) {
@@ -269,8 +268,7 @@ client.on(Events.InteractionCreate, async interaction => {
         try { await command.execute(interaction); } catch (e) { console.error(e); }
         return;
     }
-
-    // Modal and Button logic remains identical to your provided code...
+    // button modal stuff
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder()
@@ -291,7 +289,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const targetUser = await client.users.fetch(targetId);
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
-                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}**!`;
+                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> You caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your collection!`;
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
                 if (messageId) {
@@ -313,8 +311,8 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
-client.on('messageCreate', async msg => {
-    if (!msg.guild || msg.author.bot) return;
+client.on('', async msg => {
+    if (!msg.guild || msg.author.id === client.user.id) return;
     const content = msg.content.toLowerCase();
 
     const randomNum = Math.floor(Math.random() * 500) + 1;
@@ -322,7 +320,7 @@ client.on('messageCreate', async msg => {
 
     const trigger67 = /\b67\b|six seven|six-seven/;
     if (trigger67.test(content)) {
-        const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log"];
+        const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
         msg.reply(responses[Math.floor(Math.random() * responses.length)]);
     }
 
