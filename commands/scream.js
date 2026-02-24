@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,6 +9,15 @@ module.exports = {
                 .setDescription('the voice channel to haunt')
                 .setRequired(true)),
     async execute(interaction) {
-        // logic handled in index.js
+        const channel = interaction.options.getChannel('channel');
+        // type 2 is voice
+        if (!channel || channel.type !== 2) {
+            return interaction.reply({ content: 'Valid VC only.', flags: [MessageFlags.Ephemeral] });
+        }
+
+        // Access the playScream function attached to client in index.js
+        interaction.client.playScream(interaction.guild, channel.id);
+        
+        return interaction.reply(`The eternal screaming moved to **${channel.name}**.`);
     },
 };
