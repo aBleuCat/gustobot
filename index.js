@@ -27,6 +27,17 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// models
+const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
+const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
+const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
+const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ userId: String }));
+const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
+const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
+const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
+const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
+
+
 // load global commands
 const globalCommandsData = [];
 const globalCommandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -64,16 +75,6 @@ http.createServer((req, res) => {
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('db connected'))
     .catch(err => console.error(err));
-
-// models
-const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
-const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
-const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
-const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ userId: String }));
-const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
-const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
-const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
-const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 
 // voice state
 const player = createAudioPlayer();
