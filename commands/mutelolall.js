@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const mongoose = require('mongoose');
-const MutedChannel = mongoose.model('MutedChannel');
+const MutedChannel = mongoose.models.MutedChannel || mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 
 module.exports = {
     data: new SlashCommandBuilder()
