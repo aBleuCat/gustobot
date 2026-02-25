@@ -231,8 +231,11 @@ client.on(Events.MessageCreate, async msg => {
 
     // 67 trigger
     if (/\b67\b|six seven|six-seven/.test(content)) {
-        const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
-        msg.reply(responses[Math.floor(Math.random() * responses.length)]);
+        const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
+        if (!isMuted) {
+            const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
+            msg.reply(responses[Math.floor(Math.random() * responses.length)]);
+        }
     }
 
     // spawn timer
