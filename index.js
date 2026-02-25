@@ -1,3 +1,4 @@
+require('libsodium-wrappers'); // fix voice encryption error
 const http = require('http');
 require('dotenv').config();
 const { 
@@ -66,6 +67,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 // models
 const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
+const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
+const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
+const AdviceBan = mongoose.model('AdviceBan', new mongoose.Schema({ userId: String }));
 const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: String, addRole: String, restoreRole: String, revertAt: Number }));
 const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
