@@ -1,24 +1,29 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const mongoose = require('mongoose');
 
-// Passive lookup
 const UserHorses = mongoose.model('UserHorses');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('forcehorse')
-        .setDescription('Give a user a horse')
-        .addUserOption(o => o.setName('target').setDescription('The user to receive the horse').setRequired(true))
-        .addStringOption(o => o.setName('type').setDescription('The horse type').setRequired(true)
+        .setDescription('Owner Only: Give a user a horse or a rare creature')
+        .addUserOption(o => o.setName('target').setDescription('The user to receive the item').setRequired(true))
+        .addStringOption(o => o.setName('type').setDescription('The type').setRequired(true)
             .addChoices(
                 { name: 'Truth and Affirmation', value: 'Horse of Truth and Affirmation' },
                 { name: 'Patience and Wisdom', value: 'Horse of Patience and Wisdom' },
                 { name: 'Comfort and Relaxation', value: 'Horse of Comfort and Relaxation' },
                 { name: 'Lies and Deceit', value: 'Horse of Lies and Deceit' },
-                { name: 'Despair and Agony', value: 'Horse of Despair and Agony' }
+                { name: 'Despair and Agony', value: 'Horse of Despair and Agony' },
+                { name: 'Ultra-Rare Dung Beetle', value: 'Dung Beetle' }
             ))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
+        // RESTRICT TO ME ONLY
+        if (interaction.user.id !== '934290747623096381') {
+            return interaction.reply({ content: "You are not authorized to use this command.", ephemeral: true });
+        }
+
         const target = interaction.options.getUser('target');
         const type = interaction.options.getString('type');
 
@@ -33,7 +38,7 @@ module.exports = {
         await inventory.save();
 
         return interaction.reply({ 
-            content: `Succesfully gifted the **${type}** to <@${target.id}>.`, 
+            content: `<@${target.id}> has magically obtained a **${type}**`, 
             ephemeral: false 
         });
     }
