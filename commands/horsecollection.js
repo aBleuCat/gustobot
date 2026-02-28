@@ -29,7 +29,7 @@ module.exports = {
 
         const completionPercentage = (ownedUniqueCount / totalUniqueHorses) * 100;
 
-        let responseHeader = `## 🐎 Your Horse Collection 🐎\n **Horse Completion: ${completionPercentage}%**`;
+        let responseHeader = `## 🐎 Your Horse Collection 🐎\n **Horse Completion: ${completionPercentage}%**\n`;
         
         return interaction.reply(responseHeader + horseListText);
     }
