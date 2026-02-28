@@ -282,7 +282,7 @@ client.on(Events.MessageCreate, async msg => {
         const horses = {
             "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
             "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg?ex=69a37e37&is=69a22cb7&hm=1dfe6e41de1d9f391171e4da9f4511e99365b5e307d80e0302110d5f4f8ce258",
-            "Horse of Comfort and Relaxation": "tranquility",
+            "Horse of Comfort and Relaxation": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png?ex=69a386cb&is=69a2354b&hm=065470f96e0c642e46fbd847aa0e7e6c8ce59cc98aa148370d039f5255d29896&",
             "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
             "Horse of Despair and Agony": "aka ap chem"
         };
