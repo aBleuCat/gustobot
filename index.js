@@ -36,7 +36,8 @@ const Timeout = mongoose.model('Timeout', new mongoose.Schema({ targetUser: Stri
 const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: String, channelId: String }));
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
-
+const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
+const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, horses: { type: Map, of: Number, default: {} } }));
 
 // load global commands
 const globalCommandsData = [];
@@ -273,6 +274,40 @@ client.on(Events.MessageCreate, async msg => {
                 }
             } catch (e) { console.error(e); }
         }
+
+        // horse spawning logic
+    const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
+    if (hConfig && hConfig.enabled) {
+        // the five horses
+        const horses = {
+            "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
+            "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg?ex=69a37e37&is=69a22cb7&hm=1dfe6e41de1d9f391171e4da9f4511e99365b5e307d80e0302110d5f4f8ce258",
+            "Horse of Comfort and Relaxation": "tranquility",
+            "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
+            "Horse of Despair and Agony": "aka ap chem"
+        };
+
+        if (Math.floor(Math.random() * 750) === 0) {
+            const horseNames = Object.keys(horses);
+            const selectedName = horseNames[Math.floor(Math.random() * horseNames.length)];
+            const horseMessage = horses[selectedName];
+            
+            // Save to DB
+            let inventory = await UserHorses.findOne({ userId: msg.author.id });
+            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: {} });
+            
+            const currentCount = inventory.horses.get(selectedName) || 0;
+            inventory.horses.set(selectedName, currentCount + 1);
+            await inventory.save();
+
+            // Send to config channel
+            try {
+                const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
+                await targetChan.send(`<@${msg.author.id}> you found the **${selectedName}**!`);
+                await targetChan.send(`*${horseMessage}*`);
+            } catch (e) { console.error("Horse spawn send error:", e); }
+        }
+    }
     }
 });
 
