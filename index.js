@@ -306,6 +306,20 @@ client.on(Events.MessageCreate, async msg => {
                 await targetChan.send(`<@${msg.author.id}> you found the **${selectedName}**!`);
                 await targetChan.send(`*${horseMessage}*`);
             } catch (e) { console.error("Horse spawn send error:", e); }
+
+            // 1/1250 Super Rare Dung Beetle
+        if (Math.floor(Math.random() * 1250) === 0) {
+            let inventory = await UserHorses.findOne({ userId: msg.author.id });
+            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
+            const count = inventory.horses.get("Dung Beetle") || 0;
+            inventory.horses.set("Dung Beetle", count + 1);
+            await inventory.save();
+
+            await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!`);
+            return await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
+        }
+            
         }
     }
     }
