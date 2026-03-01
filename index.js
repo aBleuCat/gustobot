@@ -278,13 +278,6 @@ client.on(Events.MessageCreate, async msg => {
         try {
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
 
-            // TEST ROLL: 1 in 2 chance for "Thing" to verify spawning works
-            if (Math.floor(Math.random() * 2) === 0) {
-                await targetChan.send(`<@${msg.author.id}> gets ✨**Thing**✨!`);
-                await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
-                // Note: Not saving to DB as this is just a test
-            }
-
             // DUNG BEETLE ROLL: 1 in 1500
             if (Math.floor(Math.random() * 1500) === 0) {
                 let inventory = await UserHorses.findOne({ userId: msg.author.id });
