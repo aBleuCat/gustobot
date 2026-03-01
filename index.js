@@ -223,44 +223,40 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
-// messages
 client.on(Events.MessageCreate, async msg => {
     if (!msg.guild || msg.author.id === client.user.id) return;
     const content = msg.content.toLowerCase();
 
-    // random cat
-    if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
+    // 1. STATS & TRIGGERS (Independent)
+    try {
+        // Random cat
+        if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
-    // 67 trigger
-    if (/\b67\b|six seven|six-seven/.test(content)) {
-        const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
-        if (!isMuted) {
-            const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
-            msg.reply(responses[Math.floor(Math.random() * responses.length)]);
+        // 67 trigger
+        if (/\b67\b|six seven|six-seven/.test(content)) {
+            const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
+            if (!isMuted) {
+                const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
+                msg.reply(responses[Math.floor(Math.random() * responses.length)]);
+            }
         }
-    }
 
-    // spawn timer
-    if (msg.components.length > 0 && (msg.author.bot || msg.webhookId)) {
-        const timeoutId = setTimeout(() => { disableButtons(msg.channel.id, msg.id, 'Expired'); activeSpawns.delete(msg.id); }, 120000);
-        activeSpawns.set(msg.id, { channelId: msg.channel.id, timeoutId });
-    }
-
-    // lol tracking
-    if (/\blol\b/.test(content)) {
-        const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
-        if (!isMuted) {
-            msg.channel.send("lol");
-            const stats = await updateLolStatsDB();
-            if (stats.daily % 60 === 0) msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
-            else if (stats.daily % 40 === 0) msg.channel.send("Do you not have *anything* better to do?");
-            else if (stats.daily % 20 === 0) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+        // lol tracking
+        if (/\blol\b/.test(content)) {
+            const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
+            if (!isMuted) {
+                msg.channel.send("lol");
+                const stats = await updateLolStatsDB();
+                if (stats.daily % 60 === 0) msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
+                else if (stats.daily % 40 === 0) msg.channel.send("Do you not have *anything* better to do?");
+                else if (stats.daily % 20 === 0) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+            }
         }
-    }
 
-    if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+        if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+    } catch (e) { console.error("Trigger Error:", e.message); }
 
-    // autorole check
+    // 2. AUTOROLE LOGIC
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         if (JSON.stringify(msg).toLowerCase().includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser)) {
@@ -272,61 +268,60 @@ client.on(Events.MessageCreate, async msg => {
                     await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
                     await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
                 }
-            } catch (e) { console.error(e); }
-        }
-
-        // horse spawning logic
-    const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
-    if (hConfig && hConfig.enabled) {
-        // the five horses
-        const horses = {
-            "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
-            "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg?ex=69a37e37&is=69a22cb7&hm=1dfe6e41de1d9f391171e4da9f4511e99365b5e307d80e0302110d5f4f8ce258",
-            "Horse of Comfort and Relaxation": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png?ex=69a386cb&is=69a2354b&hm=065470f96e0c642e46fbd847aa0e7e6c8ce59cc98aa148370d039f5255d29896&",
-            "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
-            "Horse of Despair and Agony": "aka ap chem"
-        };
-
-        if (Math.floor(Math.random() * 750) === 0) {
-            const horseNames = Object.keys(horses);
-            const selectedName = horseNames[Math.floor(Math.random() * horseNames.length)];
-            const horseMessage = horses[selectedName];
-            
-            // Save to DB
-            let inventory = await UserHorses.findOne({ userId: msg.author.id });
-            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: {} });
-            
-            const currentCount = inventory.horses.get(selectedName) || 0;
-            inventory.horses.set(selectedName, currentCount + 1);
-            await inventory.save();
-
-            // Send to config channel
-            try {
-                const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
-                await targetChan.send(`<@${msg.author.id}> you found the **${selectedName}**!`);
-                await targetChan.send(`*${horseMessage}*`);
-            } catch (e) { console.error("Horse spawn send error:", e); }
-
-            // 1/1500 Super Rare Dung Beetle
-        if (Math.floor(Math.random() * 1500) === 0) {
-            let inventory = await UserHorses.findOne({ userId: msg.author.id });
-            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
-
-            const count = inventory.horses.get("Dung Beetle") || 0;
-            inventory.horses.set("Dung Beetle", count + 1);
-            await inventory.save();
-
-            await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!`);
-            return await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
-        }
-            
-        if (Math.floor(Math.random() * 0) === 0) {
-            await targetChan.send(`<@${msg.author.id}> gets ✨**Thing**✨!`);
-            return await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
-        }
-            
+            } catch (e) { console.error("Autorole Error:", e.message); }
         }
     }
+
+    // 3. HORSE SPAWNING (Independent Scoping)
+    const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
+    if (hConfig && hConfig.enabled) {
+        try {
+            const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
+
+            // TEST ROLL: 1 in 2 chance for "Thing" to verify spawning works
+            if (Math.floor(Math.random() * 2) === 0) {
+                await targetChan.send(`<@${msg.author.id}> gets ✨**Thing**✨!`);
+                await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
+                // Note: Not saving to DB as this is just a test
+            }
+
+            // DUNG BEETLE ROLL: 1 in 1500
+            if (Math.floor(Math.random() * 1500) === 0) {
+                let inventory = await UserHorses.findOne({ userId: msg.author.id });
+                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
+                const count = inventory.horses.get("Dung Beetle") || 0;
+                inventory.horses.set("Dung Beetle", count + 1);
+                await inventory.save();
+
+                await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!`);
+                await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
+            }
+
+            // STANDARD HORSE ROLL: 1 in 750
+            if (Math.floor(Math.random() * 750) === 0) {
+                const horses = {
+                    "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
+                    "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg",
+                    "Horse of Comfort and Relaxation": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png",
+                    "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
+                    "Horse of Despair and Agony": "aka ap chem"
+                };
+
+                const horseNames = Object.keys(horses);
+                const selectedName = horseNames[Math.floor(Math.random() * horseNames.length)];
+                
+                let inventory = await UserHorses.findOne({ userId: msg.author.id });
+                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
+                const currentCount = inventory.horses.get(selectedName) || 0;
+                inventory.horses.set(selectedName, currentCount + 1);
+                await inventory.save();
+
+                await targetChan.send(`<@${msg.author.id}> you found the **${selectedName}**!`);
+                await targetChan.send(`${horses[selectedName]}`);
+            }
+        } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
 });
 
