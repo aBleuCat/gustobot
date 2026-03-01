@@ -215,7 +215,7 @@ client.on(Events.InteractionCreate, async interaction => {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
-                await failWebhook.send({ content: `<@${interaction.user.id}> Wrong Name!` });
+                await failWebhook.send({ content: `<@${interaction.user.id}> Wrong name!` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
             } catch (err) { if (!interaction.replied) await interaction.reply({ content: `wrong`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); }
