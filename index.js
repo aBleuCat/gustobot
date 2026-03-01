@@ -201,7 +201,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 const targetUser = await client.users.fetch(targetId);
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
-                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nthis is a **${boldText}** added to collection`;
+                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
                 if (messageId) {
@@ -215,7 +215,7 @@ client.on(Events.InteractionCreate, async interaction => {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const failWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
-                await failWebhook.send({ content: `<@${interaction.user.id}> wrong name` });
+                await failWebhook.send({ content: `<@${interaction.user.id}> Wrong Name!` });
                 await failWebhook.delete();
                 await interaction.deferUpdate().catch(() => {});
             } catch (err) { if (!interaction.replied) await interaction.reply({ content: `wrong`, flags: [MessageFlags.Ephemeral] }).catch(() => {}); }
@@ -307,8 +307,8 @@ client.on(Events.MessageCreate, async msg => {
                 await targetChan.send(`*${horseMessage}*`);
             } catch (e) { console.error("Horse spawn send error:", e); }
 
-            // 1/1250 Super Rare Dung Beetle
-        if (Math.floor(Math.random() * 1250) === 0) {
+            // 1/1500 Super Rare Dung Beetle
+        if (Math.floor(Math.random() * 1500) === 0) {
             let inventory = await UserHorses.findOne({ userId: msg.author.id });
             if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
 
