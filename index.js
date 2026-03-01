@@ -320,6 +320,11 @@ client.on(Events.MessageCreate, async msg => {
             return await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
         }
             
+        if (Math.floor(Math.random() * 0) === 0) {
+            await targetChan.send(`<@${msg.author.id}> gets ✨**Thing**✨!`);
+            return await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
+        }
+            
         }
     }
     }
