@@ -57,14 +57,26 @@ for (const file of guildCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// deploy commands
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-(async () => {
+// deploy commands & connect DB on ready
+client.once(Events.ClientReady, async () => {
+    console.log(`Logged in as ${client.user.tag}`);
+    
+    // Database connection
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log('db connected'))
+        .catch(err => console.error(err));
+
+    // Force sync slash commands to fix "Option missing" errors
+    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
+        console.log('Refreshing application (/) commands...');
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
-    } catch (error) { console.error(error); }
-})();
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 // web server
 http.createServer((req, res) => {
@@ -72,17 +84,11 @@ http.createServer((req, res) => {
     res.end('online');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
-// database
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('db connected'))
-    .catch(err => console.error(err));
-
 // voice state
 const player = createAudioPlayer();
 let screamCount = 0;
 const maxScreams = 5;
 
-// play scream logic
 client.playScream = function(guild, channelId) {
     screamCount = 1;
     const connection = joinVoiceChannel({
@@ -95,7 +101,6 @@ client.playScream = function(guild, channelId) {
     connection.subscribe(player);
 };
 
-// scream loop and leave
 player.on(AudioPlayerStatus.Idle, () => {
     if (screamCount < maxScreams) {
         screamCount++;
@@ -107,17 +112,15 @@ player.on(AudioPlayerStatus.Idle, () => {
     }
 });
 
-// watch vc joins
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
     const botMember = newState.guild.members.me;
-    if (!botMember.voice.channelId) return;
+    if (!botMember || !botMember.voice.channelId) return;
     const joined = (!oldState.channelId && newState.channelId) || (oldState.channelId !== newState.channelId);
     if (joined && newState.channelId === botMember.voice.channelId && newState.id !== client.user.id) {
         client.playScream(newState.guild, newState.channelId);
     }
 });
 
-// mod logging
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -141,7 +144,6 @@ setInterval(async () => {
     }
 }, 10000);
 
-// disable buttons
 async function disableButtons(channelId, messageId, label = 'Disabled') {
     try {
         const channel = await client.channels.fetch(channelId).catch(() => null);
@@ -158,7 +160,6 @@ async function disableButtons(channelId, messageId, label = 'Disabled') {
 
 const activeSpawns = new Map(); 
 
-// lol stats db
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
@@ -179,11 +180,17 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
-        try { await command.execute(interaction); } catch (e) { console.error(e); }
+        try { 
+            await command.execute(interaction); 
+        } catch (e) { 
+            console.error(e); 
+            if (!interaction.replied) {
+                await interaction.reply({ content: `Error: ${e.message}`, flags: [MessageFlags.Ephemeral] }).catch(() => {});
+            }
+        }
         return;
     }
 
-    // countryball catch button
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder().setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`).setTitle('Catch the Countryball');
@@ -192,7 +199,6 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.showModal(modal);
     }
 
-    // countryball catch modal
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); 
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
@@ -227,12 +233,10 @@ client.on(Events.MessageCreate, async msg => {
     if (!msg.guild || msg.author.id === client.user.id) return;
     const content = msg.content.toLowerCase();
 
-    // 1. STATS & TRIGGERS (Independent)
+    // 1. STATS & TRIGGERS
     try {
-        // Random cat
         if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
-        // 67 trigger
         if (/\b67\b|six seven|six-seven/.test(content)) {
             const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
             if (!isMuted) {
@@ -241,7 +245,6 @@ client.on(Events.MessageCreate, async msg => {
             }
         }
 
-        // lol tracking
         if (/\blol\b/.test(content)) {
             const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
             if (!isMuted) {
@@ -255,9 +258,9 @@ client.on(Events.MessageCreate, async msg => {
 
         if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     } catch (e) { console.error("Trigger Error:", e.message); }
-    // autorle stuff
+
+    // 2. AUTOROLE LOGIC
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
-    
     for (const rule of matchingRules) {
         const msgJson = JSON.stringify(msg).toLowerCase();
         const targetId = rule.targetUser.toLowerCase();
@@ -265,60 +268,42 @@ client.on(Events.MessageCreate, async msg => {
         if (msgJson.includes(targetId)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
-                if (member) {
-                    // Only swap if they don't already have the role (prevents log spam)
-                    if (!member.roles.cache.has(rule.addRole)) {
-                        await member.roles.add(rule.addRole);
-                        await member.roles.remove(rule.restoreRole).catch(() => {});
-                        
-                        await new Timeout({ 
-                            targetUser: rule.targetUser, 
-                            addRole: rule.addRole, 
-                            restoreRole: rule.restoreRole, 
-                            revertAt: Date.now() + rule.durationMs 
-                        }).save();
-                        
-                        await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
-                    }
+                if (member && !member.roles.cache.has(rule.addRole)) {
+                    await member.roles.add(rule.addRole);
+                    await member.roles.remove(rule.restoreRole).catch(() => {});
+                    
+                    await new Timeout({ 
+                        targetUser: rule.targetUser, 
+                        addRole: rule.addRole, 
+                        restoreRole: rule.restoreRole, 
+                        revertAt: Date.now() + rule.durationMs 
+                    }).save();
+                    
+                    await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
                 }
             } catch (e) { console.error("Autorole Error:", e.message); }
         }
     }
 
-    // 3. HORSE SPAWNING (Independent Scoping)
+    // 3. HORSE SPAWNING
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
+            const rand = Math.floor(Math.random() * 2500);
 
-            // Horse of Providence and All Knowing: 1 in 2500
-            if (Math.floor(Math.random() * 2500) === 0) {
-                let inventory = await UserHorses.findOne({ userId: msg.author.id });
-                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+            let inventory = await UserHorses.findOne({ userId: msg.author.id });
+            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
 
-                const count = inventory.horses.get("Horse of Providence and All Knowing") || 0;
-                inventory.horses.set("Horse of Providence and All Knowing", count + 1);
+            if (rand === 0) { // Providence
+                inventory.horses.set("Horse of Providence and All Knowing", (inventory.horses.get("Horse of Providence and All Knowing") || 0) + 1);
                 await inventory.save();
-
-                await targetChan.send(`<@${msg.author.id}> You found the ✨**Horse of Providence and All Knowing**✨!`);
-                await targetChan.send(`https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
-            }
-
-            // DUNG BEETLE ROLL: 1 in 1500
-            if (Math.floor(Math.random() * 1500) === 0) {
-                let inventory = await UserHorses.findOne({ userId: msg.author.id });
-                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
-
-                const count = inventory.horses.get("Dung Beetle") || 0;
-                inventory.horses.set("Dung Beetle", count + 1);
+                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence**✨!\nhttps://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
+            } else if (rand % 1500 === 0 && rand !== 0) { // Dung Beetle
+                inventory.horses.set("Dung Beetle", (inventory.horses.get("Dung Beetle") || 0) + 1);
                 await inventory.save();
-
-                await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!`);
-                await targetChan.send(`https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
-            }
-
-            // STANDARD HORSE ROLL: 1 in 750
-            if (Math.floor(Math.random() * 750) === 0) {
+                await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!\nhttps://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
+            } else if (rand % 750 === 0 && rand !== 0) { // Standards
                 const horses = {
                     "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
                     "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg",
@@ -326,32 +311,14 @@ client.on(Events.MessageCreate, async msg => {
                     "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
                     "Horse of Despair and Agony": "aka ap chem"
                 };
-
-                const horseNames = Object.keys(horses);
-                const selectedName = horseNames[Math.floor(Math.random() * horseNames.length)];
-                
-                let inventory = await UserHorses.findOne({ userId: msg.author.id });
-                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
-
-                const currentCount = inventory.horses.get(selectedName) || 0;
-                inventory.horses.set(selectedName, currentCount + 1);
+                const selected = Object.keys(horses)[Math.floor(Math.random() * 5)];
+                inventory.horses.set(selected, (inventory.horses.get(selected) || 0) + 1);
                 await inventory.save();
-
-                await targetChan.send(`<@${msg.author.id}> You found the **${selectedName}**!`);
-                await targetChan.send(`${horses[selectedName]}`);
-            }
-
-            // Horse of Commonosity and Normaltude: 1 in 200
-            if (Math.floor(Math.random() * 200) === 0) {
-                let inventory = await UserHorses.findOne({ userId: msg.author.id });
-                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
-
-                const count = inventory.horses.get("Horse of Commonosity and Normaltude") || 0;
-                inventory.horses.set("Horse of Commonosity and Normaltude", count + 1);
+                await targetChan.send(`<@${msg.author.id}> found the **${selected}**!\n${horses[selected]}`);
+            } else if (rand % 200 === 0 && rand !== 0) { // Common
+                inventory.horses.set("Horse of Commonosity and Normaltude", (inventory.horses.get("Horse of Commonosity and Normaltude") || 0) + 1);
                 await inventory.save();
-
-                await targetChan.send(`<@${msg.author.id}> You found the **Horse of Commonosity and Normaltude**`); 
-                await targetChan.send(`https://tenor.com/view/smileyhorse-gif-6197588072543216690`);
+                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity**\nhttps://tenor.com/view/smileyhorse-gif-6197588072543216690`);
             }
         } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
