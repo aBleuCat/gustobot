@@ -10,16 +10,17 @@ module.exports = {
         .addUserOption(o => o.setName('target').setDescription('The user to receive the item').setRequired(true))
         .addStringOption(o => o.setName('type').setDescription('The type').setRequired(true)
             .addChoices(
-                { name: 'Truth and Affirmation', value: 'Horse of Truth and Affirmation' },
-                { name: 'Patience and Wisdom', value: 'Horse of Patience and Wisdom' },
-                { name: 'Comfort and Relaxation', value: 'Horse of Comfort and Relaxation' },
-                { name: 'Lies and Deceit', value: 'Horse of Lies and Deceit' },
-                { name: 'Despair and Agony', value: 'Horse of Despair and Agony' },
-                { name: 'Ultra-Rare Dung Beetle', value: 'Dung Beetle' }
+                { name: 'Providence and All Knowing (1/2500)', value: 'Horse of Providence and All Knowing' },
+                { name: 'Truth and Affirmation (1/750)', value: 'Horse of Truth and Affirmation' },
+                { name: 'Patience and Wisdom (1/750)', value: 'Horse of Patience and Wisdom' },
+                { name: 'Comfort and Relaxation (1/750)', value: 'Horse of Comfort and Relaxation' },
+                { name: 'Lies and Deceit (1/750)', value: 'Horse of Lies and Deceit' },
+                { name: 'Despair and Agony (1/750)', value: 'Horse of Despair and Agony' },
+                { name: 'Commonosity and Normaltude (1/200)', value: 'Horse of Commonosity and Normaltude' },
+                { name: 'Ultra-Rare Dung Beetle (1/1500)', value: 'Dung Beetle' }
             ))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
-        // RESTRICT TO ME ONLY
         if (interaction.user.id !== '934290747623096381') {
             return interaction.reply({ content: "You are not authorized to use this command.", ephemeral: true });
         }
