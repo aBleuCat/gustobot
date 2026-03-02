@@ -11,19 +11,32 @@ module.exports = {
         await interaction.deferReply();
 
         const allUsers = await UserHorses.find();
-        const itemValues = { "Dung Beetle": 125, "default": 75 };
-        const totalItems = 6;
+        
+        // Values = 1/10th of the reciprocal of rarity
+        const itemValues = { 
+            "Horse of Providence and All Knowing": 250, 
+            "Dung Beetle": 150,
+            "Horse of Commonosity and Normaltude": 20,
+            "default": 75 
+        };
+        
+        const totalPossibleItems = 8;
 
         const data = allUsers.map(u => {
             let worth = 0;
             let unique = 0;
             for (const [name, count] of u.horses) {
                 if (count > 0) {
-                    worth += ((itemValues[name] || itemValues.default) * count);
+                    const val = itemValues[name] || itemValues.default;
+                    worth += (val * count);
                     unique++;
                 }
             }
-            return { userId: u.userId, worth, completion: Math.round((unique / totalItems) * 100) };
+            return { 
+                userId: u.userId, 
+                worth, 
+                completion: Math.round((unique / totalPossibleItems) * 100) 
+            };
         });
 
         const worthSort = [...data].sort((a, b) => b.worth - a.worth).slice(0, 10);
