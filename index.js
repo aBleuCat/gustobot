@@ -266,7 +266,7 @@ client.on(Events.MessageCreate, async msg => {
                     await member.roles.add(rule.addRole);
                     await member.roles.remove(rule.restoreRole).catch(() => {});
                     await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
-                    await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
+                    await logToModChannel(msg.guild, `Triggered role swap for ${member.user.tag}`);
                 }
             } catch (e) { console.error("Autorole Error:", e.message); }
         }
@@ -277,6 +277,19 @@ client.on(Events.MessageCreate, async msg => {
     if (hConfig && hConfig.enabled) {
         try {
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
+
+            // Horse of Providence and All Knowing: 1 in 2500
+            if (Math.floor(Math.random() * 2500) === 0) {
+                let inventory = await UserHorses.findOne({ userId: msg.author.id });
+                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
+                const count = inventory.horses.get("Horse of Providence and All Knowing") || 0;
+                inventory.horses.set("Horse of Providence and All Knowing", count + 1);
+                await inventory.save();
+
+                await targetChan.send(`<@${msg.author.id}> You found the ✨**Horse of Providence and All Knowing**✨!`);
+                await targetChan.send(`https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
+            }
 
             // DUNG BEETLE ROLL: 1 in 1500
             if (Math.floor(Math.random() * 1500) === 0) {
@@ -311,8 +324,21 @@ client.on(Events.MessageCreate, async msg => {
                 inventory.horses.set(selectedName, currentCount + 1);
                 await inventory.save();
 
-                await targetChan.send(`<@${msg.author.id}> you found the **${selectedName}**!`);
+                await targetChan.send(`<@${msg.author.id}> You found the **${selectedName}**!`);
                 await targetChan.send(`${horses[selectedName]}`);
+            }
+
+            // Horse of Commonosity and Normaltude: 1 in 200
+            if (Math.floor(Math.random() * 200) === 0) {
+                let inventory = await UserHorses.findOne({ userId: msg.author.id });
+                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
+                const count = inventory.horses.get("Horse of Commonosity and Normaltude") || 0;
+                inventory.horses.set("Horse of Commonosity and Normaltude", count + 1);
+                await inventory.save();
+
+                await targetChan.send(`<@${msg.author.id}> You found the **Horse of Commonosity and Normaltude**`); 
+                await targetChan.send(`https://tenor.com/view/smileyhorse-gif-6197588072543216690`);
             }
         } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
