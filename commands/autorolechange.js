@@ -13,13 +13,14 @@ module.exports = {
         .addChannelOption(o => o.setName('channel').setDescription('The channel where this rule triggers').setRequired(true)),
     
     async execute(interaction) {
-        // 1. Owner Check
         if (interaction.user.id !== '934290747623096381') {
             return interaction.reply({ content: "Owner only.", flags: [MessageFlags.Ephemeral] });
         }
 
         try {
             const Rule = mongoose.model('Rule');
+
+            // 1. Fetch all options
             const watchUser = interaction.options.getUser('watch');
             const targetUser = interaction.options.getUser('target');
             const addRole = interaction.options.getRole('add');
@@ -27,10 +28,16 @@ module.exports = {
             const duration = interaction.options.getInteger('duration');
             const targetChannel = interaction.options.getChannel('channel');
 
-            // Generate a Rule ID since your autoroleview uses it
+            // 2. STRIKE TEAM: Check if any are null before proceeding
+            if (!watchUser) throw new Error("Option 'watch' (User) is missing.");
+            if (!targetUser) throw new Error("Option 'target' (User) is missing.");
+            if (!addRole) throw new Error("Option 'add' (Role) is missing.");
+            if (!restoreRole) throw new Error("Option 'restore' (Role) is missing.");
+            if (!targetChannel) throw new Error("Option 'channel' is missing.");
+
             const newRuleId = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // 2. Database Operation
+            // 3. Database Update
             await Rule.findOneAndUpdate(
                 { watchUser: watchUser.id, targetUser: targetUser.id, channel: targetChannel.id },
                 { 
@@ -42,12 +49,12 @@ module.exports = {
                 { upsert: true }
             );
 
-            return interaction.reply(`**Rule Set!** ID: \`${newRuleId}\`\n**Channel:** ${targetChannel}\n**Trigger:** When ${watchUser.username} mentions ${targetUser.username}\n**Action:** Swaps to ${addRole.name} for ${duration}m, then restores ${restoreRole.name}.`);
+            return interaction.reply(`**Rule Set!** ID: \`${newRuleId}\`\n**Channel:** ${targetChannel}\n**Trigger:** When ${watchUser.username} mentions ${targetUser.username}\n**Action:** Swaps to ${addRole.name} for ${duration}m.`);
 
         } catch (error) {
-            // 3. Error Reporting to Discord
             console.error(error);
-            const errorMessage = `**Database/Execution Error:**\n\`\`\`js\n${error.message}\n\`\`\``;
+            // This will now tell you exactly WHICH property was null
+            const errorMessage = `**Command Error:**\n\`\`\`js\n${error.message}\n\`\`\``;
             
             if (interaction.replied || interaction.deferred) {
                 return interaction.followUp({ content: errorMessage, flags: [MessageFlags.Ephemeral] });
