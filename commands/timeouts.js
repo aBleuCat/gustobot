@@ -8,7 +8,6 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
-        // Access the model (ensure it's defined or imported)
         const Timeout = mongoose.model('Timeout');
         const activeTimeouts = await Timeout.find({});
 
@@ -22,11 +21,10 @@ module.exports = {
 
         const list = activeTimeouts.map(t => {
             const unixSeconds = Math.floor(t.revertAt / 1000);
-            return `<@${t.targetUser}>: Has <@&${t.addRole}>, reverts to <@&${t.restoreRole}> <t:${unixSeconds}:R>`;
+            return `<@${t.targetUser}>: Has <@&${t.addRole}>, restores to <@&${t.restoreRole}> <t:${unixSeconds}:R>`;
         }).join('\n');
 
         embed.setDescription(list);
-
         await interaction.reply({ embeds: [embed] });
     },
 };
