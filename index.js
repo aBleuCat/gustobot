@@ -298,7 +298,8 @@ client.on(Events.MessageCreate, async msg => {
             if (rand === 0) { // Providence
                 inventory.horses.set("Horse of Providence and All Knowing", (inventory.horses.get("Horse of Providence and All Knowing") || 0) + 1);
                 await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence**✨!\nhttps://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
+                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence**✨!`);
+                await targetChan.send(`https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
             } else if (rand % 1500 === 0 && rand !== 0) { // Dung Beetle
                 inventory.horses.set("Dung Beetle", (inventory.horses.get("Dung Beetle") || 0) + 1);
                 await inventory.save();
@@ -318,7 +319,8 @@ client.on(Events.MessageCreate, async msg => {
             } else if (rand % 200 === 0 && rand !== 0) { // Common
                 inventory.horses.set("Horse of Commonosity and Normaltude", (inventory.horses.get("Horse of Commonosity and Normaltude") || 0) + 1);
                 await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity**\nhttps://tenor.com/view/smileyhorse-gif-6197588072543216690`);
+                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity**`);
+                await targetChan.send(`https://tenor.com/view/smileyhorse-gif-6197588072543216690`);
             }
         } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
