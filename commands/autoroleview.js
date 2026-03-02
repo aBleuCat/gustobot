@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const mongoose = require('mongoose');
 
 module.exports = {
@@ -12,8 +12,15 @@ module.exports = {
 
         if (rules.length === 0) return interaction.reply('No rules found in cloud.');
 
-        let list = rules.map(r => `ID: \`${r.ruleId}\` | <@${r.watchUser}> triggers on <@${r.targetUser}>`).join('\n');
-        await interaction.reply({ content: `**Rules:**\n${list}` });
+        const embed = new EmbedBuilder()
+            .setTitle('Active Autorole Rules')
+            .setColor('#F1C40F');
+
+        const list = rules.map(r => {
+            return `\`${r.ruleId}\` <@${r.watchUser}> triggers on <@${r.targetUser}>. Adds <@&${r.addRole}> and restores <@&${r.restoreRole}>. Duration: ${r.durationMs / 60000}m\n`;
+        }).join('\n---\n');
+
+        embed.setDescription(list);
+        await interaction.reply({ embeds: [embed] });
     }
 };
-
