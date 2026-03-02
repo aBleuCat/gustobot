@@ -255,18 +255,31 @@ client.on(Events.MessageCreate, async msg => {
 
         if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     } catch (e) { console.error("Trigger Error:", e.message); }
-
-    // 2. AUTOROLE LOGIC
+    // autorle stuff
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
+    
     for (const rule of matchingRules) {
-        if (JSON.stringify(msg).toLowerCase().includes(rule.targetUser.toLowerCase()) || msg.mentions.users.has(rule.targetUser)) {
+        const msgJson = JSON.stringify(msg).toLowerCase();
+        const targetId = rule.targetUser.toLowerCase();
+
+        if (msgJson.includes(targetId)) {
             try {
                 const member = await msg.guild.members.fetch(rule.targetUser).catch(() => null);
                 if (member) {
-                    await member.roles.add(rule.addRole);
-                    await member.roles.remove(rule.restoreRole).catch(() => {});
-                    await new Timeout({ targetUser: rule.targetUser, addRole: rule.addRole, restoreRole: rule.restoreRole, revertAt: Date.now() + rule.durationMs }).save();
-                    await logToModChannel(msg.guild, `Triggered role swap for ${member.user.tag}`);
+                    // Only swap if they don't already have the role (prevents log spam)
+                    if (!member.roles.cache.has(rule.addRole)) {
+                        await member.roles.add(rule.addRole);
+                        await member.roles.remove(rule.restoreRole).catch(() => {});
+                        
+                        await new Timeout({ 
+                            targetUser: rule.targetUser, 
+                            addRole: rule.addRole, 
+                            restoreRole: rule.restoreRole, 
+                            revertAt: Date.now() + rule.durationMs 
+                        }).save();
+                        
+                        await logToModChannel(msg.guild, `triggered role swap for ${member.user.tag}`);
+                    }
                 }
             } catch (e) { console.error("Autorole Error:", e.message); }
         }
