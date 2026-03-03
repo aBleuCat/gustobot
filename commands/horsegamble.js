@@ -2,6 +2,12 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 
+// Dynamically generate choices from the JSON keys
+const horseChoices = Object.keys(HORSE_VALUES).map(name => ({
+    name: name,
+    value: name
+}));
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
@@ -10,16 +16,8 @@ module.exports = {
             option.setName('horse')
                 .setDescription('The horse you want to gamble. 1-hour cooldown.')
                 .setRequired(true)
-                .addChoices(
-                    { name: 'Commonosity and Normaltude', value: 'Horse of Commonosity and Normaltude' },
-                    { name: 'Truth and Affirmation', value: 'Horse of Truth and Affirmation' },
-                    { name: 'Patience and Wisdom', value: 'Horse of Patience and Wisdom' },
-                    { name: 'Comfort and Relaxation', value: 'Horse of Comfort and Relaxation' },
-                    { name: 'Lies and Deceit', value: 'Horse of Lies and Deceit' },
-                    { name: 'Despair and Agony', value: 'Horse of Despair and Agony' },
-                    { name: 'Dung Beetle', value: 'Dung Beetle' },
-                    { name: 'Providence and All Knowing', value: 'Horse of Providence and All Knowing' }
-                )),
+                .addChoices(...horseChoices.slice(0, 25)) // Discord limits to 25 choices
+        ),
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const horseName = interaction.options.getString('horse');
@@ -46,8 +44,6 @@ module.exports = {
             });
         }
 
-        // Generates a random integer between -100 and 100 inclusive.
-        // Every number in the range has an equal 1/201 chance.
         const change = Math.floor(Math.random() * 201) - 100;
 
         const startValue = HORSE_VALUES[horseName].value;
@@ -56,7 +52,7 @@ module.exports = {
         let closestHorse = horseName;
         let minDiff = Infinity;
 
-        // Find closest match in the master JSON
+        // Find closest match in the master json
         for (const [name, data] of Object.entries(HORSE_VALUES)) {
             const diff = Math.abs(data.value - targetValue);
             if (diff < minDiff) {
@@ -65,11 +61,10 @@ module.exports = {
             }
         }
 
-        // Calculate REAL profit/loss based on the horse actually received
         const endValue = HORSE_VALUES[closestHorse].value;
         const actualDiff = endValue - startValue;
 
-        // Update Database
+        // Update db
         inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
         inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
         inventory.lastGamble = now;
