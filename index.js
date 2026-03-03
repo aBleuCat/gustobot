@@ -328,3 +328,5 @@ client.on(Events.MessageCreate, async msg => {
 });
 
 client.login(process.env.TOKEN);
+
+console.log(globalCommandsData.map(c => c.name));
