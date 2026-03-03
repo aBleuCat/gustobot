@@ -5,7 +5,7 @@ const HORSE_VALUES = require('../horses.json');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsescollection')
-        .setDescription('View your collection of horses and rare creatures'),
+        .setDescription('View your collection of horses'),
     async execute(interaction) {
         const allUsers = await mongoose.model('UserHorses').find();
         const inventory = allUsers.find(u => u.userId === interaction.user.id);
@@ -18,7 +18,7 @@ module.exports = {
         const leaderboard = allUsers.map(u => {
             let worth = 0;
             for (const [name, count] of u.horses) {
-                worth += ((HORSE_VALUES[name] || 0) * count);
+                worth += ((HORSE_VALUES[name]?.value || 0) * count);
             }
             return { userId: u.userId, worth };
         }).sort((a, b) => b.worth - a.worth);
@@ -43,7 +43,7 @@ module.exports = {
         const missing = allPossibleItems.filter(item => !ownedItems.has(item));
         let missingText = missing.length > 0 
             ? "\n### Missing Thingamabobs\n" + missing.map(m => `* *${m}*`).join('\n')
-            : "\n### ✨ Collection Complete! ✨";
+            : "\n### ✨ You have mastered the gustovian stables! ✨";
 
         return interaction.reply(`## 🐎 Your Collection 🐎\n**Rank:** #${rank} | **Net Worth:** $${userWorth}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }
