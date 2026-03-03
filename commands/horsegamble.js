@@ -5,10 +5,10 @@ const HORSE_VALUES = require('../horses.json');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
-        .setDescription('Trade a horse for a chance at a different one!')
+        .setDescription('Gamble a horse for a chance at a different one!')
         .addStringOption(option =>
             option.setName('horse')
-                .setDescription('The horse you want to gamble. 3-hour cooldown.')
+                .setDescription('The horse you want to gamble. 1-hour cooldown.')
                 .setRequired(true)
                 .addChoices(
                     { name: 'Commonosity and Normaltude', value: 'Horse of Commonosity and Normaltude' },
@@ -33,33 +33,22 @@ module.exports = {
         }
 
         const now = Date.now();
-        const cooldown = 3 * 60 * 60 * 1000; // 3 Hours
+        const cooldown = 1 * 60 * 60 * 1000; // 1 Hour
         const lastGamble = inventory.lastGamble || 0;
         const isOwner = interaction.user.id === '934290747623096381';
 
         if (!isOwner && (now - lastGamble < cooldown)) {
             const remaining = cooldown - (now - lastGamble);
-            const hours = Math.floor(remaining / (1000 * 60 * 60));
-            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const minutes = Math.floor(remaining / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
             return interaction.reply({ 
-                content: `Hold your horses! You can try again in ${hours}h ${minutes}m.`,  
+                content: `Hold your horses! You can try again in ${minutes}m ${seconds}s.`,  
             });
         }
 
-        // --- NEW CHANCE LOGIC ---
-        // 20% chance for a Massive Win (+100)
-        // 20% chance for a Total Loss (-100)
-        // 60% chance for a Small Flux (-30 to +30)
-        let change = 0;
-        const rng = Math.random();
-
-        if (rng <= 0.20) {
-            change = 100; // 1/5 chance for Max
-        } else if (rng <= 0.40) {
-            change = -100; // 1/5 chance for Min
-        } else {
-            change = Math.floor(Math.random() * 61) - 30; // Small random flux
-        }
+        // Generates a random integer between -100 and 100 inclusive.
+        // Every number in the range has an equal 1/201 chance.
+        const change = Math.floor(Math.random() * 201) - 100;
 
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
@@ -67,6 +56,7 @@ module.exports = {
         let closestHorse = horseName;
         let minDiff = Infinity;
 
+        // Find closest match in the master JSON
         for (const [name, data] of Object.entries(HORSE_VALUES)) {
             const diff = Math.abs(data.value - targetValue);
             if (diff < minDiff) {
@@ -86,11 +76,11 @@ module.exports = {
         await inventory.save();
 
         if (closestHorse === horseName) {
-            return interaction.reply(`The gamble resulted in no change ($0). You kept your **${horseName}**. Be thankful, could've been worse`);
+            return interaction.reply(`The gamble resulted in no change ($0). You kept your **${horseName}**. Be thankful, could've been worse.`);
         }
 
-        const resultText = actualDiff >= 0 ? `won (+$${actualDiff})` : `lost ($${actualDiff})`;
-        const outcomeMsg = `You gambled your **${horseName}** ($${startValue}) and ${resultText} a **${closestHorse}** ($${endValue})!`;
+        const resultText = actualDiff >= 0 ? `won +$${actualDiff}` : `lost $${actualDiff}`;
+        const outcomeMsg = `You gambled your **${horseName}** ($${startValue}) and ${resultText}. You got a **${closestHorse}** ($${endValue})!`;
 
         return interaction.reply(outcomeMsg);
     }
