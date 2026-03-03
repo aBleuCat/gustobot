@@ -16,7 +16,7 @@ const HORSE_VALUES = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
-        .setDescription('Gamble a horse to potentially get a better (or worse) one. Winners never quit! \nNote: You can only gamble once per day, and the most you can lose or win is about $100.')
+        .setDescription('Test your luck! Note: You can only gamble once per day, and the most you can lose or win is about $100.')
         .addStringOption(option =>
             option.setName('horse')
                 .setDescription('The horse you want to gamble')
