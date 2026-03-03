@@ -37,7 +37,7 @@ const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: S
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
-const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, horses: { type: Map, of: Number, default: {} } }));
+const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 
 // load global commands
 const globalCommandsData = [];
@@ -286,6 +286,7 @@ client.on(Events.MessageCreate, async msg => {
     }
 
     // 3. HORSE SPAWNING
+    if (msg.author.bot) return; // Horses aren't given to bots
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
@@ -298,7 +299,7 @@ client.on(Events.MessageCreate, async msg => {
             if (rand === 0) { // Providence
                 inventory.horses.set("Horse of Providence and All Knowing", (inventory.horses.get("Horse of Providence and All Knowing") || 0) + 1);
                 await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence**✨!`);
+                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence and All Knowing**✨!`);
                 await targetChan.send(`https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
             } else if (rand % 1500 === 0 && rand !== 0) { // Dung Beetle
                 inventory.horses.set("Dung Beetle", (inventory.horses.get("Dung Beetle") || 0) + 1);
@@ -319,7 +320,7 @@ client.on(Events.MessageCreate, async msg => {
             } else if (rand % 200 === 0 && rand !== 0) { // Common
                 inventory.horses.set("Horse of Commonosity and Normaltude", (inventory.horses.get("Horse of Commonosity and Normaltude") || 0) + 1);
                 await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity**`);
+                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity and Normaltude**`);
                 await targetChan.send(`https://tenor.com/view/smileyhorse-gif-6197588072543216690`);
             }
         } catch (e) { console.error("Horse Spawn Error:", e.message); }
