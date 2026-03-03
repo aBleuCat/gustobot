@@ -16,7 +16,7 @@ module.exports = {
             let unique = 0;
             for (const [name, count] of u.horses) {
                 if (count > 0) {
-                    const val = HORSE_VALUES[name] || 0;
+                    const val = HORSE_VALUES[name]?.value || 0;
                     worth += (val * count);
                     unique++;
                 }
