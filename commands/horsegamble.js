@@ -40,12 +40,13 @@ module.exports = {
             return interaction.reply({ content: `You don't have a **${horseName}** to gamble! Use \`/horsescollection\` to see which horses you have`, flags: [MessageFlags.Ephemeral] });
         }
 
-        // Daily Check
+        // Daily Check + Immunity for you
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
         const lastGamble = inventory.lastGamble || 0;
+        const isOwner = interaction.user.id === '934290747623096381';
 
-        if (now - lastGamble < oneDay) {
+        if (!isOwner && (now - lastGamble < oneDay)) {
             const remaining = oneDay - (now - lastGamble);
             const hours = Math.floor(remaining / (1000 * 60 * 60));
             const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
@@ -56,7 +57,7 @@ module.exports = {
         const u1 = Math.random();
         const u2 = Math.random();
         const normalRand = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-        let change = Math.round(normalRand * 35); // Approx 3 standard deviations to hit 100
+        let change = Math.round(normalRand * 35); 
         if (change > 100) change = 100;
         if (change < -100) change = -100;
 
@@ -85,5 +86,7 @@ module.exports = {
         const outcomeMsg = closestHorse === horseName 
             ? `The gamble resulted in no change. You kept your **${horseName}**. Could have gone worse; be thankful.`
             : `You gambled your **${horseName}** ($${startValue}) and ${resultText} a **${closestHorse}** ($${HORSE_VALUES[closestHorse]})!`;
+
+        return interaction.reply(outcomeMsg);
     }
 };
