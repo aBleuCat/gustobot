@@ -286,44 +286,51 @@ client.on(Events.MessageCreate, async msg => {
     }
 
     // 3. HORSE SPAWNING
-    if (msg.author.bot) return; // Horses aren't given to bots
+    if (msg.author.bot) return;
+
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
-            const rand = Math.floor(Math.random() * 2500);
+        
+            // Get all values from the new JSON structure to find the max
+            const horseEntries = Object.entries(HORSE_VALUES);
+            const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
+            const rollRange = maxVal * 10; 
+            const rand = Math.floor(Math.random() * rollRange);
 
             let inventory = await UserHorses.findOne({ userId: msg.author.id });
             if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
 
-            if (rand === 0) { // Providence
-                inventory.horses.set("Horse of Providence and All Knowing", (inventory.horses.get("Horse of Providence and All Knowing") || 0) + 1);
-                await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the ✨**Horse of Providence and All Knowing**✨!`);
-                await targetChan.send(`https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392`);
-            } else if (rand % 1500 === 0 && rand !== 0) { // Dung Beetle
-                inventory.horses.set("Dung Beetle", (inventory.horses.get("Dung Beetle") || 0) + 1);
-                await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> gets ✨**Dung Beetle**✨!\nhttps://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945`);
-            } else if (rand % 750 === 0 && rand !== 0) { // Standards
-                const horses = {
-                    "Horse of Truth and Affirmation": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527",
-                    "Horse of Patience and Wisdom": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg",
-                    "Horse of Comfort and Relaxation": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png",
-                    "Horse of Lies and Deceit": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063",
-                    "Horse of Despair and Agony": "aka ap chem"
-                };
-                const selected = Object.keys(horses)[Math.floor(Math.random() * 5)];
-                inventory.horses.set(selected, (inventory.horses.get(selected) || 0) + 1);
-                await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the **${selected}**!\n${horses[selected]}`);
-            } else if (rand % 200 === 0 && rand !== 0) { // Common
-                inventory.horses.set("Horse of Commonosity and Normaltude", (inventory.horses.get("Horse of Commonosity and Normaltude") || 0) + 1);
-                await inventory.save();
-                await targetChan.send(`<@${msg.author.id}> found the **Horse of Commonosity and Normaltude**`);
-                await targetChan.send(`https://tenor.com/view/smileyhorse-gif-6197588072543216690`);
+            // Sort by value descending
+            const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
+            for (const [name, data] of sortedHorses) {
+                const rarity = data.value * 10;
+            
+                if (rand % rarity === 0) {
+                    inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
+                    await inventory.save();
+                    // Dynamic styling
+                    let prefix = "found the";
+                    let decoration = "";
+                    if (name.includes("Providence") || name === "Dung Beetle") {
+                        prefix = name === "Dung Beetle" ? "gets ✨" : "found the ✨";
+                        decoration = "✨";
+                    }
+                    // Send Message 1: Text
+                    await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
+                    // Send Message 2: GIF/Link (from JSON)
+                    if (data.link) {
+                        await targetChan.send(data.link);
+                    }
+
+                break; 
             }
-        } catch (e) { console.error("Horse Spawn Error:", e.message); }
+        }
+    } catch (e) { 
+        console.error("Horse Spawn Error:", e.message); 
+    }
+}
     }
 });
 
