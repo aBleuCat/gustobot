@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const mongoose = require('mongoose');
-
-const UserHorses = mongoose.model('UserHorses');
+const HORSE_VALUES = require('../horses.json');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,25 +8,15 @@ module.exports = {
         .setDescription('View the richest horse collectors'),
     async execute(interaction) {
         await interaction.deferReply();
-
-        const allUsers = await UserHorses.find();
-        
-        // Values = 1/10th of the reciprocal of rarity
-        const itemValues = { 
-            "Horse of Providence and All Knowing": 250, 
-            "Dung Beetle": 150,
-            "Horse of Commonosity and Normaltude": 20,
-            "default": 75 
-        };
-        
-        const totalPossibleItems = 8;
+        const allUsers = await mongoose.model('UserHorses').find();
+        const totalPossibleItems = Object.keys(HORSE_VALUES).length;
 
         const data = allUsers.map(u => {
             let worth = 0;
             let unique = 0;
             for (const [name, count] of u.horses) {
                 if (count > 0) {
-                    const val = itemValues[name] || itemValues.default;
+                    const val = HORSE_VALUES[name] || 0;
                     worth += (val * count);
                     unique++;
                 }
