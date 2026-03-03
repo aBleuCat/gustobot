@@ -285,51 +285,56 @@ client.on(Events.MessageCreate, async msg => {
         }
     }
 
-    // 3. HORSE SPAWNING
-    if (msg.author.bot) return;
+// 3. HORSE SPAWNING
+if (msg.author.bot) return;
 
-    const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
-    if (hConfig && hConfig.enabled) {
-        try {
-            const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
+const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
+if (hConfig && hConfig.enabled) {
+    try {
+        const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
         
-            // Get all values from the new JSON structure to find the max
-            const horseEntries = Object.entries(HORSE_VALUES);
-            const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
-            const rollRange = maxVal * 10; 
-            const rand = Math.floor(Math.random() * rollRange);
+        // Get all values from the new JSON structure to find the max
+        const horseEntries = Object.entries(HORSE_VALUES);
+        const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
+        const rollRange = maxVal * 10; 
+        const rand = Math.floor(Math.random() * rollRange);
 
-            let inventory = await UserHorses.findOne({ userId: msg.author.id });
-            if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+        let inventory = await UserHorses.findOne({ userId: msg.author.id });
+        if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
 
-            // Sort by value descending
-            const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
-            for (const [name, data] of sortedHorses) {
-                const rarity = data.value * 10;
-            
-                if (rand % rarity === 0) {
-                    inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
-                    await inventory.save();
-                    // Dynamic styling
-                    let prefix = "found the";
-                    let decoration = "";
-                    if (name.includes("Providence") || name === "Dung Beetle") {
-                        prefix = name === "Dung Beetle" ? "gets ✨" : "found the ✨";
-                        decoration = "✨";
-                    }
-                    // Send Message 1: Text
-                    await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
-                    // Send Message 2: GIF/Link (from JSON)
+        // Sort by value descending
+        const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
+
+        for (const [name, data] of sortedHorses) {
+            const rarity = data.value * 10;
+        
+            if (rand % rarity === 0) {
+                inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
+                await inventory.save();
+                
+                // Dynamic styling
+                let prefix = "found the";
+                let decoration = "";
+                if (name.includes("Providence") || name === "Dung Beetle") {
+                    prefix = name === "Dung Beetle" ? "gets ✨" : "found the ✨";
+                    decoration = "✨";
+                }
+                
+                // Send Message 1: Text
+                await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
+                
+                // Send Message 2: GIF/Link (from JSON)
                     if (data.link) {
                         await targetChan.send(data.link);
                     }
 
-                break; 
-            }
-        }
-    } catch (e) { 
-        console.error("Horse Spawn Error:", e.message); 
-    }
+                    break; // Stop loop once a horse is found
+                }
+            } // End of for loop
+        } catch (e) { 
+            console.error("Horse Spawn Error:", e.message); 
+        } // End of try/catch
+    } // End of if (hConfig)
 }
     }
 });
