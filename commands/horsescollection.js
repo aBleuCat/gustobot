@@ -5,14 +5,23 @@ const HORSE_VALUES = require('../horses.json');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsescollection')
-        .setDescription('View your collection of horses'),
+        .setDescription('View a collection of horses')
+        .addUserOption(option => 
+            option.setName('user')
+                .setDescription('The user whose collection you want to view')
+                .setRequired(false)),
     async execute(interaction) {
+        const targetUser = interaction.options.getUser('user') || interaction.user;
+        const isSelf = targetUser.id === interaction.user.id;
+        
         const allUsers = await mongoose.model('UserHorses').find();
-        const inventory = allUsers.find(u => u.userId === interaction.user.id);
+        const inventory = allUsers.find(u => u.userId === targetUser.id);
         const allPossibleItems = Object.keys(HORSE_VALUES);
 
-        if (!inventory || !inventory.horses || inventory.horses.size === 0) {
-            return interaction.reply("Your stables are empty. Keep talking to find some horses!");
+        if (!inventory || !inventory.horses || Array.from(inventory.horses.values()).every(v => v === 0)) {
+            return interaction.reply(isSelf 
+                ? "Your stables are empty. Keep talking to find some horses!" 
+                : `${targetUser.username}'s stables are empty.`);
         }
 
         const leaderboard = allUsers.map(u => {
@@ -23,8 +32,8 @@ module.exports = {
             return { userId: u.userId, worth };
         }).sort((a, b) => b.worth - a.worth);
 
-        const rank = leaderboard.findIndex(u => u.userId === interaction.user.id) + 1;
-        const userWorth = leaderboard.find(u => u.userId === interaction.user.id).worth;
+        const rank = leaderboard.findIndex(u => u.userId === targetUser.id) + 1;
+        const userWorth = leaderboard.find(u => u.userId === targetUser.id)?.worth || 0;
 
         let horseListText = "";
         let ownedUniqueCount = 0;
@@ -41,10 +50,14 @@ module.exports = {
 
         const completionPercentage = Math.round((ownedUniqueCount / allPossibleItems.length) * 100);
         const missing = allPossibleItems.filter(item => !ownedItems.has(item));
+        
+        let missingHeader = isSelf ? "### Missing Thingamabobs" : `### Missing from ${targetUser.username}'s Stable`;
         let missingText = missing.length > 0 
-            ? "\n### Missing Thingamabobs\n" + missing.map(m => `* *${m}*`).join('\n')
-            : "\n### ✨ You have mastered the gustovian stables! ✨";
+            ? `\n${missingHeader}\n` + missing.map(m => `* *${m}*`).join('\n')
+            : (isSelf ? "\n### ✨ You have mastered the gustovian stables! ✨" : `\n### ✨ ${targetUser.username} has mastered the stables! ✨`);
 
-        return interaction.reply(`## 🐎 Your Collection 🐎\n**Rank:** #${rank} | **Net Worth:** $${userWorth}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
+        const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
+
+        return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }
 };
