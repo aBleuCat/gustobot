@@ -1,10 +1,34 @@
 {
-  "Horse of Commonosity and Normaltude": 20,
-  "Horse of Truth and Affirmation": 75,
-  "Horse of Patience and Wisdom": 75,
-  "Horse of Comfort and Relaxation": 75,
-  "Horse of Lies and Deceit": 75,
-  "Horse of Despair and Agony": 75,
-  "Dung Beetle": 150,
-  "Horse of Providence and All Knowing": 250
+  "Horse of Providence and All Knowing": {
+    "value": 250,
+    "link": "https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392"
+  },
+  "Dung Beetle": {
+    "value": 150,
+    "link": "https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945"
+  },
+  "Horse of Truth and Affirmation": {
+    "value": 75,
+    "link": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527"
+  },
+  "Horse of Patience and Wisdom": {
+    "value": 75,
+    "link": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg"
+  },
+  "Horse of Comfort and Relaxation": {
+    "value": 75,
+    "link": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png"
+  },
+  "Horse of Lies and Deceit": {
+    "value": 75,
+    "link": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063"
+  },
+  "Horse of Despair and Agony": {
+    "value": 75,
+    "link": "aka ap chem"
+  },
+  "Horse of Commonosity and Normaltude": {
+    "value": 20,
+    "link": "https://tenor.com/view/smileyhorse-gif-6197588072543216690"
+  }
 }
