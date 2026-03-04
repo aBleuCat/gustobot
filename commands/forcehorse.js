@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const mongoose = require('mongoose');
+const HORSE_VALUES = require('../horses.json'); // Import the horse data for the links
 
 const UserHorses = mongoose.model('UserHorses');
 
@@ -10,7 +11,7 @@ module.exports = {
         .addUserOption(o => o.setName('target').setDescription('The user to receive the item').setRequired(true))
         .addStringOption(o => o.setName('type').setDescription('The type').setRequired(true)
             .addChoices(
-                { name: 'Providence and All Knowing (1/2500)', value: 'Horse of Providence and All Knowing' },
+                { name: 'Omniscience and All Knowing (1/2500)', value: 'Horse of Omniscience and All Knowing' },
                 { name: 'Truth and Affirmation (1/750)', value: 'Horse of Truth and Affirmation' },
                 { name: 'Patience and Wisdom (1/750)', value: 'Horse of Patience and Wisdom' },
                 { name: 'Comfort and Relaxation (1/750)', value: 'Horse of Comfort and Relaxation' },
@@ -40,9 +41,16 @@ module.exports = {
         
         await inventory.save();
 
-        return interaction.reply({ 
+        // Send the confirmation message
+        await interaction.reply({ 
             content: `<@${target.id}> has magically obtained a **${type}**`, 
             ephemeral: false 
         });
+
+        // Check if the horse has a link in the JSON and send it separately
+        const horseData = HORSE_VALUES[type];
+        if (horseData && horseData.link) {
+            await interaction.followUp({ content: horseData.link, ephemeral: false });
+        }
     }
 };
