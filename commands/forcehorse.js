@@ -48,9 +48,9 @@ module.exports = {
         });
 
         // Check if the horse has a link in the JSON and send it separately
-        const horseData = HORSE_VALUES[type];
+       const horseData = HORSE_VALUES[type];
         if (horseData && horseData.link) {
-            await interaction.followUp({ content: horseData.link, ephemeral: false });
+            await interaction.channel.send(horseData.link);
         }
     }
 };
