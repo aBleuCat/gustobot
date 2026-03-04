@@ -13,7 +13,7 @@ module.exports = {
         .setDescription('Play the hand of fate and gamble a horse!')
         .addStringOption(option =>
             option.setName('horse')
-                .setDescription('The horse to gamble. Gambling again within 10m and you may go crazy!')
+                .setDescription('The horse to gamble. Gambling too much and you may go crazy!')
                 .setRequired(true)
                 .addChoices(...horseChoices.slice(0, 25))
         ),
@@ -31,20 +31,20 @@ module.exports = {
 
         const now = Date.now();
         const lastGamble = inventory.lastGamble || 0;
-        const frenzyThreshold = 10 * 60 * 1000; // 10 Minutes
-        let frenzyOccurred = false;
+        const frenzyThreshold = 10 * 60 * 1000; 
         let frenzyMessage = "";
 
-        // frenzy
+        // --- GAMBLING FRENZY LOGIC ---
         if (now - lastGamble < frenzyThreshold) {
             if (Math.random() < 0.20) { // 1/5 chance
-                frenzyOccurred = true;
-                
-                // Get all owned horses, sorted by value (cheapest first)
                 const ownedHorses = [];
-                for (const [name, count] of inventory.horses) {
+                
+                // Using .entries() for Mongoose Map compatibility
+                for (const [name, count] of inventory.horses.entries()) {
                     if (count > 0 && HORSE_VALUES[name]) {
-                        for (let i = 0; i < count; i++) {
+                        // If it's the horse currently being gambled, only count the "extra" ones
+                        const availableCount = (name === horseName) ? count - 1 : count;
+                        for (let i = 0; i < availableCount; i++) {
                             ownedHorses.push({ name, value: HORSE_VALUES[name].value });
                         }
                     }
@@ -53,26 +53,22 @@ module.exports = {
                 // Sort: lowest value first
                 ownedHorses.sort((a, b) => a.value - b.value);
                 
-                // Take up to 3 (excluding the one being gambled right now)
-                const victims = ownedHorses
-                    .filter(h => h.name !== horseName)
-                    .slice(0, 3);
+                // Take up to 3 cheapest
+                const victims = ownedHorses.slice(0, 3);
 
                 if (victims.length > 0) {
-                    frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited and lost control! The bot forced 3 more horses into the pit:`;
+                    frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
                     
                     for (const victim of victims) {
-                        // Process a mini-gamble for each victim
                         const fChange = Math.floor(Math.random() * 201) - 100;
                         const fTarget = victim.value + fChange;
                         
-                        // Remove the victim first
+                        // Deduct victim
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
 
                         if (fChange < -75 || fTarget < 0) {
-                            frenzyMessage += `\n* Your **${victim.name}** ran away during the chaos!`;
+                            frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
                         } else {
-                            // Find closest
                             let fClosest = victim.name;
                             let fMinDiff = Infinity;
                             for (const [vName, vData] of Object.entries(HORSE_VALUES)) {
@@ -87,7 +83,7 @@ module.exports = {
             }
         }
 
-        // prmary roll
+        // primary roll
         const change = Math.floor(Math.random() * 201) - 100;
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
@@ -114,6 +110,8 @@ module.exports = {
         inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
         inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
         inventory.lastGamble = now;
+        
+        // Final Save
         await inventory.save();
 
         let outcomeMsg = "";
