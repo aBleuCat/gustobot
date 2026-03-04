@@ -16,8 +16,10 @@ module.exports = {
                 { name: 'Comfort and Relaxation (1/750)', value: 'Horse of Comfort and Relaxation' },
                 { name: 'Lies and Deceit (1/750)', value: 'Horse of Lies and Deceit' },
                 { name: 'Despair and Agony (1/750)', value: 'Horse of Despair and Agony' },
+                { name: 'Suspicion and Distrust (1/750)', value: 'Horse of Suspicion and Distrust' },
                 { name: 'Commonosity and Normaltude (1/200)', value: 'Horse of Commonosity and Normaltude' },
-                { name: 'Ultra-Rare Dung Beetle (1/1500)', value: 'Dung Beetle' }
+                { name: 'Dung Beetle (1/1500)', value: 'Dung Beetle' },
+                { name: 'Horse of Curses and Slurs (1/2000)', value: 'Horse of Curses and Slurs' }
             ))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
