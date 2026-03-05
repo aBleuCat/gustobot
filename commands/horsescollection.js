@@ -39,10 +39,13 @@ module.exports = {
         let ownedUniqueCount = 0;
         const ownedItems = new Set();
 
+        // --- LIST OWNED HORSES ---
         for (const [name, count] of inventory.horses) {
             if (count > 0 && HORSE_VALUES[name]) {
+                const val = HORSE_VALUES[name].value;
                 let prefix = name === "Dung Beetle" ? "🪲" : (name.includes("Providence") ? "✨" : "🐎");
-                horseListText += `* ${prefix} **${name}**: \`x${count}\` \n`;
+                
+                horseListText += `* ${prefix} **${name}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
                 ownedItems.add(name);
                 ownedUniqueCount++;
             }
@@ -51,13 +54,23 @@ module.exports = {
         const completionPercentage = Math.round((ownedUniqueCount / allPossibleItems.length) * 100);
         const missing = allPossibleItems.filter(item => !ownedItems.has(item));
         
+        // --- LIST MISSING HORSES ---
         let missingHeader = isSelf ? "### Missing Thingamabobs" : `### Missing from ${targetUser.username}'s Stable`;
-        let missingText = missing.length > 0 
-            ? `\n${missingHeader}\n` + missing.map(m => `* *${m}*`).join('\n')
-            : (isSelf ? "\n### ✨ You have mastered the gustovian stables! ✨" : `\n### ✨ ${targetUser.username} has mastered the stables! ✨`);
+        let missingText = "";
+
+        if (missing.length > 0) {
+            missingText = `\n${missingHeader}\n` + missing.map(m => {
+                const mVal = HORSE_VALUES[m]?.value || 0;
+                return `* *${m}* ($${mVal.toLocaleString()})`;
+            }).join('\n');
+        } else {
+            missingText = isSelf 
+                ? "\n### ✨ You have mastered the gustovian stables! ✨" 
+                : `\n### ✨ ${targetUser.username} has mastered the stables! ✨`;
+        }
 
         const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
 
-        return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
+        return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }
 };
