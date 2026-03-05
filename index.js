@@ -1,4 +1,4 @@
-require('libsodium-wrappers'); // fix voice encryption error
+require('libsodium-wrappers'); // Fix voice encryption
 const http = require('http');
 require('dotenv').config();
 const { 
@@ -10,14 +10,11 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 const path = require('path');
-const { 
-    joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, getVoiceConnection 
-} = require('@discordjs/voice');
 
-// Import Horse Data
+// Horse data
 const HORSE_VALUES = require('./horses.json');
 
-// init client
+// Client init
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -30,7 +27,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// models
+// DB Models
 const Rule = mongoose.model('Rule', new mongoose.Schema({ ruleId: String, watchUser: String, targetUser: String, channel: String, addRole: String, restoreRole: String, durationMs: Number }));
 const ActionResponse = mongoose.model('ActionResponse', new mongoose.Schema({ trigger: String, response: String }));
 const Advice = mongoose.model('Advice', new mongoose.Schema({ content: String, authorId: String }));
@@ -42,7 +39,7 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: St
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
 const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 
-// load global commands
+// Load global commands
 const globalCommandsData = [];
 const globalCommandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of globalCommandFiles) {
@@ -51,7 +48,7 @@ for (const file of globalCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// load guild commands
+// Load guild commands
 const guildCommandsData = [];
 const guildCommandFiles = fs.readdirSync('./guild_commands').filter(file => file.endsWith('.js'));
 for (const file of guildCommandFiles) {
@@ -60,69 +57,33 @@ for (const file of guildCommandFiles) {
     client.commands.set(command.data.name, command);
 }
 
-// deploy commands & connect DB on ready
+// Ready event
 client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}`);
     
-    // Database connection
+    // Connect DB
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('db connected'))
         .catch(err => console.error(err));
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
-        console.log('Refreshing application (/) commands...');
+        console.log('Refreshing commands...');
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
-        console.log('Successfully reloaded application (/) commands.');
+        console.log('Commands reloaded');
     } catch (error) {
         console.error(error);
     }
 });
 
-// web server
+// Health check server
 http.createServer((req, res) => {
     res.writeHead(200);
     res.end('online');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
-// voice state
-const player = createAudioPlayer();
-let screamCount = 0;
-const maxScreams = 5;
-
-client.playScream = function(guild, channelId) {
-    screamCount = 1;
-    const connection = joinVoiceChannel({
-        channelId: channelId,
-        guildId: guild.id,
-        adapterCreator: guild.voiceAdapterCreator,
-    });
-    const resource = createAudioResource(path.join(__dirname, 'scream.mp3'));
-    player.play(resource);
-    connection.subscribe(player);
-};
-
-player.on(AudioPlayerStatus.Idle, () => {
-    if (screamCount < maxScreams) {
-        screamCount++;
-        player.play(createAudioResource(path.join(__dirname, 'scream.mp3')));
-    } else {
-        const connections = client.guilds.cache.map(g => getVoiceConnection(g.id)).filter(c => c);
-        connections.forEach(c => c.destroy());
-        screamCount = 0;
-    }
-});
-
-client.on(Events.VoiceStateUpdate, (oldState, newState) => {
-    const botMember = newState.guild.members.me;
-    if (!botMember || !botMember.voice.channelId) return;
-    const joined = (!oldState.channelId && newState.channelId) || (oldState.channelId !== newState.channelId);
-    if (joined && newState.channelId === botMember.voice.channelId && newState.id !== client.user.id) {
-        client.playScream(newState.guild, newState.channelId);
-    }
-});
-
+// Log helper
 async function logToModChannel(guild, message) {
     const config = await ModChannel.findOne({ guildId: guild.id });
     if (!config) return;
@@ -131,7 +92,7 @@ async function logToModChannel(guild, message) {
 }
 client.logToModChannel = logToModChannel;
 
-// role reverter
+// Role reverter
 setInterval(async () => {
     const expired = await Timeout.find({ revertAt: { $lte: Date.now() } });
     for (const doc of expired) {
@@ -146,22 +107,7 @@ setInterval(async () => {
     }
 }, 10000);
 
-async function disableButtons(channelId, messageId, label = 'Disabled') {
-    try {
-        const channel = await client.channels.fetch(channelId).catch(() => null);
-        if (!channel) return;
-        const fetched = await channel.messages.fetch(messageId).catch(() => null);
-        if (!fetched || !fetched.components.length || fetched.author.id !== client.user.id) return;
-        const row = new ActionRowBuilder();
-        fetched.components[0].components.forEach(c => {
-            row.addComponents(ButtonBuilder.from(c).setDisabled(true).setLabel(label));
-        });
-        await fetched.edit({ components: [row] });
-    } catch (e) { if (e.code !== 50005) console.error(e); }
-}
-
-const activeSpawns = new Map(); 
-
+// Stat updater
 async function updateLolStatsDB() {
     let stats = await LolStats.findOne({ id: "global_stats" });
     if (!stats) stats = new LolStats({ id: "global_stats" });
@@ -177,13 +123,12 @@ async function updateLolStatsDB() {
     return stats;
 }
 
-// interactions
+// Interaction handling
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
         
-        // Log the user and command to console/Render logs
         console.log(`[COMMAND]: ${interaction.user.tag} used /${interaction.commandName}`);
 
         try { 
@@ -197,6 +142,7 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
     }
 
+    // Button click triggers catch modal
     if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
         const [, ans, bold, type, targetId, stats] = interaction.customId.split('::');
         const modal = new ModalBuilder().setCustomId(`modal::${ans}::${bold}::${type}::${targetId}::${stats}::${interaction.message.id}`).setTitle('Catch the Countryball');
@@ -205,21 +151,24 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.showModal(modal);
     }
 
+    // Modal submit handles the answer check
     if (interaction.isModalSubmit() && interaction.customId.startsWith('modal::')) {
         const [, correctAnswer, boldText, type, targetId, customStats, messageId] = interaction.customId.split('::'); 
         const userAnswer = interaction.fields.getTextInputValue('user_answer');
+        
         if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
             try {
                 const targetUser = await client.users.fetch(targetId);
                 const catchWebhook = await interaction.channel.createWebhook({ name: targetUser.displayName, avatar: targetUser.displayAvatarURL() });
                 const statString = (customStats === "DEFAULT" || !customStats) ? "(#6463FAC, +5%/+13%)" : customStats;
-                let successMsg = type === 'fulltext' ? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` : `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
+                
+                let successMsg = type === 'fulltext' 
+                    ? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}` 
+                    : `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
+                
                 await catchWebhook.send({ content: successMsg });
                 await catchWebhook.delete();
-                if (messageId) {
-                    await disableButtons(interaction.channel.id, messageId, 'Caught!');
-                    if (activeSpawns.has(messageId)) { clearTimeout(activeSpawns.get(messageId).timeoutId); activeSpawns.delete(messageId); }
-                }
+                
                 await interaction.deferUpdate().catch(() => {}); 
                 await logToModChannel(interaction.guild, `${interaction.user.tag} caught ${correctAnswer}`);
             } catch (err) { console.error(err); }
@@ -235,11 +184,12 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
+// Chat triggers
 client.on(Events.MessageCreate, async msg => {
-    if (!msg.guild || msg.author.id === client.user.id) return;
+    if (!msg.guild || msg.author.bot) return;
     const content = msg.content.toLowerCase();
 
-    // 1. STATS & TRIGGERS
+    // Stats and Triggers
     try {
         if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
 
@@ -265,7 +215,7 @@ client.on(Events.MessageCreate, async msg => {
         if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
     } catch (e) { console.error("Trigger Error:", e.message); }
 
-    // 2. AUTOROLE LOGIC
+    // Autorole logic
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
         const msgJson = JSON.stringify(msg).toLowerCase();
@@ -291,14 +241,11 @@ client.on(Events.MessageCreate, async msg => {
         }
     }
 
-    // 3. HORSE SPAWNING
-    if (msg.author.bot) return;
-
+    // Horse spawning
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
-            
             const horseEntries = Object.entries(HORSE_VALUES);
             const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
             const rollRange = maxVal * 10; 
@@ -311,7 +258,6 @@ client.on(Events.MessageCreate, async msg => {
 
             for (const [name, data] of sortedHorses) {
                 const rarity = data.value * 10;
-            
                 if (rand % rarity === 0) {
                     inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
                     await inventory.save();
@@ -324,20 +270,13 @@ client.on(Events.MessageCreate, async msg => {
                     }
                     
                     await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
-                    
-                    if (data.link) {
-                        await targetChan.send(data.link);
-                    }
+                    if (data.link) await targetChan.send(data.link);
 
                     break; 
                 }
             }
-        } catch (e) { 
-            console.error("Horse Spawn Error:", e.message); 
-        }
+        } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
 });
 
 client.login(process.env.TOKEN);
-
-console.log(globalCommandsData.map(c => c.name));
