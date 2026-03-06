@@ -124,6 +124,21 @@ async function updateLolStatsDB() {
     return stats;
 }
 
+// Similarity helper (Dice bigram coefficient)
+function stringSimilarity(a, b) {
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    const getBigrams = str => {
+        const bigrams = new Set();
+        for (let i = 0; i < str.length - 1; i++) bigrams.add(str.slice(i, i + 2));
+        return bigrams;
+    };
+    const aB = getBigrams(a.toLowerCase());
+    const bB = getBigrams(b.toLowerCase());
+    const intersection = [...aB].filter(x => bB.has(x)).length;
+    return (2 * intersection) / (aB.size + bB.size);
+}
+
 // Interaction handling
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
@@ -221,6 +236,7 @@ client.on(Events.MessageCreate, async msg => {
     } catch (e) { 
         console.error("Trigger Error:", e.message); 
     }
+
     // Autorole logic
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
@@ -251,38 +267,28 @@ client.on(Events.MessageCreate, async msg => {
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
-            const DEBOUNCE_MS = 30 * 1000;       // 30 seconds between eligible messages
-            const SIMILARITY_THRESHOLD = 0.70;   // 70% similar = ignored
-            const RECENT_MSG_COUNT = 5;           // how many past messages to compare against
-
-            // similairty %
-            function stringSimilarity(a, b) {
-                if (a === b) return 1;
-                if (a.length < 2 || b.length < 2) return 0;
-                const getBigrams = str => {
-                    const bigrams = new Set();
-                    for (let i = 0; i < str.length - 1; i++) bigrams.add(str.slice(i, i + 2));
-                    return bigrams;
-                };
-                const aB = getBigrams(a.toLowerCase());
-                const bB = getBigrams(b.toLowerCase());
-                const intersection = [...aB].filter(x => bB.has(x)).length;
-                return (2 * intersection) / (aB.size + bB.size);
-            }
+            const DEBOUNCE_MS = 30 * 1000;
+            const SIMILARITY_THRESHOLD = 0.70;
+            const RECENT_MSG_COUNT = 5;
 
             const now = Date.now();
             const msgText = msg.content.trim().toLowerCase();
-            const MessageCache = mongoose.model('MessageCache');
 
             let cache = await MessageCache.findOne({ userId: msg.author.id, guildId: msg.guild.id });
             if (!cache) cache = new MessageCache({ userId: msg.author.id, guildId: msg.guild.id });
 
             // Debounce check
-            if (now - cache.lastMessageTime < DEBOUNCE_MS) return;
+            if (now - cache.lastMessageTime < DEBOUNCE_MS) {
+                console.log(`[HORSE] Debounced ${msg.author.tag}`);
+                return;
+            }
 
-            // Similarity check against recent messages
+            // Similarity check
             const tooSimilar = cache.recentMessages.some(prev => stringSimilarity(prev, msgText) >= SIMILARITY_THRESHOLD);
-            if (tooSimilar) return;
+            if (tooSimilar) {
+                console.log(`[HORSE] Too similar for ${msg.author.tag}`);
+                return;
+            }
 
             // Update cache
             cache.lastMessageTime = now;
@@ -294,8 +300,12 @@ client.on(Events.MessageCreate, async msg => {
             const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
             const rollRange = maxVal * 10;
             const rand = Math.floor(Math.random() * rollRange);
+
+            console.log(`[HORSE] Roll for ${msg.author.tag}: ${rand}/${rollRange}`);
+
             let inventory = await UserHorses.findOne({ userId: msg.author.id });
             if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+
             const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
             for (const [name, data] of sortedHorses) {
                 const rarity = data.value * 10;
@@ -310,13 +320,14 @@ client.on(Events.MessageCreate, async msg => {
                         decoration = "✨";
                     }
 
-                     await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
+                    console.log(`[HORSE] ${msg.author.tag} spawned ${name}!`);
+                    await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
                     if (data.link) await targetChan.send(data.link);
                     break;
-               }
-        }
-    } catch (e) { console.error("Horse Spawn Error:", e.message); }
-}
+                }
+            }
+        } catch (e) { console.error("Horse Spawn Error:", e.message); }
+    }
 });
 
 client.login(process.env.TOKEN);
