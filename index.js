@@ -37,8 +37,8 @@ const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: S
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
-const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, gamblingDebt: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
+const MessageCache = mongoose.model('MessageCache', new mongoose.Schema({ userId: String, guildId: String, lastMessageTime: { type: Number, default: 0 }, recentMessages: { type: [String], default: [] } }));
 
 // Load global commands
 const globalCommandsData = [];
