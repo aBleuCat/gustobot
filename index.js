@@ -267,7 +267,7 @@ client.on(Events.MessageCreate, async msg => {
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
-            const DEBOUNCE_MS = 1 * 1000;
+            const DEBOUNCE_MS = 2.5 * 1000;
             const SIMILARITY_THRESHOLD = 0.60;
             const RECENT_MSG_COUNT = 5;
 
