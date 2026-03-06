@@ -38,6 +38,7 @@ const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channe
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
 const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
+const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, gamblingDebt: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 
 // Load global commands
 const globalCommandsData = [];
@@ -250,38 +251,72 @@ client.on(Events.MessageCreate, async msg => {
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
+            const DEBOUNCE_MS = 30 * 1000;       // 30 seconds between eligible messages
+            const SIMILARITY_THRESHOLD = 0.70;   // 70% similar = ignored
+            const RECENT_MSG_COUNT = 5;           // how many past messages to compare against
+
+            // similairty %
+            function stringSimilarity(a, b) {
+                if (a === b) return 1;
+                if (a.length < 2 || b.length < 2) return 0;
+                const getBigrams = str => {
+                    const bigrams = new Set();
+                    for (let i = 0; i < str.length - 1; i++) bigrams.add(str.slice(i, i + 2));
+                    return bigrams;
+                };
+                const aB = getBigrams(a.toLowerCase());
+                const bB = getBigrams(b.toLowerCase());
+                const intersection = [...aB].filter(x => bB.has(x)).length;
+                return (2 * intersection) / (aB.size + bB.size);
+            }
+
+            const now = Date.now();
+            const msgText = msg.content.trim().toLowerCase();
+            const MessageCache = mongoose.model('MessageCache');
+
+            let cache = await MessageCache.findOne({ userId: msg.author.id, guildId: msg.guild.id });
+            if (!cache) cache = new MessageCache({ userId: msg.author.id, guildId: msg.guild.id });
+
+            // Debounce check
+            if (now - cache.lastMessageTime < DEBOUNCE_MS) return;
+
+            // Similarity check against recent messages
+            const tooSimilar = cache.recentMessages.some(prev => stringSimilarity(prev, msgText) >= SIMILARITY_THRESHOLD);
+            if (tooSimilar) return;
+
+            // Update cache
+            cache.lastMessageTime = now;
+            cache.recentMessages = [msgText, ...cache.recentMessages].slice(0, RECENT_MSG_COUNT);
+            await cache.save();
+
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
             const horseEntries = Object.entries(HORSE_VALUES);
             const maxVal = Math.max(...horseEntries.map(([_, data]) => data.value));
-            const rollRange = maxVal * 10; 
+            const rollRange = maxVal * 10;
             const rand = Math.floor(Math.random() * rollRange);
-
             let inventory = await UserHorses.findOne({ userId: msg.author.id });
             if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
-
             const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
-
             for (const [name, data] of sortedHorses) {
                 const rarity = data.value * 10;
                 if (rand % rarity === 0) {
                     inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
                     await inventory.save();
-                    
+
                     let prefix = "found the";
                     let decoration = "";
                     if (name.includes("Providence") || name === "Dung Beetle") {
                         prefix = name === "Dung Beetle" ? "gets ✨" : "found the ✨";
                         decoration = "✨";
                     }
-                    
-                    await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
-                    if (data.link) await targetChan.send(data.link);
 
-                    break; 
-                }
-            }
-        } catch (e) { console.error("Horse Spawn Error:", e.message); }
-    }
+                     await targetChan.send(`<@${msg.author.id}> ${prefix} **${name}**${decoration}!`);
+                    if (data.link) await targetChan.send(data.link);
+                    break;
+               }
+        }
+    } catch (e) { console.error("Horse Spawn Error:", e.message); }
+}
 });
 
 client.login(process.env.TOKEN);

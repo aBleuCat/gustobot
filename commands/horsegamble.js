@@ -52,6 +52,11 @@ module.exports = {
         const frenzyThreshold = 10 * 60 * 1000; 
         let frenzyMessage = "";
 
+        // Calculate loss bias: 10 per gamble, capped at 50
+        // e.g. 0 gambles = range -100 to +100, 1 gamble = -110 to +100, 5 gambles = -135 to +100
+        const gamblingDebt = inventory.gamblingDebt || 0;
+        const lossBias = Math.min(gamblingDebt * 7, 35);
+
         // le frenzy
         if (now - lastGamble < frenzyThreshold) {
             if (Math.random() < 0.20) { 
@@ -72,7 +77,8 @@ module.exports = {
                     frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
                     
                     for (const victim of victims) {
-                        const fChange = Math.floor(Math.random() * 201) - 100;
+                        // Frenzy rolls also use the same loss bias
+                        const fChange = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
                         const fTarget = victim.value + fChange;
                         
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
@@ -89,14 +95,20 @@ module.exports = {
             }
         }
 
-        // main roll
-        const change = Math.floor(Math.random() * 201) - 100;
+        // main roll — range shifts down by lossBias, max gain stays at +100
+        // lossBias=0: rand(201)-100 → [-100, +100]
+        // lossBias=10: rand(211)-110 → [-110, +100]
+        // lossBias=50: rand(251)-150 → [-150, +100]
+        const change = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
 
+        // Increment gamblingDebt after each gamble (capped at 5 so lossBias caps at 35)
+        inventory.gamblingDebt = Math.min((inventory.gamblingDebt || 0) + 1, 5);
+        inventory.lastGamble = now;
+
         if (change < -75 || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
-            inventory.lastGamble = now;
             await inventory.save();
             return interaction.reply(`I told you gambling is bad! You lost your **${horseName}**!${frenzyMessage}`);
         }
@@ -107,7 +119,6 @@ module.exports = {
 
         inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
         inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
-        inventory.lastGamble = now;
         
         await inventory.save();
 
