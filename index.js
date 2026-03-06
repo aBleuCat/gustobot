@@ -191,30 +191,35 @@ client.on(Events.MessageCreate, async msg => {
 
     // Stats and Triggers
     try {
-        if (Math.floor(Math.random() * 500) + 1 === 64) msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566");
+        if (Math.floor(Math.random() * 1000) + 1 === 64) {
+            await msg.channel.send("https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566").catch(() => {});
+        }
 
         if (/\b67\b|six seven|six-seven/.test(content)) {
             const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
             if (!isMuted) {
-                const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau"];
-                msg.reply(responses[Math.floor(Math.random() * responses.length)]);
+                const responses = ["grown man btw", "top 2% of students btw", "ok pack it up time to do your learning log", "stuybau", "ts not funny", "in the big 25 wait no thats not right year"];
+                await msg.reply(responses[Math.floor(Math.random() * responses.length)]).catch(() => {});
             }
         }
 
         if (/\blol\b/.test(content)) {
             const isMuted = await MutedChannel.findOne({ channelId: msg.channel.id });
             if (!isMuted) {
-                msg.channel.send("lol");
+                await msg.channel.send("lol").catch(() => {});
                 const stats = await updateLolStatsDB();
-                if (stats.daily % 60 === 0) msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts");
-                else if (stats.daily % 40 === 0) msg.channel.send("Do you not have *anything* better to do?");
-                else if (stats.daily % 20 === 0) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
+                if (stats.daily % 60 === 0) await msg.channel.send("<:PensiveKMS:1474277252546957400>\nPeople are starving in Africa because of ts").catch(() => {});
+                else if (stats.daily % 40 === 0) await msg.channel.send("Do you not have *anything* better to do?").catch(() => {});
+                else if (stats.daily % 20 === 0) await msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif").catch(() => {});
             }
         }
 
-        if (msg.content.includes("@everyone")) msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif");
-    } catch (e) { console.error("Trigger Error:", e.message); }
-
+        if (msg.content.includes("@everyone")) {
+            await msg.channel.send("https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif").catch(() => {});
+        }
+    } catch (e) { 
+        console.error("Trigger Error:", e.message); 
+    }
     // Autorole logic
     const matchingRules = await Rule.find({ watchUser: msg.author.id, channel: msg.channel.id });
     for (const rule of matchingRules) {
