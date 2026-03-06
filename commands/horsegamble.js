@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 
 // generate choices from the JSON keys
@@ -16,12 +15,11 @@ function getClosestHorse(targetValue) {
         const diff = Math.abs(data.value - targetValue);
         if (diff < minDiff) {
             minDiff = diff;
-            candidates = [name]; // New closest found, reset candidates
+            candidates = [name];
         } else if (diff === minDiff) {
-            candidates.push(name); // Tied for closest, add to candidates
+            candidates.push(name);
         }
     }
-    // Return a random candidate from the closest matches
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
@@ -48,13 +46,18 @@ module.exports = {
 
         const now = Date.now();
         const lastGamble = inventory.lastGamble || 0;
-        const frenzyThreshold = 10 * 60 * 1000; 
+        const frenzyThreshold = 10 * 60 * 1000;
+        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hour
         let frenzyMessage = "";
 
-        // Calculate loss bias: 10 per gamble, capped at 50
-        // e.g. 0 gambles = range -100 to +100, 1 gamble = -110 to +100, 5 gambles = -135 to +100
+        // Reset gamblingDebt if it's been more than 2 hour since last gamble
+        if (now - lastGamble > debtResetThreshold) {
+            inventory.gamblingDebt = 0;
+        }
+
+        // e.g. 0 gambles = range -100 to +100, 1 gamble = -107 to +100, 4+ gambles = -130 to +100
         const gamblingDebt = inventory.gamblingDebt || 0;
-        const lossBias = Math.min(gamblingDebt * 7, 35);
+        const lossBias = Math.min(gamblingDebt * 7, 30);
 
         // le frenzy
         if (now - lastGamble < frenzyThreshold) {
@@ -76,7 +79,6 @@ module.exports = {
                     frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
                     
                     for (const victim of victims) {
-                        // Frenzy rolls also use the same loss bias
                         const fChange = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
                         const fTarget = victim.value + fChange;
                         
@@ -94,15 +96,11 @@ module.exports = {
             }
         }
 
-        // main roll — range shifts down by lossBias, max gain stays at +100
-        // lossBias=0: rand(201)-100 → [-100, +100]
-        // lossBias=10: rand(211)-110 → [-110, +100]
-        // lossBias=50: rand(251)-150 → [-150, +100]
+        // main roll
         const change = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
 
-        // Increment gamblingDebt after each gamble (capped at 5 so lossBias caps at 35)
         inventory.gamblingDebt = Math.min((inventory.gamblingDebt || 0) + 1, 5);
         inventory.lastGamble = now;
 
