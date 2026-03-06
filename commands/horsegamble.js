@@ -53,9 +53,9 @@ module.exports = {
         let frenzyMessage = "";
 
         // Calculate loss bias: 10 per gamble, capped at 50
-        // e.g. 0 gambles = range -100 to +100, 1 gamble = -110 to +100, 5 gambles = -150 to +100
+        // e.g. 0 gambles = range -100 to +100, 1 gamble = -110 to +100, 5 gambles = -135 to +100
         const gamblingDebt = inventory.gamblingDebt || 0;
-        const lossBias = Math.min(gamblingDebt * 10, 50);
+        const lossBias = Math.min(gamblingDebt * 7, 35);
 
         // le frenzy
         if (now - lastGamble < frenzyThreshold) {
@@ -103,7 +103,7 @@ module.exports = {
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
 
-        // Increment gamblingDebt after each gamble (capped at 5 so lossBias caps at 50)
+        // Increment gamblingDebt after each gamble (capped at 5 so lossBias caps at 35)
         inventory.gamblingDebt = Math.min((inventory.gamblingDebt || 0) + 1, 5);
         inventory.lastGamble = now;
 
