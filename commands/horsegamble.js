@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const HORSE_VALUES = require('../horses.json');
+const mongoose = require('mongoose');
 
 // generate choices from the JSON keys
 const horseChoices = Object.keys(HORSE_VALUES).map(name => ({
@@ -34,6 +35,7 @@ module.exports = {
                 .addChoices(...horseChoices.slice(0, 25))
         ),
     async execute(interaction) {
+        const UserHorses = mongoose.model('UserHorses');
         const horseName = interaction.options.getString('horse');
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
 
@@ -47,10 +49,10 @@ module.exports = {
         const now = Date.now();
         const lastGamble = inventory.lastGamble || 0;
         const frenzyThreshold = 10 * 60 * 1000;
-        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hour
+        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
         let frenzyMessage = "";
 
-        // Reset gamblingDebt if it's been more than 2 hour since last gamble
+        // Reset gamblingDebt if it's been more than 2 hours since last gamble
         if (now - lastGamble > debtResetThreshold) {
             inventory.gamblingDebt = 0;
         }
