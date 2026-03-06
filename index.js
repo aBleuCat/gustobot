@@ -267,7 +267,7 @@ client.on(Events.MessageCreate, async msg => {
     const hConfig = await HorseConfig.findOne({ guildId: msg.guild.id });
     if (hConfig && hConfig.enabled) {
         try {
-            const DEBOUNCE_MS = 12 * 1000;
+            const DEBOUNCE_MS = 1 * 1000;
             const SIMILARITY_THRESHOLD = 0.60;
             const RECENT_MSG_COUNT = 5;
 
@@ -290,10 +290,11 @@ client.on(Events.MessageCreate, async msg => {
                 return;
             }
 
-            // Update cache
-            cache.lastMessageTime = now;
-            cache.recentMessages = [msgText, ...cache.recentMessages].slice(0, RECENT_MSG_COUNT);
-            await cache.save();
+            await MessageCache.findOneAndUpdate(
+                { userId: msg.author.id, guildId: msg.guild.id },
+                { lastMessageTime: now, recentMessages: [msgText, ...(cache.recentMessages || [])].slice(0, RECENT_MSG_COUNT) },
+                { upsert: true }
+            );
 
             const targetChan = await msg.guild.channels.fetch(hConfig.channelId).catch(() => msg.channel);
             const horseEntries = Object.entries(HORSE_VALUES);
