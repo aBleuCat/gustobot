@@ -36,7 +36,6 @@ module.exports = {
                 .addChoices(...horseChoices.slice(0, 25))
         ),
     async execute(interaction) {
-        const UserHorses = mongoose.model('UserHorses');
         const horseName = interaction.options.getString('horse');
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
 
