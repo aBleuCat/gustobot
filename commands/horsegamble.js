@@ -39,24 +39,24 @@ module.exports = {
         const horseName = interaction.options.getString('horse');
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
 
-    // Horse Coin logic
-    const isHorseCoin = horseName === 'Horse Coin';
+        // Horse Coin logic
+        const isHorseCoin = horseName === 'Horse Coin';
 
-    if (isHorseCoin) {
-        // Costs 2 coins (bid + fee), returns 1-4 coins
-        if ((inventory.horseCoins || 0) < 2) {
-            return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
+        if (isHorseCoin) {
+            // Costs 2 coins (bid + fee), returns 1-4 coins
+            if ((inventory.horseCoins || 0) < 2) {
+                return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
+            }
+            const winAmount = Math.floor(Math.random() * 4) + 1;
+            inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
+            await inventory.save();
+            return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
         }
-        const winAmount = Math.floor(Math.random() * 4) + 1;
-        inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
-        await inventory.save();
-        return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
-    }
-        
+
         if (!inventory || (inventory.horses.get(horseName) || 0) <= 0) {
-            return interaction.reply({ 
-                content: `You don't have a **${horseName}**!`, 
-                flags: [MessageFlags.Ephemeral] 
+            return interaction.reply({
+                content: `You don't have a **${horseName}**!`,
+                flags: [MessageFlags.Ephemeral]
             });
         }
 
@@ -66,21 +66,21 @@ module.exports = {
         const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
         let frenzyMessage = "";
 
-    // Requires 1 horse coin to gamble
-    if ((inventory.horseCoins || 0) < 1) {
-        // 40% chance of confiscation instead
-        if (Math.random() < 0.40) {
-            inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
-            await inventory.save();
-            return interaction.reply(`🚔 You tried to gamble without a Horse Coin and the **police confiscated your ${horseName}**!`);
+        // Requires 1 horse coin to gamble
+        if ((inventory.horseCoins || 0) < 1) {
+            // 40% chance of confiscation instead
+            if (Math.random() < 0.40) {
+                inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+                await inventory.save();
+                return interaction.reply(`🚔 You tried to gamble without a Horse Coin and the **police confiscated your ${horseName}**!`);
+            }
+        } else {
+            inventory.horseCoins -= 1;
         }
-    } else {
-        inventory.horseCoins -= 1;
-    }
-        
+
         // le frenzy
         if (now - lastGamble < frenzyThreshold) {
-            if (Math.random() < 0.20) { 
+            if (Math.random() < 0.20) {
                 const ownedHorses = [];
                 for (const [name, count] of inventory.horses.entries()) {
                     if (count > 0 && HORSE_VALUES[name]) {
@@ -96,8 +96,11 @@ module.exports = {
 
                 if (victims.length > 0) {
                     frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
-                        
+
+                    for (const victim of victims) {
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
+                        const fChange = Math.floor(Math.random() * 201) - 100;
+                        const fTarget = victim.value + fChange;
 
                         if (fChange < -75 || fTarget < 0) {
                             frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
@@ -113,6 +116,8 @@ module.exports = {
 
         // main roll
         const startValue = HORSE_VALUES[horseName].value;
+        const change = Math.floor(Math.random() * 201) - 100;
+        const targetValue = startValue + change;
 
         if (change < -75 || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
@@ -126,7 +131,7 @@ module.exports = {
 
         inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
         inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
-        
+
         await inventory.save();
 
         let outcomeMsg = "";
