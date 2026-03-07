@@ -318,6 +318,7 @@ client.on(Events.MessageCreate, async msg => {
 
             const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
             for (const [name, data] of sortedHorses) {
+                if (name === 'Horse Coin') continue; // can't be spawned
                 const rarity = data.value * 10;
                 if (rand % rarity === 0) {
                     inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
