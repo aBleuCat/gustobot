@@ -37,7 +37,7 @@ const ModChannel = mongoose.model('ModChannel', new mongoose.Schema({ guildId: S
 const MutedChannel = mongoose.model('MutedChannel', new mongoose.Schema({ channelId: String }));
 const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: String, default: "global_stats" }, allTime: { type: Number, default: 0 }, weekly: { type: Number, default: 0 }, daily: { type: Number, default: 0 }, lastTimestamp: { type: Number, default: 0 }, lastDay: { type: String, default: "" }, lastWeek: { type: Number, default: 0 } }));
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
-const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, gamblingDebt: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
+const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horseCoins: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 const MessageCache = mongoose.model('MessageCache', new mongoose.Schema({ userId: String, guildId: String, lastMessageTime: { type: Number, default: 0 }, recentMessages: { type: [String], default: [] } }));
 
 // Load global commands
@@ -302,6 +302,15 @@ client.on(Events.MessageCreate, async msg => {
             const rollRange = maxVal * 10;
             const rand = Math.floor(Math.random() * rollRange);
 
+            // 1 in 200 chance for 3 horse coins from chatting
+            if (Math.floor(Math.random() * 200) === 0) {
+                inventory = await UserHorses.findOne({ userId: msg.author.id });
+                if (!inventory) inventory = new UserHorses({ userId: msg.author.id, horses: new Map() });
+                inventory.horseCoins = (inventory.horseCoins || 0) + 3;
+                await inventory.save();
+                await targetChan.send(`<@${msg.author.id}> acquired **3 Horse Coins** 🪙!`);
+            }
+
             console.log(`[HORSE] Roll for ${msg.author.tag}: ${rand}/${rollRange}`);
 
             let inventory = await UserHorses.findOne({ userId: msg.author.id });
@@ -309,6 +318,7 @@ client.on(Events.MessageCreate, async msg => {
 
             const sortedHorses = horseEntries.sort((a, b) => b[1].value - a[1].value);
             for (const [name, data] of sortedHorses) {
+                if (name === 'Horse Coin') continue; // can't be spawned
                 const rarity = data.value * 10;
                 if (rand % rarity === 0) {
                     inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);

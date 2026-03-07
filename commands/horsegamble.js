@@ -52,15 +52,32 @@ module.exports = {
         const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
         let frenzyMessage = "";
 
-        // Reset gamblingDebt if it's been more than 2 hours since last gamble
-        if (now - lastGamble > debtResetThreshold) {
-            inventory.gamblingDebt = 0;
+        // Horse Coin logic
+    const isHorseCoin = horseName === 'Horse Coin';
+
+    if (isHorseCoin) {
+        // Costs 2 coins (bid + fee), returns 1-4 coins
+        if ((inventory.horseCoins || 0) < 2) {
+            return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
         }
+        const winAmount = Math.floor(Math.random() * 4) + 1;
+        inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
+        await inventory.save();
+        return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
+    }
 
-        // e.g. 0 gambles = range -100 to +100, 1 gamble = -107 to +100, 4+ gambles = -130 to +100
-        const gamblingDebt = inventory.gamblingDebt || 0;
-        const lossBias = Math.min(gamblingDebt * 7, 30);
-
+    // Requires 1 horse coin to gamble
+    if ((inventory.horseCoins || 0) < 1) {
+        // 40% chance of confiscation instead
+        if (Math.random() < 0.40) {
+            inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+            await inventory.save();
+            return interaction.reply(`🚔 You tried to gamble without a Horse Coin and the **police confiscated your ${horseName}**!`);
+        }
+    } else {
+        inventory.horseCoins -= 1;
+    }
+        
         // le frenzy
         if (now - lastGamble < frenzyThreshold) {
             if (Math.random() < 0.20) { 
@@ -75,7 +92,7 @@ module.exports = {
                 }
 
                 ownedHorses.sort((a, b) => a.value - b.value);
-                const victims = ownedHorses.slice(0, 3);
+                const victims = ownedHorses.slice(0, 2);
 
                 if (victims.length > 0) {
                     frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
@@ -102,9 +119,6 @@ module.exports = {
         const change = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
         const startValue = HORSE_VALUES[horseName].value;
         const targetValue = startValue + change;
-
-        inventory.gamblingDebt = Math.min((inventory.gamblingDebt || 0) + 1, 5);
-        inventory.lastGamble = now;
 
         if (change < -75 || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
