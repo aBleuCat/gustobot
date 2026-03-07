@@ -39,20 +39,7 @@ module.exports = {
         const horseName = interaction.options.getString('horse');
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
 
-        if (!inventory || (inventory.horses.get(horseName) || 0) <= 0) {
-            return interaction.reply({ 
-                content: `You don't have a **${horseName}**!`, 
-                flags: [MessageFlags.Ephemeral] 
-            });
-        }
-
-        const now = Date.now();
-        const lastGamble = inventory.lastGamble || 0;
-        const frenzyThreshold = 10 * 60 * 1000;
-        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
-        let frenzyMessage = "";
-
-        // Horse Coin logic
+    // Horse Coin logic
     const isHorseCoin = horseName === 'Horse Coin';
 
     if (isHorseCoin) {
@@ -65,6 +52,19 @@ module.exports = {
         await inventory.save();
         return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
     }
+        
+        if (!inventory || (inventory.horses.get(horseName) || 0) <= 0) {
+            return interaction.reply({ 
+                content: `You don't have a **${horseName}**!`, 
+                flags: [MessageFlags.Ephemeral] 
+            });
+        }
+
+        const now = Date.now();
+        const lastGamble = inventory.lastGamble || 0;
+        const frenzyThreshold = 10 * 60 * 1000;
+        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
+        let frenzyMessage = "";
 
     // Requires 1 horse coin to gamble
     if ((inventory.horseCoins || 0) < 1) {
@@ -96,10 +96,6 @@ module.exports = {
 
                 if (victims.length > 0) {
                     frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
-                    
-                    for (const victim of victims) {
-                        const fChange = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
-                        const fTarget = victim.value + fChange;
                         
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
 
@@ -116,9 +112,7 @@ module.exports = {
         }
 
         // main roll
-        const change = Math.floor(Math.random() * (201 + lossBias)) - 100 - lossBias;
         const startValue = HORSE_VALUES[horseName].value;
-        const targetValue = startValue + change;
 
         if (change < -75 || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
