@@ -7,6 +7,10 @@ const horseChoices = Object.keys(HORSE_VALUES).map(name => ({
     value: name
 }));
 
+const HORSE_COIN_CHOICE = { name: '🪙 Horse Coin', value: 'Horse Coin' };
+const HOUSE_USER_ID = '1469509600561729710';
+const COMMON_HORSE = 'Horse of Commonosity and Normaltude';
+
 function getClosestHorse(targetValue) {
     let minDiff = Infinity;
     let candidates = [];
@@ -24,6 +28,14 @@ function getClosestHorse(targetValue) {
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+async function getOrCreateInventory(UserHorses, userId) {
+    let inv = await UserHorses.findOne({ userId });
+    if (!inv) {
+        inv = new UserHorses({ userId, horses: new Map(), horseCoins: 0 });
+    }
+    return inv;
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
@@ -32,7 +44,7 @@ module.exports = {
             option.setName('horse')
                 .setDescription('The horse to gamble. Gamble too much and you may go crazy!')
                 .setRequired(true)
-                .addChoices(...horseChoices.slice(0, 25))
+                .addChoices(HORSE_COIN_CHOICE, ...horseChoices.slice(0, 24))
         ),
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
@@ -66,6 +78,12 @@ module.exports = {
         if ((inventory.horseCoins || 0) < 1) {
             if (Math.random() < 0.40) {
                 inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+
+                // Give confiscated horse to the house
+                const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+                houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
+                await houseInv.save();
+
                 await inventory.save();
                 return interaction.reply(`🚔 You tried to gamble without a Horse Coin and the **police confiscated your ${horseName}**!`);
             }
@@ -114,6 +132,12 @@ module.exports = {
 
         if (change < -75 || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+
+            // Give lost horse to the house
+            const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+            houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
+            await houseInv.save();
+
             await inventory.save();
             return interaction.reply(`I told you gambling is bad! You lost your **${horseName}**!${frenzyMessage}`);
         }
@@ -124,6 +148,21 @@ module.exports = {
 
         inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
         inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
+
+        // House gains/loses Horse of Commonosity based on player's profit/loss
+        const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
+        if (commonTransfer > 0) {
+            const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+            if (actualDiff < 0) {
+                // Player lost value — house gains common horses
+                houseInv.horses.set(COMMON_HORSE, (houseInv.horses.get(COMMON_HORSE) || 0) + commonTransfer);
+            } else if (actualDiff > 0) {
+                // Player gained value — house loses common horses (floor at 0)
+                const houseCurrentCommon = houseInv.horses.get(COMMON_HORSE) || 0;
+                houseInv.horses.set(COMMON_HORSE, Math.max(0, houseCurrentCommon - commonTransfer));
+            }
+            await houseInv.save();
+        }
 
         await inventory.save();
 
