@@ -9,16 +9,17 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply();
         const allUsers = await mongoose.model('UserHorses').find();
-        const totalPossibleItems = Object.keys(HORSE_VALUES).length;
+        const totalPossibleItems = Object.values(HORSE_VALUES).filter(v => v.comp !== false).length;
 
         const data = allUsers.map(u => {
             let worth = 0;
             let unique = 0;
             for (const [name, count] of u.horses) {
                 if (count > 0) {
-                    const val = HORSE_VALUES[name]?.value || 0;
-                    worth += (val * count);
-                    unique++;
+                    const horseData = HORSE_VALUES[name];
+                    if (!horseData) continue;
+                    worth += (horseData.value * count);
+                    if (horseData.comp !== false) unique++;
                 }
             }
             return { 
