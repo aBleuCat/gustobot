@@ -243,9 +243,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Chat triggers
 client.on(Events.MessageCreate, async msg => {
-    if (!msg.guild || msg.author.bot) return;
-    const content = msg.content.toLowerCase();
-
+    if (!msg.guild) return;
+    if (msg.author.bot && msg.author.id !== '1428178018802733076') return;
+    
     // Stats and Triggers
     try {
         if (Math.floor(Math.random() * 1000) + 1 === 64) {
