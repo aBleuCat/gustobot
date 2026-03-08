@@ -139,10 +139,6 @@ function stringSimilarity(a, b) {
     return (2 * intersection) / (aB.size + bB.size);
 }
 
-// pingHandler.js
-
-const { PingResponse, PingTrigger } = require('./pingSchemas');
-
 /**
  * Parse a trigger query string into a matcher function.
  *
