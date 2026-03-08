@@ -16,7 +16,17 @@ module.exports = {
         
         const allUsers = await mongoose.model('UserHorses').find();
         const inventory = allUsers.find(u => u.userId === targetUser.id);
-        const allPossibleItems = Object.keys(HORSE_VALUES);
+        const allPossibleItems = Object.keys(HORSE_VALUES).filter(k => HORSE_VALUES[k].comp !== false);
+
+        for (const [name, count] of inventory.horses) {
+            if (count > 0 && HORSE_VALUES[name]) {
+                const val = HORSE_VALUES[name].value;
+                let prefix = name === "Dung Beetle" ? "🪲" : (name.includes("Providence") ? "✨" : "🐎");
+                horseListText += `* ${prefix} **${name}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
+                ownedItems.add(name);
+                if (HORSE_VALUES[name].comp !== false) ownedUniqueCount++; // Only count comp horses
+            }
+        }
 
         if (!inventory || !inventory.horses || Array.from(inventory.horses.values()).every(v => v === 0)) {
             return interaction.reply(isSelf 
