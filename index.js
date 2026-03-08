@@ -46,7 +46,7 @@ const pingMessageSchema = new mongoose.Schema({
         text: { type: String, default: null }
     }
 });
-const PingResponse = mongoose.model('PingMessage', pingMessageSchema);
+const PingResponse = mongoose.model('PingResponse', pingMessageSchema);
 
 // Load global commands
 const globalCommandsData = [];
@@ -147,73 +147,37 @@ function stringSimilarity(a, b) {
     return (2 * intersection) / (aB.size + bB.size);
 }
 
-/**
- * Parse a trigger query string into a matcher function.
- *
- * Supported clauses (space-separated, ALL must pass = AND logic):
- *   contains:<text>         message content includes <text> (case-insensitive)
- *   !contains:<text>        message content does NOT include <text>
- *   from:<userId|username>  author id or username equals value
- *   !from:<userId|username> author id or username does NOT equal value
- *   channel:<channelId>     message is in this channel
- *   !channel:<channelId>    message is NOT in this channel
- *
- * Returns (msg) => boolean, or null if query is blank.
- */
-function parseTrigger(query) {
-    if (!query || !query.trim()) return null;
-
-    const clauses = query.trim().split(/\s+/);
-
-    return function matches(msg) {
-        const content    = msg.content.toLowerCase();
-        const authorId   = msg.author.id.toLowerCase();
-        const authorName = msg.author.username.toLowerCase();
-        const channelId  = msg.channel.id.toLowerCase();
-
-        for (const clause of clauses) {
-            const negated  = clause.startsWith('!');
-            const raw      = negated ? clause.slice(1) : clause;
-            const colonIdx = raw.indexOf(':');
-            if (colonIdx === -1) continue; // malformed, skip
-
-            const key = raw.slice(0, colonIdx).toLowerCase();
-            const val = raw.slice(colonIdx + 1).toLowerCase();
-
-            let result;
-            switch (key) {
-                case 'contains': result = content.includes(val);                 break;
-                case 'from':     result = authorId === val || authorName === val; break;
-                case 'channel':  result = channelId === val;                      break;
-                default:         result = true; // unknown clause → don't block
-            }
-
-            if (negated ? result : !result) return false;
-        }
-        return true;
-    };
-}
-
+// Ping handler
 async function handleBotPing(msg, client) {
     if (msg.author.id === client.user.id) return;
     if (!msg.mentions.has(client.user.id)) return;
 
-    // Check triggers first (first match wins)
-    const triggers = await PingTrigger.find({});
-    for (const t of triggers) {
-        const matcher = parseTrigger(t.query);
-        if (matcher && matcher(msg)) {
-            await msg.reply(t.response).catch(() => {});
+    const content = msg.content.toLowerCase();
+    const allResponses = await PingResponse.find({});
+
+    // Check triggers first
+    for (const entry of allResponses) {
+        if (!entry.trigger?.type) continue;
+
+        if (entry.trigger.type === 'contains' && content.includes(entry.trigger.text.toLowerCase())) {
+            await msg.reply(entry.message).catch(() => {});
+            return;
+        }
+        if (entry.trigger.type === 'exact' && content === entry.trigger.text.toLowerCase()) {
+            await msg.reply(entry.message).catch(() => {});
+            return;
+        }
+        if (entry.trigger.type === 'author' && msg.author.id === entry.trigger.text) {
+            await msg.reply(entry.message).catch(() => {});
             return;
         }
     }
 
-    // No trigger matched → random response from pool
-    const pool = await PingResponse.find({});
-    if (!pool.length) return;
-
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    await msg.reply(pick.content).catch(() => {});
+    // Fall back to random untriggered message
+    const untriggered = allResponses.filter(e => !e.trigger?.type);
+    if (!untriggered.length) return;
+    const pick = untriggered[Math.floor(Math.random() * untriggered.length)];
+    await msg.reply(pick.message).catch(() => {});
 }
 
 // Interaction handling
