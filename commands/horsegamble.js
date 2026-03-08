@@ -2,7 +2,6 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const HORSE_VALUES = require('../horses.json');
 const mongoose = require('mongoose');
 
-// generate choices from the JSON keys
 const horseChoices = Object.keys(HORSE_VALUES).map(name => ({
     name: name,
     value: name
@@ -13,7 +12,7 @@ function getClosestHorse(targetValue) {
     let candidates = [];
 
     for (const [name, data] of Object.entries(HORSE_VALUES)) {
-        if (data.comp === false) continue; // Skip non-comp horses
+        if (data.comp === false) continue;
         const diff = Math.abs(data.value - targetValue);
         if (diff < minDiff) {
             minDiff = diff;
@@ -40,11 +39,9 @@ module.exports = {
         const horseName = interaction.options.getString('horse');
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
 
-        // Horse Coin logic
         const isHorseCoin = horseName === 'Horse Coin';
 
         if (isHorseCoin) {
-            // Costs 2 coins (bid + fee), returns 1-4 coins
             if ((inventory.horseCoins || 0) < 2) {
                 return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
             }
@@ -64,12 +61,9 @@ module.exports = {
         const now = Date.now();
         const lastGamble = inventory.lastGamble || 0;
         const frenzyThreshold = 10 * 60 * 1000;
-        const debtResetThreshold = 2 * 60 * 60 * 1000; // 2 hours
         let frenzyMessage = "";
 
-        // Requires 1 horse coin to gamble
         if ((inventory.horseCoins || 0) < 1) {
-            // 40% chance of confiscation instead
             if (Math.random() < 0.40) {
                 inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
                 await inventory.save();
@@ -79,7 +73,6 @@ module.exports = {
             inventory.horseCoins -= 1;
         }
 
-        // le frenzy
         if (now - lastGamble < frenzyThreshold) {
             if (Math.random() < 0.20) {
                 const ownedHorses = [];
@@ -115,7 +108,6 @@ module.exports = {
             }
         }
 
-        // main roll
         const startValue = HORSE_VALUES[horseName].value;
         const change = Math.floor(Math.random() * 201) - 100;
         const targetValue = startValue + change;
