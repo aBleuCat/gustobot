@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 const path = require('path');
+const PingMessage = require('./models/PingMessage');
 
 // Horse data
 const HORSE_VALUES = require('./horses.json');
