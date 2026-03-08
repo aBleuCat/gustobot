@@ -13,12 +13,12 @@ module.exports = {
 
         if (!isOrbital) {
             return interaction.reply({ 
-                content: "<@${interaction.user.id}> tried to use the orbital cannon but miserably failed."
+                content: `<@${interaction.user.id}> tried to use the orbital cannon but miserably failed.`
             });
         }
 
         try {
-            return interaction.reply({ content: "<@${interaction.user.id}> used Orbital Strike Cannon" });
+            return interaction.reply({ content: `<@${interaction.user.id}> used Orbital Strike Cannon` });
         } catch (error) {
             console.error(error);
             return interaction.reply({ content: "I couldn't send the message here.", flags: [MessageFlags.Ephemeral] });
