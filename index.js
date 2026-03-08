@@ -46,7 +46,7 @@ const pingMessageSchema = new mongoose.Schema({
         text: { type: String, default: null }
     }
 });
-const PingMessage = mongoose.model('PingMessage', pingMessageSchema);
+const PingResponse = mongoose.model('PingMessage', pingMessageSchema);
 
 // Load global commands
 const globalCommandsData = [];
