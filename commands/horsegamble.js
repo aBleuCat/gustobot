@@ -13,6 +13,7 @@ function getClosestHorse(targetValue) {
     let candidates = [];
 
     for (const [name, data] of Object.entries(HORSE_VALUES)) {
+        if (data.comp === false) continue; // Skip non-comp horses
         const diff = Math.abs(data.value - targetValue);
         if (diff < minDiff) {
             minDiff = diff;
