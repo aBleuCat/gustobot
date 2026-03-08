@@ -45,7 +45,7 @@ module.exports = {
             if ((inventory.horseCoins || 0) < 2) {
                 return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
             }
-            const winAmount = Math.floor(Math.random() * 4) + 1;
+            const winAmount = Math.floor(Math.random() * 4);
             inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
             await inventory.save();
             return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
