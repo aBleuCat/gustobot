@@ -1,7 +1,8 @@
 {
   "Horse Coin": {
     "value": 25,
-    "link": "this isn't supposed to happen"
+    "link": "this isn't supposed to happen",
+    "comp": false
   },
   "The Trojan Horse": {
     "value": 400,

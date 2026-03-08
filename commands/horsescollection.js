@@ -16,7 +16,7 @@ module.exports = {
         
         const allUsers = await mongoose.model('UserHorses').find();
         const inventory = allUsers.find(u => u.userId === targetUser.id);
-        const allPossibleItems = Object.keys(HORSE_VALUES);
+        const allPossibleItems = Object.keys(HORSE_VALUES).filter(k => HORSE_VALUES[k].comp !== false);
 
         if (!inventory || !inventory.horses || Array.from(inventory.horses.values()).every(v => v === 0)) {
             return interaction.reply(isSelf 
@@ -39,25 +39,21 @@ module.exports = {
         let ownedUniqueCount = 0;
         const ownedItems = new Set();
 
-        // --- LIST OWNED HORSES ---
         for (const [name, count] of inventory.horses) {
             if (count > 0 && HORSE_VALUES[name]) {
                 const val = HORSE_VALUES[name].value;
                 let prefix = name === "Dung Beetle" ? "🪲" : (name.includes("Providence") ? "✨" : "🐎");
-                
                 horseListText += `* ${prefix} **${name}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
                 ownedItems.add(name);
-                ownedUniqueCount++;
+                if (HORSE_VALUES[name].comp !== false) ownedUniqueCount++;
             }
         }
 
         const completionPercentage = Math.round((ownedUniqueCount / allPossibleItems.length) * 100);
         const missing = allPossibleItems.filter(item => !ownedItems.has(item));
-        
-        // --- LIST MISSING HORSES ---
+
         let missingHeader = isSelf ? "### Missing Thingamabobs" : `### Missing from ${targetUser.username}'s Stable`;
         let missingText = "";
-
         if (missing.length > 0) {
             missingText = `\n${missingHeader}\n` + missing.map(m => {
                 const mVal = HORSE_VALUES[m]?.value || 0;
@@ -70,7 +66,6 @@ module.exports = {
         }
 
         const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
-
         return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }
 };
