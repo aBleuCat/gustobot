@@ -10,7 +10,6 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 const path = require('path');
-const PingMessage = require('./models/PingMessage');
 
 // Horse data
 const HORSE_VALUES = require('./horses.json');
@@ -40,6 +39,14 @@ const LolStats = mongoose.model('LolStats', new mongoose.Schema({ id: { type: St
 const HorseConfig = mongoose.model('HorseConfig', new mongoose.Schema({ guildId: String, enabled: Boolean, channelId: String }));
 const UserHorses = mongoose.model('UserHorses', new mongoose.Schema({ userId: String, lastGamble: { type: Number, default: 0 }, horseCoins: { type: Number, default: 0 }, horses: { type: Map, of: Number, default: {} } }));
 const MessageCache = mongoose.model('MessageCache', new mongoose.Schema({ userId: String, guildId: String, lastMessageTime: { type: Number, default: 0 }, recentMessages: { type: [String], default: [] } }));
+const pingMessageSchema = new mongoose.Schema({
+    message: { type: String, required: true },
+    trigger: {
+        type: { type: String, enum: ['contains', 'author', 'exact'], default: null },
+        text: { type: String, default: null }
+    }
+});
+const PingMessage = mongoose.model('PingMessage', pingMessageSchema);
 
 // Load global commands
 const globalCommandsData = [];
