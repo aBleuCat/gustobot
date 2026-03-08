@@ -139,6 +139,79 @@ function stringSimilarity(a, b) {
     return (2 * intersection) / (aB.size + bB.size);
 }
 
+// pingHandler.js
+
+const { PingResponse, PingTrigger } = require('./pingSchemas');
+
+/**
+ * Parse a trigger query string into a matcher function.
+ *
+ * Supported clauses (space-separated, ALL must pass = AND logic):
+ *   contains:<text>         message content includes <text> (case-insensitive)
+ *   !contains:<text>        message content does NOT include <text>
+ *   from:<userId|username>  author id or username equals value
+ *   !from:<userId|username> author id or username does NOT equal value
+ *   channel:<channelId>     message is in this channel
+ *   !channel:<channelId>    message is NOT in this channel
+ *
+ * Returns (msg) => boolean, or null if query is blank.
+ */
+function parseTrigger(query) {
+    if (!query || !query.trim()) return null;
+
+    const clauses = query.trim().split(/\s+/);
+
+    return function matches(msg) {
+        const content    = msg.content.toLowerCase();
+        const authorId   = msg.author.id.toLowerCase();
+        const authorName = msg.author.username.toLowerCase();
+        const channelId  = msg.channel.id.toLowerCase();
+
+        for (const clause of clauses) {
+            const negated  = clause.startsWith('!');
+            const raw      = negated ? clause.slice(1) : clause;
+            const colonIdx = raw.indexOf(':');
+            if (colonIdx === -1) continue; // malformed, skip
+
+            const key = raw.slice(0, colonIdx).toLowerCase();
+            const val = raw.slice(colonIdx + 1).toLowerCase();
+
+            let result;
+            switch (key) {
+                case 'contains': result = content.includes(val);                 break;
+                case 'from':     result = authorId === val || authorName === val; break;
+                case 'channel':  result = channelId === val;                      break;
+                default:         result = true; // unknown clause → don't block
+            }
+
+            if (negated ? result : !result) return false;
+        }
+        return true;
+    };
+}
+
+async function handleBotPing(msg, client) {
+    if (msg.author.id === client.user.id) return;
+    if (!msg.mentions.has(client.user.id)) return;
+
+    // Check triggers first (first match wins)
+    const triggers = await PingTrigger.find({});
+    for (const t of triggers) {
+        const matcher = parseTrigger(t.query);
+        if (matcher && matcher(msg)) {
+            await msg.reply(t.response).catch(() => {});
+            return;
+        }
+    }
+
+    // No trigger matched → random response from pool
+    const pool = await PingResponse.find({});
+    if (!pool.length) return;
+
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    await msg.reply(pick.content).catch(() => {});
+}
+
 // Interaction handling
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
@@ -339,6 +412,7 @@ client.on(Events.MessageCreate, async msg => {
             }
         } catch (e) { console.error("Horse Spawn Error:", e.message); }
     }
+    await handleBotPing(msg, client).catch(e => console.error('PingHandler Error:', e.message));
 });
 
 client.login(process.env.TOKEN);
