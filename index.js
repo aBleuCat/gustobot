@@ -245,6 +245,7 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on(Events.MessageCreate, async msg => {
     if (!msg.guild) return;
     if (msg.author.bot && msg.author.id !== '1428178018802733076') return;
+    const content = msg.content.toLowerCase();
     
     // Stats and Triggers
     try {
