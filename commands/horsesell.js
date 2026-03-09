@@ -46,7 +46,7 @@ module.exports = {
         }
 
         const horseValue = HORSE_VALUES[horseName].value;
-        const coinsEarned = Math.max(1, Math.floor(horseValue * 2 / 25)) * amount;
+        const coinsEarned = Math.max(1, Math.floor(horseValue * 4 / 25)) * amount;
         inventory.horses.set(horseName, inventory.horses.get(horseName) - amount);
         inventory.horseCoins = (inventory.horseCoins || 0) + coinsEarned;
         await inventory.save();
