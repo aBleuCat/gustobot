@@ -1,4 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { catchDataStore } = require('../lib/handlers/interactionHandler');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('deximpersonate')
@@ -14,30 +16,47 @@ module.exports = {
             ))
         .addStringOption(o => o.setName('stats').setDescription('Custom stats (e.g. #ABCDEF, +1%/+2%). Optional.').setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+
     async execute(interaction) {
-        const target = interaction.options.getUser('target');
-        const image = interaction.options.getAttachment('image');
-        const ans = interaction.options.getString('formanswer');
-        const bold = interaction.options.getString('boldtext');
-        const type = interaction.options.getString('texttype');
-        const stats = interaction.options.getString('stats') || "DEFAULT";
-        const webhook = await interaction.channel.createWebhook({
-            name: target.username,
-            avatar: target.displayAvatarURL(),
-        });
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`catch::${ans}::${bold}::${type}::${target.id}::${stats}`)
-                .setLabel('Catch me')
-                .setStyle(ButtonStyle.Primary),
-        );
-        await webhook.send({
-            content: `A wild countryball appeared!`,
-            files: [image.url],
-            components: [row]
-        });
-        await webhook.delete();
-        await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag}.`);
-        await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
+        try {
+            const target = interaction.options.getUser('target');
+            const image = interaction.options.getAttachment('image');
+            const ans = interaction.options.getString('formanswer');
+            const bold = interaction.options.getString('boldtext');
+            const type = interaction.options.getString('texttype');
+            const stats = interaction.options.getString('stats') || "DEFAULT";
+
+            // Use a unique key per spawn so multiple spawns don't collide
+            const spawnId = `${target.id}-${Date.now()}`;
+            catchDataStore.set(spawnId, { ans, bold, type, targetId: target.id, stats });
+
+            const webhook = await interaction.channel.createWebhook({
+                name: target.username,
+                avatar: target.displayAvatarURL(),
+            });
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`catch::${spawnId}`)
+                    .setLabel('Catch me')
+                    .setStyle(ButtonStyle.Primary),
+            );
+
+            await webhook.send({
+                content: `A wild countryball appeared!`,
+                files: [image.url],
+                components: [row]
+            });
+            await webhook.delete();
+
+            await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag}.`);
+            await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
+
+        } catch (e) {
+            console.error('[deximpersonate]', e);
+            if (!interaction.replied) {
+                await interaction.reply({ content: `Error: ${e.message}`, ephemeral: true }).catch(() => {});
+            }
+        }
     },
 };
