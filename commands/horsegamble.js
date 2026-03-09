@@ -47,7 +47,7 @@ module.exports = {
 
         if (inventory?.horses) {
             for (const [name, count] of inventory.horses.entries()) {
-                if (count > 0 if (count > 0 && HORSE_VALUES[name] && HORSE_VALUES[name].comp !== false)if (count > 0 && HORSE_VALUES[name] && HORSE_VALUES[name].comp !== false) HORSE_VALUES[name]) {
+                if (count > 0 && HORSE_VALUES[name]) {
                     choices.push({ name: `${name} (x${count})`, value: name });
                 }
             }
@@ -93,7 +93,7 @@ module.exports = {
         let frenzyMessage = "";
 
         if ((inventory.horseCoins || 0) < 1) {
-            if (Math.random() < 0.40) {
+            if (Math.random() < 0.25) {
                 inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
                 const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
                 houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
