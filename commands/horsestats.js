@@ -1,0 +1,165 @@
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const mongoose = require('mongoose');
+const HORSE_VALUES = require('../horses.json');
+
+const HORSES_PER_PAGE = 15;
+
+function gini(values) {
+    if (!values.length) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const n = sorted.length;
+    const mean = sorted.reduce((a, b) => a + b, 0) / n;
+    if (mean === 0) return 0;
+    let numerator = 0;
+    for (let i = 0; i < n; i++)
+        for (let j = 0; j < n; j++)
+            numerator += Math.abs(sorted[i] - sorted[j]);
+    return numerator / (2 * n * n * mean);
+}
+
+function buildBreakdownPage(sortedHorses, page) {
+    const totalPages = Math.ceil(sortedHorses.length / HORSES_PER_PAGE);
+    const slice = sortedHorses.slice(page * HORSES_PER_PAGE, (page + 1) * HORSES_PER_PAGE);
+    const lines = [
+        `🐴 **Horse Breakdown** (page ${page + 1}/${totalPages})`,
+        '',
+        ...slice.map(([name, count]) => `* **${name}**: ${count}`),
+    ];
+    return lines.join('\n');
+}
+
+function buildPageButtons(page, totalPages, statsId) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`hstats::${statsId}::${page - 1}`)
+            .setLabel('◀')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(page === 0),
+        new ButtonBuilder()
+            .setCustomId(`hstats::${statsId}::${page + 1}`)
+            .setLabel('▶')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(page === totalPages - 1),
+    );
+}
+
+// In-memory store for breakdown data, keyed by a unique id per invocation
+const breakdownStore = new Map();
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('horsestats')
+        .setDescription('View global horse economy statistics'),
+
+    // Called from interactionHandler for hstats:: buttons
+    handleButton: async function(interaction) {
+        const [, statsId, pageStr] = interaction.customId.split('::');
+        const page = parseInt(pageStr);
+        const sortedHorses = breakdownStore.get(statsId);
+
+        if (!sortedHorses) {
+            return interaction.reply({ content: 'This stats session has expired. Run /horsestats again.', flags: [MessageFlags.Ephemeral] });
+        }
+
+        const totalPages = Math.ceil(sortedHorses.length / HORSES_PER_PAGE);
+        const content = buildBreakdownPage(sortedHorses, page);
+        const row = buildPageButtons(page, totalPages, statsId);
+
+        await interaction.update({ content, components: [row] });
+    },
+
+    async execute(interaction) {
+        await interaction.deferReply();
+
+        const UserHorses = mongoose.model('UserHorses');
+        const allUsers = await UserHorses.find({});
+
+        if (!allUsers.length) return interaction.editReply('No horse data yet!');
+
+        const horseCounts = {};
+        const playerWealth = [];
+        let totalCoins = 0;
+        let totalHorses = 0;
+        let totalWealth = 0;
+        let playersWithHorses = 0;
+
+        for (const user of allUsers) {
+            let userWealth = 0;
+            totalCoins += user.horseCoins || 0;
+
+            if (user.horses) {
+                for (const [name, count] of user.horses.entries()) {
+                    if (count <= 0) continue;
+                    horseCounts[name] = (horseCounts[name] || 0) + count;
+                    totalHorses += count;
+                    userWealth += (HORSE_VALUES[name]?.value || 0) * count;
+                }
+            }
+
+            if (userWealth > 0 || (user.horseCoins || 0) > 0) {
+                playersWithHorses++;
+                totalWealth += userWealth;
+                playerWealth.push(userWealth);
+            }
+        }
+
+        const giniScore = gini(playerWealth);
+        const avgWealth = playersWithHorses > 0 ? Math.round(totalWealth / playersWithHorses) : 0;
+        const richest = Math.max(...playerWealth);
+
+        // Top 10% wealth share
+        const sorted = [...playerWealth].sort((a, b) => b - a);
+        const top10Count = Math.max(1, Math.ceil(sorted.length * 0.1));
+        const top10Wealth = sorted.slice(0, top10Count).reduce((a, b) => a + b, 0);
+        const top10Pct = totalWealth > 0 ? ((top10Wealth / totalWealth) * 100).toFixed(1) : '0.0';
+
+        // Top 5 most common
+        const sortedByCount = Object.entries(horseCounts).sort((a, b) => b[1] - a[1]);
+        const top5Common = sortedByCount.slice(0, 5);
+
+        // Top 5 by total value in circulation
+        const top5ByValue = Object.entries(horseCounts)
+            .map(([name, count]) => ({ name, count, totalValue: (HORSE_VALUES[name]?.value || 0) * count }))
+            .sort((a, b) => b.totalValue - a.totalValue)
+            .slice(0, 5);
+
+        // Rarest
+        const rarest = Object.entries(horseCounts)
+            .filter(([, count]) => count > 0)
+            .sort((a, b) => a[1] !== b[1] ? a[1] - b[1] : (HORSE_VALUES[b[0]]?.value || 0) - (HORSE_VALUES[a[0]]?.value || 0))[0];
+
+        const statsLines = [
+            `📊 **Horse Economy Stats**`,
+            ``,
+            `👥 **Players**: ${playersWithHorses}`,
+            `🐴 **Total Horses**: ${totalHorses} across ${Object.keys(horseCounts).length} unique breeds`,
+            `🪙 **Total Horse Coins**: ${totalCoins}`,
+            `💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
+            `📈 **Avg Wealth per Player**: $${avgWealth.toLocaleString()}`,
+            `🤑 **Richest Player**: $${richest.toLocaleString()}`,
+            `⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? '😬' : giniScore > 0.4 ? '😐' : '😌'}`,
+            `💰 **Top 10% own**: ${top10Pct}% of all wealth (${top10Count} player${top10Count !== 1 ? 's' : ''})`,
+            ``,
+            `🏆 **Most Common Horses**`,
+            ...top5Common.map(([name, count]) => `* **${name}**: ${count}`),
+            ``,
+            `💎 **Most Wealth in Circulation**`,
+            ...top5ByValue.map(({ name, count, totalValue }) => `* **${name}**: ${count}x ($${totalValue.toLocaleString()} total)`),
+            ``,
+            rarest ? `🦄 **Rarest Owned**: **${rarest[0]}** (only ${rarest[1]} exist)` : '',
+        ].filter(l => l !== undefined);
+
+        await interaction.editReply({ content: statsLines.join('\n') });
+
+        // Send breakdown as a follow-up with pagination
+        const statsId = `${interaction.user.id}-${Date.now()}`;
+        breakdownStore.set(statsId, sortedByCount);
+        setTimeout(() => breakdownStore.delete(statsId), 10 * 60 * 1000); // expire after 10 min
+
+        const totalPages = Math.ceil(sortedByCount.length / HORSES_PER_PAGE);
+        await interaction.followUp({
+            content: buildBreakdownPage(sortedByCount, 0),
+            components: [buildPageButtons(0, totalPages, statsId)]
+        });
+    }
+};

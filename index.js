@@ -77,3 +77,7 @@ registerMessageHandler(client);
 startRoleReverter(client);
 
 client.login(process.env.TOKEN);
+
+// Prevent unhandled promise rejections from crashing the bot
+process.on('unhandledRejection', err => console.error('Unhandled Rejection:', err));
+process.on('uncaughtException', err => console.error('Uncaught Exception:', err));
