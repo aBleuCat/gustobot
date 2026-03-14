@@ -78,6 +78,7 @@ module.exports = {
 
         const horseCounts = {};
         const playerWealth = [];
+        const playerHorseCounts = []; // parallel array to playerWealth
         let totalCoins = 0;
         let totalHorses = 0;
         let totalWealth = 0;
@@ -85,6 +86,7 @@ module.exports = {
 
         for (const user of allUsers) {
             let userWealth = 0;
+            let userHorseCount = 0;
             totalCoins += user.horseCoins || 0;
 
             if (user.horses) {
@@ -93,6 +95,7 @@ module.exports = {
                     horseCounts[name] = (horseCounts[name] || 0) + count;
                     totalHorses += count;
                     userWealth += (HORSE_VALUES[name]?.value || 0) * count;
+                    userHorseCount += count;
                 }
             }
 
@@ -100,18 +103,45 @@ module.exports = {
                 playersWithHorses++;
                 totalWealth += userWealth;
                 playerWealth.push(userWealth);
+                playerHorseCounts.push(userHorseCount);
             }
         }
+
+        // Sort players by wealth descending, keeping horse counts aligned
+        const playersSorted = playerWealth
+            .map((wealth, i) => ({ wealth, horses: playerHorseCounts[i] }))
+            .sort((a, b) => b.wealth - a.wealth);
+
+        const n = playersSorted.length;
+
+        // Helper: compute stats for a slice of playersSorted
+        function sliceStats(players) {
+            const wealth = players.reduce((sum, p) => sum + p.wealth, 0);
+            const horses = players.reduce((sum, p) => sum + p.horses, 0);
+            return {
+                count: players.length,
+                wealth,
+                horses,
+                wealthPct: totalWealth > 0 ? ((wealth / totalWealth) * 100).toFixed(1) : '0.0',
+                horsesPct: totalHorses > 0 ? ((horses / totalHorses) * 100).toFixed(1) : '0.0',
+            };
+        }
+
+        // Top 1%
+        const top1Count = Math.max(1, Math.ceil(n * 0.01));
+        const top1Stats = sliceStats(playersSorted.slice(0, top1Count));
+
+        // Top 10%
+        const top10Count = Math.max(1, Math.ceil(n * 0.1));
+        const top10Stats = sliceStats(playersSorted.slice(0, top10Count));
+
+        // Bottom 50%
+        const bottom50Count = Math.max(1, Math.floor(n * 0.5));
+        const bottom50Stats = sliceStats(playersSorted.slice(n - bottom50Count));
 
         const giniScore = gini(playerWealth);
         const avgWealth = playersWithHorses > 0 ? Math.round(totalWealth / playersWithHorses) : 0;
         const richest = Math.max(...playerWealth);
-
-        // Top 10% wealth share
-        const sorted = [...playerWealth].sort((a, b) => b - a);
-        const top10Count = Math.max(1, Math.ceil(sorted.length * 0.1));
-        const top10Wealth = sorted.slice(0, top10Count).reduce((a, b) => a + b, 0);
-        const top10Pct = totalWealth > 0 ? ((top10Wealth / totalWealth) * 100).toFixed(1) : '0.0';
 
         // Top 5 most common
         const sortedByCount = Object.entries(horseCounts).sort((a, b) => b[1] - a[1]);
@@ -132,13 +162,17 @@ module.exports = {
             `📊 **Horse Economy Stats**`,
             ``,
             `👥 **Players**: ${playersWithHorses}`,
-            `🐴 **Total Horses**: ${totalHorses} across ${Object.keys(horseCounts).length} unique breeds`,
+            `🐎 **Total Horses**: ${totalHorses} across ${Object.keys(horseCounts).length} unique breeds`,
             `🪙 **Total Horse Coins**: ${totalCoins}`,
             `💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
             `📈 **Avg Wealth per Player**: $${avgWealth.toLocaleString()}`,
             `🤑 **Richest Player**: $${richest.toLocaleString()}`,
             `⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? '😬' : giniScore > 0.4 ? '😐' : '😌'}`,
-            `💰 **Top 10% own**: ${top10Pct}% of all wealth (${top10Count} player${top10Count !== 1 ? 's' : ''})`,
+            ``,
+            `📉 **Wealth Distribution**`,
+            `* 🥇 **Top 1%** (${top1Stats.count} player${top1Stats.count !== 1 ? 's' : ''}): $${top1Stats.wealth.toLocaleString()} — **${top1Stats.wealthPct}%** of wealth · **${top1Stats.horsesPct}%** of horses (${top1Stats.horses})`,
+            `* 🏅 **Top 10%** (${top10Stats.count} player${top10Stats.count !== 1 ? 's' : ''}): $${top10Stats.wealth.toLocaleString()} — **${top10Stats.wealthPct}%** of wealth · **${top10Stats.horsesPct}%** of horses (${top10Stats.horses})`,
+            `* 📊 **Bottom 50%** (${bottom50Stats.count} player${bottom50Stats.count !== 1 ? 's' : ''}): $${bottom50Stats.wealth.toLocaleString()} — **${bottom50Stats.wealthPct}%** of wealth · **${bottom50Stats.horsesPct}%** of horses (${bottom50Stats.horses})`,
             ``,
             `🏆 **Most Common Horses**`,
             ...top5Common.map(([name, count]) => `* **${name}**: ${count}`),
@@ -154,7 +188,7 @@ module.exports = {
         // Send breakdown as a follow-up with pagination
         const statsId = `${interaction.user.id}-${Date.now()}`;
         breakdownStore.set(statsId, sortedByCount);
-        setTimeout(() => breakdownStore.delete(statsId), 10 * 60 * 1000); // expire after 10 min
+        setTimeout(() => breakdownStore.delete(statsId), 5 * 60 * 1000); // expire after 5 min
 
         const totalPages = Math.ceil(sortedByCount.length / HORSES_PER_PAGE);
         await interaction.followUp({
