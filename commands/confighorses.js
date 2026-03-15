@@ -8,7 +8,7 @@ module.exports = {
         .setDescription('Configure horse spawning settings')
         .addBooleanOption(o => o.setName('enabled').setDescription('Enable or disable spawning').setRequired(true))
         .addChannelOption(o => o.setName('channel').setDescription('The channel where horse spawns are announced').setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
         const enabled = interaction.options.getBoolean('enabled');
         const channel = interaction.options.getChannel('channel');
