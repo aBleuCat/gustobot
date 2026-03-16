@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { config, descriptions } = require('../lib/config');
 
-const OWNER_ID = 934290747623096381;
+const OWNER_ID = '934290747623096381';
 
 module.exports = {
     data: new SlashCommandBuilder()
