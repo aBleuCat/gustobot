@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const HORSE_VALUES = require('../horses.json');
 const mongoose = require('mongoose');
+const { config } = require('../lib/config');
 
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'Horse of Commonosity and Normaltude';
@@ -89,11 +90,10 @@ module.exports = {
 
         const now = Date.now();
         const lastGamble = inventory.lastGamble || 0;
-        const frenzyThreshold = 10 * 60 * 1000;
         let frenzyMessage = "";
 
         if ((inventory.horseCoins || 0) < 1) {
-            if (Math.random() < 0.25) {
+            if (Math.random() < config.CONFISCATE_CHANCE) {
                 inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
                 const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
                 houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
@@ -105,8 +105,8 @@ module.exports = {
             inventory.horseCoins -= 1;
         }
 
-        if (now - lastGamble < frenzyThreshold) {
-            if (Math.random() < 0.20) {
+        if (now - lastGamble < config.FRENZY_THRESHOLD_MS) {
+            if (Math.random() < config.FRENZY_CHANCE) {
                 const ownedHorses = [];
                 for (const [name, count] of inventory.horses.entries()) {
                     if (count > 0 && HORSE_VALUES[name]) {
@@ -124,7 +124,7 @@ module.exports = {
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
                         const fChange = Math.floor(Math.random() * 201) - 100;
                         const fTarget = victim.value + fChange;
-                        if (fChange < -75 || fTarget < 0) {
+                        if (fChange < config.LOSS_THRESHOLD || fTarget < 0) {
                             frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
                         } else {
                             const fClosest = getClosestHorse(fTarget);
@@ -140,7 +140,7 @@ module.exports = {
         const change = Math.floor(Math.random() * 201) - 100;
         const targetValue = startValue + change;
 
-        if (change < -75 || targetValue < 0) {
+        if (change < config.LOSS_THRESHOLD || targetValue < 0) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
             const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
             houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
