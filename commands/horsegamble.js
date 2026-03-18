@@ -140,7 +140,7 @@ module.exports = {
         const change = Math.floor(Math.random() * 201) - 100;
         const targetValue = startValue + change;
 
-        if (change < config.LOSS_THRESHOLD || targetValue < 0) {
+        if (change < config.LOSS_THRESHOLD) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
             const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
             houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
