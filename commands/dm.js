@@ -1,5 +1,10 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
+const DM_ALLOWED_USER_IDS = new Set([
+    '853658523786412063',
+    '934290747623096381'
+]);
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('dm')
@@ -14,6 +19,13 @@ module.exports = {
                 .setRequired(true)), 
 
     async execute(interaction) {
+        if (!DM_ALLOWED_USER_IDS.has(interaction.user.id)) {
+            return interaction.reply({
+                content: 'You do not have permission to use this command.',
+                ephemeral: true
+            });
+        }
+
         const targetUser = interaction.options.getUser('user');
         const messageText = interaction.options.getString('message');
 
