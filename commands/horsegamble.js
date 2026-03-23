@@ -6,6 +6,16 @@ const { config } = require('../lib/config');
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'Horse of Commonosity and Normaltude';
 
+function normalizeHorseMap(inventory) {
+    if (!inventory) return inventory;
+    if (!inventory.horses || typeof inventory.horses.get !== 'function') {
+        const asObj = inventory.horses || {};
+        inventory.horses = new Map(Object.entries(asObj));
+        if (typeof inventory.markModified === 'function') inventory.markModified('horses');
+    }
+    return inventory;
+}
+
 function getClosestHorse(targetValue) {
     let minDiff = Infinity;
     let candidates = [];
@@ -21,7 +31,7 @@ function getClosestHorse(targetValue) {
 async function getOrCreateInventory(UserHorses, userId) {
     let inv = await UserHorses.findOne({ userId });
     if (!inv) inv = new UserHorses({ userId, horses: new Map(), horseCoins: 0 });
-    return inv;
+    return normalizeHorseMap(inv);
 }
 
 module.exports = {
@@ -45,7 +55,7 @@ module.exports = {
     async autocomplete(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const focused = interaction.options.getFocused().toLowerCase();
-        const inventory = await UserHorses.findOne({ userId: interaction.user.id });
+        const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
         const choices = [];
 
@@ -74,7 +84,7 @@ module.exports = {
         let count = interaction.options.getInteger('count') || 1;
         const isHorseCoin = horseName.toLowerCase() === 'horse coin';
 
-        let inventory = await UserHorses.findOne({ userId: interaction.user.id });
+        let inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
         if (!isHorseCoin && !HORSE_VALUES[horseName]) {
             const match = Object.keys(HORSE_VALUES).find(k => k.toLowerCase() === horseName.toLowerCase());
@@ -85,6 +95,7 @@ module.exports = {
         if (!inventory) {
             inventory = new UserHorses({ userId: interaction.user.id, horses: new Map() });
         }
+        normalizeHorseMap(inventory);
 
         if ((inventory.horseCoins || 0) < 0) {
             return interaction.reply({
