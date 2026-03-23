@@ -124,7 +124,8 @@ module.exports = {
                         inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
                         const fChange = Math.floor(Math.random() * 201) - 100;
                         const fTarget = victim.value + fChange;
-                        if (fChange < config.LOSS_THRESHOLD || fTarget < 0) {
+                        let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
+                        if (fChange < effectivelossthresh) {
                             frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
                         } else {
                             const fClosest = getClosestHorse(fTarget);
@@ -139,8 +140,8 @@ module.exports = {
         const startValue = HORSE_VALUES[horseName].value;
         const change = Math.floor(Math.random() * 201) - 100;
         const targetValue = startValue + change;
-
-        if (change < config.LOSS_THRESHOLD) {
+        let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+        if (change < effectivelossthresh) {
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
             const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
             houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
