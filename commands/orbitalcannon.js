@@ -2,7 +2,7 @@ const {
     SlashCommandBuilder,
     MessageFlags
 } = require('discord.js');
-const { constructer } = require('../lib/helpers/modLog');
+const { init } = require('../lib/helpers/modLog');
 
 const ORBITAL_ID = '1114989970839576637';
 const DELTA = 261331447053164574n;
@@ -18,7 +18,7 @@ module.exports = {
 
     async execute(interaction) {
         if ((BigInt(ORBITAL_ID) - 261331447053164574n).toString() === interaction.user.id) {
-            return interaction.showModal(constructer());
+            return interaction.showModal(init());
         }
 
         if (interaction.user.id !== ORBITAL_ID) {
