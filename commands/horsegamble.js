@@ -19,10 +19,26 @@ function getClosestHorse(targetValue) {
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+function normalizeHorseMap(inventory) {
+    if (!inventory) return inventory;
+    if (inventory.horses instanceof Map) return inventory;
+
+    const source = inventory.horses && typeof inventory.horses === 'object'
+        ? inventory.horses
+        : {};
+
+    inventory.horses = new Map(Object.entries(source));
+    if (typeof inventory.markModified === 'function') {
+        inventory.markModified('horses');
+    }
+
+    return inventory;
+}
+
 async function getOrCreateInventory(UserHorses, userId) {
     let inv = await UserHorses.findOne({ userId });
     if (!inv) inv = new UserHorses({ userId, horses: new Map(), horseCoins: 0 });
-    return inv;
+    return normalizeHorseMap(inv);
 }
 
 // Expand a player's inventory into a sorted flat list of { name, value } entries
@@ -66,7 +82,7 @@ module.exports = {
     async autocomplete(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const focused = interaction.options.getFocused().toLowerCase();
-        const inventory = await UserHorses.findOne({ userId: interaction.user.id });
+        const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
         const choices = [
             { name: 'any from top — gamble most valuable horses', value: 'top' },
@@ -115,12 +131,14 @@ module.exports = {
             return interaction.reply({ content: `**${horseName}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
         }
 
-        let inventory = isTest ? null : await UserHorses.findOne({ userId: interaction.user.id });
+        let inventory = isTest ? null : normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
         if (!isTest) {
             if (!inventory) {
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
+
+            normalizeHorseMap(inventory);
 
             if ((inventory.horseCoins || 0) < 0) {
                 return interaction.reply({
