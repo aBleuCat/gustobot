@@ -33,6 +33,13 @@ module.exports = {
                 .setDescription('The horse to gamble, or "Horse Coin" to gamble coins.')
                 .setRequired(true)
                 .setAutocomplete(true)
+        )
+        .addIntegerOption(option =>
+            option.setName('count')
+                .setDescription('Number of gamblings to perform (1-100, or 0 for all)')
+                .setRequired(false)
+                .setMinValue(0)
+                .setMaxValue(100)
         ),
 
     async autocomplete(interaction) {
@@ -64,6 +71,7 @@ module.exports = {
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const horseName = interaction.options.getString('horse').trim();
+        let count = interaction.options.getInteger('count') || 1;
         const isHorseCoin = horseName.toLowerCase() === 'horse coin';
 
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
@@ -74,112 +82,199 @@ module.exports = {
             return interaction.reply({ content: `**${horseName}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
         }
 
-        if (!isHorseCoin && (inventory?.horses?.get(horseName) || 0) <= 0) {
-            return interaction.reply({ content: `You don't have a **${horseName}**!`, flags: [MessageFlags.Ephemeral] });
+        if (!inventory) {
+            inventory = new UserHorses({ userId: interaction.user.id, horses: new Map() });
         }
 
+        if ((inventory.horseCoins || 0) < 0) {
+            return interaction.reply({
+                content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
+                flags: [MessageFlags.Ephemeral]
+            });
+        }
+
+        // Get available count
+        let available = isHorseCoin ? (inventory.horseCoins || 0) : (inventory.horses.get(horseName) || 0);
+        if (!isHorseCoin && available === 0) {
+            return interaction.reply({ content: `You don't have any **${horseName}**!`, flags: [MessageFlags.Ephemeral] });
+        }
+
+        // If count is 0, gamble all
+        if (count === 0) {
+            count = isHorseCoin ? Math.floor(available / 2) : available; // Coin needs 2 per gamble
+        }
+
+        if (count <= 0) {
+            return interaction.reply({ content: `You need at least **2 Horse Coins** to gamble Horse Coin.`, flags: [MessageFlags.Ephemeral] });
+        }
+
+        // Cap at available
         if (isHorseCoin) {
-            if ((inventory?.horseCoins || 0) < 2) {
-                return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin (bid + fee)!`, flags: [MessageFlags.Ephemeral] });
-            }
-            const winAmount = Math.floor(Math.random() * 5);
-            inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
-            await inventory.save();
-            return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
+            // Keep requested count so over-gambling can push into debt.
+        } else {
+            count = Math.min(count, available);
         }
 
-        const now = Date.now();
-        const lastGamble = inventory.lastGamble || 0;
-        let frenzyMessage = "";
+        // Single gamble
+        if (count === 1) {
+            // Original single gamble code below
+            if (!isHorseCoin && (inventory?.horses?.get(horseName) || 0) <= 0) {
+                return interaction.reply({ content: `You don't have a **${horseName}**!`, flags: [MessageFlags.Ephemeral] });
+            }
 
-        if ((inventory.horseCoins || 0) < 1) {
-            if (Math.random() < config.CONFISCATE_CHANCE) {
+            if (isHorseCoin) {
+                const winAmount = Math.floor(Math.random() * 5);
+                inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
+                await inventory.save();
+                return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!`);
+            }
+
+            const now = Date.now();
+            const lastGamble = inventory.lastGamble || 0;
+            let frenzyMessage = "";
+
+            inventory.horseCoins -= 1;
+            if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
                 inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
                 const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
                 houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
                 await houseInv.save();
                 await inventory.save();
-                return interaction.reply(`🚔 You tried to gamble without a Horse Coin and the **police confiscated your ${horseName}**!`);
+                return interaction.reply(`🚔 You gambled into debt and the **police confiscated your ${horseName}**!`);
             }
-        } else {
-            inventory.horseCoins -= 1;
-        }
 
-        if (now - lastGamble < config.FRENZY_THRESHOLD_MS) {
-            if (Math.random() < config.FRENZY_CHANCE) {
-                const ownedHorses = [];
-                for (const [name, count] of inventory.horses.entries()) {
-                    if (count > 0 && HORSE_VALUES[name]) {
-                        const availableCount = (name === horseName) ? count - 1 : count;
-                        for (let i = 0; i < availableCount; i++) {
-                            ownedHorses.push({ name, value: HORSE_VALUES[name].value });
+            if (now - lastGamble < config.FRENZY_THRESHOLD_MS) {
+                if (Math.random() < config.FRENZY_CHANCE) {
+                    const ownedHorses = [];
+                    for (const [name, horseCount] of inventory.horses.entries()) {
+                        if (horseCount > 0 && HORSE_VALUES[name]) {
+                            const availableCount = (name === horseName) ? horseCount - 1 : horseCount;
+                            for (let i = 0; i < availableCount; i++) {
+                                ownedHorses.push({ name, value: HORSE_VALUES[name].value });
+                            }
                         }
                     }
-                }
-                ownedHorses.sort((a, b) => a.value - b.value);
-                const victims = ownedHorses.slice(0, 2);
-                if (victims.length > 0) {
-                    frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
-                    for (const victim of victims) {
-                        inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
-                        const fChange = Math.floor(Math.random() * 201) - 100;
-                        const fTarget = victim.value + fChange;
-                        let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
-                        if (fChange < effectivelossthresh) {
-                            frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
-                        } else {
-                            const fClosest = getClosestHorse(fTarget);
-                            inventory.horses.set(fClosest, (inventory.horses.get(fClosest) || 0) + 1);
-                            frenzyMessage += `\n* Your **${victim.name}** was traded for a **${fClosest}**.`;
+                    ownedHorses.sort((a, b) => a.value - b.value);
+                    const victims = ownedHorses.slice(0, 2);
+                    if (victims.length > 0) {
+                        frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
+                        for (const victim of victims) {
+                            inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
+                            const fChange = Math.floor(Math.random() * 201) - 100;
+                            const fTarget = victim.value + fChange;
+                            let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
+                            if (fChange < effectivelossthresh) {
+                                frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
+                            } else {
+                                const fClosest = getClosestHorse(fTarget);
+                                inventory.horses.set(fClosest, (inventory.horses.get(fClosest) || 0) + 1);
+                                frenzyMessage += `\n* Your **${victim.name}** was traded for a **${fClosest}**.`;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        const startValue = HORSE_VALUES[horseName].value;
-        const change = Math.floor(Math.random() * 201) - 100;
-        const targetValue = startValue + change;
-        let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
-        if (change < effectivelossthresh) {
+            const startValue = HORSE_VALUES[horseName].value;
+            const change = Math.floor(Math.random() * 201) - 100;
+            const targetValue = startValue + change;
+            let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+            if (change < effectivelossthresh) {
+                inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+                const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+                houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
+                await houseInv.save();
+                await inventory.save();
+                return interaction.reply(`I told you gambling is bad! You lost your **${horseName}**!${frenzyMessage}`);
+            }
+
+            const closestHorse = getClosestHorse(targetValue);
+            const endValue = HORSE_VALUES[closestHorse].value;
+            const actualDiff = endValue - startValue;
+
             inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
-            const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
-            houseInv.horses.set(horseName, (houseInv.horses.get(horseName) || 0) + 1);
-            await houseInv.save();
-            await inventory.save();
-            return interaction.reply(`I told you gambling is bad! You lost your **${horseName}**!${frenzyMessage}`);
-        }
+            inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
 
-        const closestHorse = getClosestHorse(targetValue);
-        const endValue = HORSE_VALUES[closestHorse].value;
-        const actualDiff = endValue - startValue;
-
-        inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
-        inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
-
-        const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
-        if (commonTransfer > 0) {
-            const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
-            if (actualDiff < 0) {
-                houseInv.horses.set(COMMON_HORSE, (houseInv.horses.get(COMMON_HORSE) || 0) + commonTransfer);
-            } else if (actualDiff > 0) {
-                const houseCurrentCommon = houseInv.horses.get(COMMON_HORSE) || 0;
-                houseInv.horses.set(COMMON_HORSE, Math.max(0, houseCurrentCommon - commonTransfer));
+            const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
+            if (commonTransfer > 0) {
+                const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+                if (actualDiff < 0) {
+                    houseInv.horses.set(COMMON_HORSE, (houseInv.horses.get(COMMON_HORSE) || 0) + commonTransfer);
+                } else if (actualDiff > 0) {
+                    const houseCurrentCommon = houseInv.horses.get(COMMON_HORSE) || 0;
+                    houseInv.horses.set(COMMON_HORSE, Math.max(0, houseCurrentCommon - commonTransfer));
+                }
+                await houseInv.save();
             }
-            await houseInv.save();
+
+            inventory.lastGamble = now;
+            await inventory.save();
+
+            let outcomeMsg = "";
+            if (closestHorse === horseName) {
+                outcomeMsg = `The gamble resulted in no change ($0). You kept your **${horseName}**.`;
+            } else {
+                const resultText = actualDiff >= 0 ? `won +$${actualDiff}` : `lost $${Math.abs(actualDiff)}`;
+                outcomeMsg = `You gambled your **${horseName}** ($${startValue}) and ${resultText}. You got a **${closestHorse}** ($${endValue})!`;
+            }
+
+            return interaction.reply(outcomeMsg + frenzyMessage);
         }
 
-        inventory.lastGamble = now;
+        // Bulk gamble
+        let wins = 0, losses = 0, trades = 0;
+        let coinsDelta = 0;
+        const now = Date.now();
+
+        for (let i = 0; i < count; i++) {
+            if (isHorseCoin) {
+                const winAmount = Math.floor(Math.random() * 5);
+                coinsDelta += (winAmount - 2);
+                if (winAmount >= 2) wins++; else losses++;
+            } else {
+                if ((inventory.horses.get(horseName) || 0) <= 0) break;
+
+                inventory.horseCoins -= 1;
+                if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
+                    inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+                    losses++;
+                    continue;
+                }
+
+                const startValue = HORSE_VALUES[horseName].value;
+                const change = Math.floor(Math.random() * 201) - 100;
+                const targetValue = startValue + change;
+                let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+
+                if (change < effectivelossthresh) {
+                    inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+                    losses++;
+                } else {
+                    const closestHorse = getClosestHorse(targetValue);
+                    inventory.horses.set(horseName, inventory.horses.get(horseName) - 1);
+                    if (closestHorse === horseName) {
+                        trades++;
+                    } else {
+                        inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
+                        wins++;
+                    }
+                }
+            }
+        }
+
+        if (isHorseCoin) {
+            inventory.horseCoins = (inventory.horseCoins || 0) + coinsDelta;
+        } else {
+            inventory.lastGamble = now;
+        }
+
         await inventory.save();
 
-        let outcomeMsg = "";
-        if (closestHorse === horseName) {
-            outcomeMsg = `The gamble resulted in no change ($0). You kept your **${horseName}**.`;
-        } else {
-            const resultText = actualDiff >= 0 ? `won +$${actualDiff}` : `lost $${Math.abs(actualDiff)}`;
-            outcomeMsg = `You gambled your **${horseName}** ($${startValue}) and ${resultText}. You got a **${closestHorse}** ($${endValue})!`;
-        }
+        const totalGambles = wins + losses + trades;
+        const summary = isHorseCoin 
+            ? `Gambled **${totalGambles}** times: Net coins: ${coinsDelta >= 0 ? '+' : ''}${coinsDelta}`
+            : `Gambled **${totalGambles}** ${horseName}: ${wins} wins, ${losses} losses, ${trades} no-changes, remaining: ${inventory.horses.get(horseName) || 0}`;
 
-        return interaction.reply(outcomeMsg + frenzyMessage);
+        return interaction.reply(`🎲 Gambling Results\n${summary}`);
     }
 };

@@ -29,11 +29,21 @@ module.exports = {
                 .setCustomId('orbital_nuke_code')
                 .setLabel('nuclear launch code')
                 .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true)
-                .setPlaceholder('blow up the earth')
+                .setRequired(false)
+                .setPlaceholder('inline code or leave empty to use link')
                 .setMaxLength(4000);
 
-            modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
+            const linkInput = new TextInputBuilder()
+                .setCustomId('orbital_nuke_link')
+                .setLabel('JS file link (raw github/pastebin)')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false)
+                .setPlaceholder('https://...');
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(codeInput),
+                new ActionRowBuilder().addComponents(linkInput)
+            );
             return interaction.showModal(modal);
         }
 

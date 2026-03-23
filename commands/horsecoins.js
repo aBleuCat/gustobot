@@ -4,14 +4,19 @@ const mongoose = require('mongoose');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('coincount')
-        .setDescription('Check your horse coin balance'),
+        .setDescription('Check horse coin balance')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User to check (optional, defaults to you)')
+                .setRequired(false)),
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
-        const inventory = await UserHorses.findOne({ userId: interaction.user.id });
+        const targetUser = interaction.options.getUser('user') || interaction.user;
+        const inventory = await UserHorses.findOne({ userId: targetUser.id });
         const coins = inventory?.horseCoins || 0;
 
         return interaction.reply({
-            content: `You have **${coins}** 🪙 Horse Coin${coins !== 1 ? 's' : ''}`
+            content: `<@${targetUser.id}> has **${coins}** 🪙 Horse Coin${coins !== 1 ? 's' : ''}`
         });
     }
 };
