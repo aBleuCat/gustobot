@@ -8,6 +8,7 @@ const {
 } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
+const PAGE_SIZE = 10;
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horseleaderboard')
