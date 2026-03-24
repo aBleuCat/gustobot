@@ -8,18 +8,22 @@ const {
 } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
-
-const PAGE_SIZE = 10;
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horseleaderboard')
-        .setDescription('View the richest horse collectors'),
+        .setDescription('View the richest horse collectors')
+        .addIntegerOption(opt =>
+            opt.setName('page')
+                .setDescription('Page number to view (starts at 1)')
+                .setMinValue(1)
+        ),
     async execute(interaction) {
         await interaction.deferReply();
-        const allUsers = await mongoose.model('UserHorses').find();
+        // Fetch only needed fields for speed
+        const allUsers = await mongoose.model('UserHorses').find({}, { userId: 1, horses: 1, horseCoins: 1 });
         const totalPossibleItems = Object.values(HORSE_VALUES).filter(v => v.comp !== false).length;
 
+        // Precompute leaderboard data
         const data = allUsers.map(u => {
             let worth = 0;
             let unique = 0;
@@ -44,36 +48,51 @@ module.exports = {
         const coinSort = [...data].sort((a, b) => b.horseCoins - a.horseCoins);
 
         const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-        let currentPage = 0;
+        // Get page from option, default to 1
+        let currentPage = (interaction.options.getInteger('page') || 1) - 1;
+        if (currentPage < 0) currentPage = 0;
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+
+        // Helper to fetch usernames for only the current page
         const userCache = new Map();
-
-        const getUserName = async (userId) => {
-            if (userCache.has(userId)) return userCache.get(userId);
-            const user = await interaction.client.users.fetch(userId).catch(() => null);
-            const name = user ? user.displayName : 'Unknown User';
-            userCache.set(userId, name);
-            return name;
-        };
-
-        const buildList = async (list, type, page) => {
+        async function getUserNamesForPage(list, page) {
             const start = page * PAGE_SIZE;
             const current = list.slice(start, start + PAGE_SIZE);
-            let str = '';
+            const ids = current.map(item => item.userId);
+            const results = await Promise.all(ids.map(async userId => {
+                if (userCache.has(userId)) return userCache.get(userId);
+                try {
+                    const user = await interaction.client.users.fetch(userId);
+                    const name = user?.displayName || user?.username || 'Unknown User';
+                    userCache.set(userId, name);
+                    return name;
+                } catch {
+                    userCache.set(userId, 'Unknown User');
+                    return 'Unknown User';
+                }
+            }));
+            return results;
+        }
 
+        // Build leaderboard string for a given list and page
+        async function buildList(list, type, page) {
+            const start = page * PAGE_SIZE;
+            const current = list.slice(start, start + PAGE_SIZE);
+            const names = await getUserNamesForPage(list, page);
+            let str = '';
             for (let i = 0; i < current.length; i++) {
                 const item = current[i];
-                const name = await getUserName(item.userId);
+                const name = names[i] || 'Unknown User';
                 const rank = start + i + 1;
                 const val = type === 'worth'
                     ? `$${item.worth.toLocaleString()}`
                     : (type === 'coins' ? `${item.horseCoins.toLocaleString()} 🪙` : `${item.completion}%`);
                 str += `**${rank}.** ${name}: ${val}\n`;
             }
-
             return str || 'No data.';
-        };
+        }
 
-        const buildEmbed = async (page) => {
+        async function buildEmbed(page) {
             return new EmbedBuilder()
                 .setTitle(`🐎 Horse Collector Leaderboards (Page ${page + 1}/${totalPages})`)
                 .setColor('#f1c40f')
@@ -82,20 +101,22 @@ module.exports = {
                     { name: '🏆 Completion', value: await buildList(compSort, 'comp', page), inline: true },
                     { name: '🪙 Horse Coins', value: await buildList(coinSort, 'coins', page), inline: true }
                 );
-        };
+        }
 
-        const getButtons = (page) => new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`hlb_prev_${page}`)
-                .setLabel('⬅️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(page === 0),
-            new ButtonBuilder()
-                .setCustomId(`hlb_next_${page}`)
-                .setLabel('➡️')
-                .setStyle(ButtonStyle.Secondary)
-                .setDisabled(page >= totalPages - 1)
-        );
+        function getButtons(page) {
+            return new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`hlb_prev_${page}`)
+                    .setLabel('⬅️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(page === 0),
+                new ButtonBuilder()
+                    .setCustomId(`hlb_next_${page}`)
+                    .setLabel('➡️')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(page >= totalPages - 1)
+            );
+        }
 
         await interaction.editReply({
             embeds: [await buildEmbed(currentPage)],
@@ -113,11 +134,11 @@ module.exports = {
                 }).catch(() => {});
                 return;
             }
-
             const [, direction, page] = i.customId.split('_');
             const parsedPage = Number(page);
             currentPage = direction === 'next' ? parsedPage + 1 : parsedPage - 1;
-
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= totalPages) currentPage = totalPages - 1;
             await i.update({
                 embeds: [await buildEmbed(currentPage)],
                 components: [getButtons(currentPage)]
