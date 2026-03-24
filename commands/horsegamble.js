@@ -4,17 +4,22 @@ const mongoose = require('mongoose');
 const { config } = require('../lib/config');
 
 const HOUSE_USER_ID = '1469509600561729710';
-const COMMON_HORSE = 'Horse of Commonosity and Normaltude';
-const ADMIN_IDS = ['934290747623096381', '853658523786412063']; // .i.exist and webcubed
+const COMMON_HORSE = 'common_horse';
+const ADMIN_IDS = ['934290747623096381', '853658523786412063'];
+
+// Get display name from slug
+function horseName(slug) {
+    return HORSE_VALUES[slug]?.name ?? slug;
+}
 
 function getClosestHorse(targetValue) {
     let minDiff = Infinity;
     let candidates = [];
-    for (const [name, data] of Object.entries(HORSE_VALUES)) {
+    for (const [slug, data] of Object.entries(HORSE_VALUES)) {
         if (data.comp === false) continue;
         const diff = Math.abs(data.value - targetValue);
-        if (diff < minDiff) { minDiff = diff; candidates = [name]; }
-        else if (diff === minDiff) { candidates.push(name); }
+        if (diff < minDiff) { minDiff = diff; candidates = [slug]; }
+        else if (diff === minDiff) { candidates.push(slug); }
     }
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
@@ -22,16 +27,9 @@ function getClosestHorse(targetValue) {
 function normalizeHorseMap(inventory) {
     if (!inventory) return inventory;
     if (inventory.horses instanceof Map) return inventory;
-
-    const source = inventory.horses && typeof inventory.horses === 'object'
-        ? inventory.horses
-        : {};
-
+    const source = inventory.horses && typeof inventory.horses === 'object' ? inventory.horses : {};
     inventory.horses = new Map(Object.entries(source));
-    if (typeof inventory.markModified === 'function') {
-        inventory.markModified('horses');
-    }
-
+    if (typeof inventory.markModified === 'function') inventory.markModified('horses');
     return inventory;
 }
 
@@ -41,14 +39,12 @@ async function getOrCreateInventory(UserHorses, userId) {
     return normalizeHorseMap(inv);
 }
 
-// Expand a player's inventory into a sorted flat list of { name, value } entries
-// sortDir: 'asc' for bottom (cheapest first), 'desc' for top (most expensive first)
 function getSortedHorseList(inventory, sortDir = 'asc') {
     const list = [];
-    for (const [name, count] of inventory.horses.entries()) {
-        if (count > 0 && HORSE_VALUES[name]) {
+    for (const [slug, count] of inventory.horses.entries()) {
+        if (count > 0 && HORSE_VALUES[slug]) {
             for (let i = 0; i < count; i++) {
-                list.push({ name, value: HORSE_VALUES[name].value });
+                list.push({ slug, value: HORSE_VALUES[slug].value });
             }
         }
     }
@@ -80,55 +76,61 @@ module.exports = {
         ),
 
     async autocomplete(interaction) {
-        const UserHorses = mongoose.model('UserHorses');
-        const focused = interaction.options.getFocused().toLowerCase();
-        const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
+        try {
+            const UserHorses = mongoose.model('UserHorses');
+            const focused = interaction.options.getFocused().toLowerCase();
+            const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
-        const choices = [
-            { name: 'any from top — gamble most valuable horses', value: 'top' },
-            { name: 'any from bottom — gamble least valuable horses', value: 'bottom' },
-        ];
+            const choices = [
+                { name: '📈 top — gamble your most valuable horses', value: 'top' },
+                { name: '📉 bottom — gamble your least valuable horses', value: 'bottom' },
+            ];
 
-        if ((inventory?.horseCoins || 0) >= 2) {
-            choices.push({ name: '🪙 Horse Coin', value: 'Horse Coin' });
-        }
+            if ((inventory?.horseCoins || 0) >= 2) {
+                choices.push({ name: '🪙 Horse Coin', value: 'horse_coin' });
+            }
 
-        if (inventory?.horses) {
-            for (const [name, count] of inventory.horses.entries()) {
-                if (count > 0 && HORSE_VALUES[name]) {
-                    choices.push({ name: `${name} (x${count})`, value: name });
+            if (inventory?.horses) {
+                for (const [slug, count] of inventory.horses.entries()) {
+                    if (count > 0 && HORSE_VALUES[slug]) {
+                        choices.push({ name: `${horseName(slug)} (x${count})`, value: slug });
+                    }
                 }
             }
+
+            const filtered = choices
+                .filter(c => c.name.toLowerCase().includes(focused))
+                .slice(0, 25);
+
+            await interaction.respond(filtered);
+        } catch (err) {
+            console.error('horsegamble autocomplete error:', err);
+            try { await interaction.respond([]); } catch {}
         }
-
-        const filtered = choices
-            .filter(c => c.name.toLowerCase().includes(focused))
-            .slice(0, 25);
-
-        await interaction.respond(filtered);
     },
 
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
-        const horseName = interaction.options.getString('horse').trim();
+        const horseSlug = interaction.options.getString('horse').trim().toLowerCase();
         let count = interaction.options.getInteger('count') ?? 1;
         const isTest = interaction.options.getBoolean('test') ?? false;
-        const isHorseCoin = horseName.toLowerCase() === 'horse coin';
-        const isTop = horseName.toLowerCase() === 'top';
-        const isBottom = horseName.toLowerCase() === 'bottom';
+        const isHorseCoin = horseSlug === 'horse_coin';
+        const isTop = horseSlug === 'top';
+        const isBottom = horseSlug === 'bottom';
         const isTopBottom = isTop || isBottom;
         const isAdmin = ADMIN_IDS.includes(interaction.user.id);
 
-        // Admin-only test mode
         if (isTest && !isAdmin) {
             return interaction.reply({ content: `You don't have permission to use test mode.`, flags: [MessageFlags.Ephemeral] });
         }
 
-        // Validate horse name for normal mode
-        if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseName]) {
-            const match = Object.keys(HORSE_VALUES).find(k => k.toLowerCase() === horseName.toLowerCase());
-            const suggestion = match ? ` Did you mean **${match}**?` : '';
-            return interaction.reply({ content: `**${horseName}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
+        if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseSlug]) {
+            const match = Object.keys(HORSE_VALUES).find(k =>
+                HORSE_VALUES[k].name.toLowerCase() === horseSlug ||
+                k.toLowerCase() === horseSlug
+            );
+            const suggestion = match ? ` Did you mean **${horseName(match)}**?` : '';
+            return interaction.reply({ content: `**${horseSlug}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
         }
 
         let inventory = isTest ? null : normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
@@ -137,9 +139,7 @@ module.exports = {
             if (!inventory) {
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
-
             normalizeHorseMap(inventory);
-
             if ((inventory.horseCoins || 0) < 0) {
                 return interaction.reply({
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
@@ -148,7 +148,7 @@ module.exports = {
             }
         }
 
-        // horse coin gambling mode
+        // ── HORSE COIN GAMBLE ──────────────────────────────────────────────────
         if (isHorseCoin) {
             const available = isTest ? Infinity : (inventory.horseCoins || 0);
             if (!isTest && available < 2) {
@@ -170,7 +170,6 @@ module.exports = {
                 return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!${testTag}`);
             }
 
-            // bulk coin gamble
             let coinsDelta = 0, wins = 0, losses = 0;
             for (let i = 0; i < gamblesCount; i++) {
                 const winAmount = Math.floor(Math.random() * 5);
@@ -187,8 +186,8 @@ module.exports = {
             );
         }
 
-        // horse list for top/bottom mode
-        let horsesToGamble = []; // array of horse names to gamble, in order
+        // ── BUILD HORSE LIST FOR TOP/BOTTOM MODE ───────────────────────────────
+        let horsesToGamble = [];
 
         if (isTopBottom) {
             if (isTest) {
@@ -200,34 +199,33 @@ module.exports = {
                 return interaction.reply({ content: `You don't have any horses to gamble!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? sorted.length : Math.min(count, sorted.length);
-            horsesToGamble = sorted.slice(0, take).map(h => h.name);
+            horsesToGamble = sorted.slice(0, take).map(h => h.slug);
         } else {
-            // Normal specific-horse mode
-            const available = isTest ? 999 : (inventory.horses.get(horseName) || 0);
+            const available = isTest ? 999 : (inventory.horses.get(horseSlug) || 0);
             if (!isTest && available === 0) {
-                return interaction.reply({ content: `You don't have any **${horseName}**!`, flags: [MessageFlags.Ephemeral] });
+                return interaction.reply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? available : Math.min(count, available);
-            horsesToGamble = Array(take).fill(horseName);
+            horsesToGamble = Array(take).fill(horseSlug);
         }
 
         if (horsesToGamble.length === 0) {
             return interaction.reply({ content: `Nothing to gamble!`, flags: [MessageFlags.Ephemeral] });
         }
 
-        // single horse gambling w/ frenzy
+        // ── SINGLE GAMBLE ──────────────────────────────────────────────────────
         if (horsesToGamble.length === 1) {
-            const name = horsesToGamble[0];
+            const slug = horsesToGamble[0];
 
             if (!isTest) {
                 inventory.horseCoins -= 1;
                 if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
-                    inventory.horses.set(name, inventory.horses.get(name) - 1);
+                    inventory.horses.set(slug, inventory.horses.get(slug) - 1);
                     const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
-                    houseInv.horses.set(name, (houseInv.horses.get(name) || 0) + 1);
+                    houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
                     await houseInv.save();
                     await inventory.save();
-                    return interaction.reply(`🚔 You gambled into debt and the **police confiscated your ${name}**!`);
+                    return interaction.reply(`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`);
                 }
             }
 
@@ -238,11 +236,11 @@ module.exports = {
             if (!isTest && now - lastGamble < config.FRENZY_THRESHOLD_MS) {
                 if (Math.random() < config.FRENZY_CHANCE) {
                     const ownedHorses = [];
-                    for (const [hName, hCount] of inventory.horses.entries()) {
-                        if (hCount > 0 && HORSE_VALUES[hName]) {
-                            const availableCount = (hName === name) ? hCount - 1 : hCount;
+                    for (const [s, hCount] of inventory.horses.entries()) {
+                        if (hCount > 0 && HORSE_VALUES[s]) {
+                            const availableCount = (s === slug) ? hCount - 1 : hCount;
                             for (let i = 0; i < availableCount; i++) {
-                                ownedHorses.push({ name: hName, value: HORSE_VALUES[hName].value });
+                                ownedHorses.push({ slug: s, value: HORSE_VALUES[s].value });
                             }
                         }
                     }
@@ -251,46 +249,46 @@ module.exports = {
                     if (victims.length > 0) {
                         frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
                         for (const victim of victims) {
-                            inventory.horses.set(victim.name, inventory.horses.get(victim.name) - 1);
+                            inventory.horses.set(victim.slug, inventory.horses.get(victim.slug) - 1);
                             const fChange = Math.floor(Math.random() * 201) - 100;
                             const fTarget = victim.value + fChange;
-                            let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
+                            const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
                             if (fChange < effectivelossthresh) {
-                                frenzyMessage += `\n* Your **${victim.name}** ran away in the confusion!`;
+                                frenzyMessage += `\n* Your **${horseName(victim.slug)}** ran away in the confusion!`;
                             } else {
                                 const fClosest = getClosestHorse(fTarget);
                                 inventory.horses.set(fClosest, (inventory.horses.get(fClosest) || 0) + 1);
-                                frenzyMessage += `\n* Your **${victim.name}** was traded for a **${fClosest}**.`;
+                                frenzyMessage += `\n* Your **${horseName(victim.slug)}** was traded for a **${horseName(fClosest)}**.`;
                             }
                         }
                     }
                 }
             }
 
-            const startValue = HORSE_VALUES[name].value;
+            const startValue = HORSE_VALUES[slug].value;
             const change = Math.floor(Math.random() * 201) - 100;
             const targetValue = startValue + change;
-            let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+            const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
             if (change < effectivelossthresh) {
                 if (!isTest) {
-                    inventory.horses.set(name, inventory.horses.get(name) - 1);
+                    inventory.horses.set(slug, inventory.horses.get(slug) - 1);
                     const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
-                    houseInv.horses.set(name, (houseInv.horses.get(name) || 0) + 1);
+                    houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
                     await houseInv.save();
                     await inventory.save();
                 }
                 const testTag = isTest ? ' *(test)*' : '';
-                return interaction.reply(`I told you gambling is bad! You lost your **${name}**!${frenzyMessage}${testTag}`);
+                return interaction.reply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
             }
 
-            const closestHorse = getClosestHorse(targetValue);
-            const endValue = HORSE_VALUES[closestHorse].value;
+            const closestSlug = getClosestHorse(targetValue);
+            const endValue = HORSE_VALUES[closestSlug].value;
             const actualDiff = endValue - startValue;
 
             if (!isTest) {
-                inventory.horses.set(name, inventory.horses.get(name) - 1);
-                inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
+                inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+                inventory.horses.set(closestSlug, (inventory.horses.get(closestSlug) || 0) + 1);
 
                 const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
                 if (commonTransfer > 0) {
@@ -309,36 +307,35 @@ module.exports = {
             }
 
             let outcomeMsg = "";
-            if (closestHorse === name) {
-                outcomeMsg = `The gamble resulted in no change ($0). You kept your **${name}**.`;
+            if (closestSlug === slug) {
+                outcomeMsg = `The gamble resulted in no change ($0). You kept your **${horseName(slug)}**.`;
             } else {
                 const resultText = actualDiff >= 0 ? `won +$${actualDiff}` : `lost $${Math.abs(actualDiff)}`;
-                outcomeMsg = `You gambled your **${name}** ($${startValue}) and ${resultText}. You got a **${closestHorse}** ($${endValue})!`;
+                outcomeMsg = `You gambled your **${horseName(slug)}** ($${startValue}) and ${resultText}. You got a **${horseName(closestSlug)}** ($${endValue})!`;
             }
             if (isTest) outcomeMsg += ' *(test)*';
 
             return interaction.reply(outcomeMsg + frenzyMessage);
         }
 
-        // bulk gambling
+        // ── BULK GAMBLE ────────────────────────────────────────────────────────
         let totalWins = 0, totalLosses = 0, totalCompleteLosses = 0, totalNoChange = 0;
         let coinsSpent = 0;
         let netValueChange = 0;
-        const gained = new Map(); // horseName -> count of that horse gained
+        const gained = new Map();
 
         const now = Date.now();
         let houseInv = isTest ? null : await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
 
-        for (const name of horsesToGamble) {
-            if (!isTest && (inventory.horses.get(name) || 0) <= 0) continue;
+        for (const slug of horsesToGamble) {
+            if (!isTest && (inventory.horses.get(slug) || 0) <= 0) continue;
 
             if (!isTest) {
                 inventory.horseCoins -= 1;
                 coinsSpent += 1;
-
                 if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
-                    inventory.horses.set(name, inventory.horses.get(name) - 1);
-                    houseInv.horses.set(name, (houseInv.horses.get(name) || 0) + 1);
+                    inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+                    houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
                     totalCompleteLosses++;
                     continue;
                 }
@@ -346,37 +343,35 @@ module.exports = {
                 coinsSpent += 1;
             }
 
-            const startValue = HORSE_VALUES[name].value;
+            const startValue = HORSE_VALUES[slug].value;
             const change = Math.floor(Math.random() * 201) - 100;
             const targetValue = startValue + change;
-            let effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+            const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
             if (change < effectivelossthresh) {
-                // complete loss goes to house
                 if (!isTest) {
-                    inventory.horses.set(name, inventory.horses.get(name) - 1);
-                    houseInv.horses.set(name, (houseInv.horses.get(name) || 0) + 1);
+                    inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+                    houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
                 }
                 netValueChange -= startValue;
                 totalCompleteLosses++;
             } else {
-                const closestHorse = getClosestHorse(targetValue);
-                const endValue = HORSE_VALUES[closestHorse].value;
+                const closestSlug = getClosestHorse(targetValue);
+                const endValue = HORSE_VALUES[closestSlug].value;
                 const actualDiff = endValue - startValue;
 
                 if (!isTest) {
-                    inventory.horses.set(name, inventory.horses.get(name) - 1);
+                    inventory.horses.set(slug, inventory.horses.get(slug) - 1);
                 }
 
-                if (closestHorse === name) {
+                if (closestSlug === slug) {
                     if (!isTest) {
-                        inventory.horses.set(name, (inventory.horses.get(name) || 0) + 1);
+                        inventory.horses.set(slug, (inventory.horses.get(slug) || 0) + 1);
                     }
                     totalNoChange++;
                 } else {
                     if (!isTest) {
-                        inventory.horses.set(closestHorse, (inventory.horses.get(closestHorse) || 0) + 1);
-
+                        inventory.horses.set(closestSlug, (inventory.horses.get(closestSlug) || 0) + 1);
                         const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
                         if (commonTransfer > 0) {
                             if (actualDiff < 0) {
@@ -387,10 +382,8 @@ module.exports = {
                             }
                         }
                     }
-
-                    gained.set(closestHorse, (gained.get(closestHorse) || 0) + 1);
+                    gained.set(closestSlug, (gained.get(closestSlug) || 0) + 1);
                     netValueChange += actualDiff;
-
                     if (actualDiff >= 0) totalWins++;
                     else totalLosses++;
                 }
@@ -407,22 +400,18 @@ module.exports = {
         const avgChange = totalGambled > 0 ? Math.round(netValueChange / totalGambled) : 0;
         const coinsRemaining = isTest ? '(test)' : (inventory.horseCoins || 0);
 
-        // breakdown per horse
         let gainedLines = '';
-        for (const [gainedName, gainedCount] of [...gained.entries()].sort((a, b) => b[1] - a[1])) {
-            const val = HORSE_VALUES[gainedName]?.value;
-            gainedLines += `\n+${gainedCount} **${gainedName}** ($${val})`;
+        for (const [slug, gainedCount] of [...gained.entries()].sort((a, b) => b[1] - a[1])) {
+            gainedLines += `\n+${gainedCount} **${horseName(slug)}** ($${HORSE_VALUES[slug]?.value})`;
         }
 
-        // remaining count for single-horse mode
         const remainingLine = (!isTopBottom && !isTest)
             ? `, remaining: ${inventory.horses.get(horsesToGamble[0]) || 0}`
             : '';
 
-        const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horsesToGamble[0];
+        const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horsesToGamble[0]);
         const testTag = isTest ? '\n*(test mode — no horses or coins spent)*' : '';
 
-        // more detailed summary
         const summary = [
             `🎲 **Gambling Results**`,
             `Gambled **${totalGambled}** ${horseLabel}: ${totalWins} wins, ${totalLosses} losses, ${totalCompleteLosses} complete losses, ${totalNoChange} no-changes${remainingLine}`,
