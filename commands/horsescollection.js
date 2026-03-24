@@ -1,61 +1,75 @@
 const { SlashCommandBuilder } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
+
+function horseName(slug) {
+    return HORSE_VALUES[slug]?.name ?? slug;
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsescollection')
         .setDescription('View a collection of horses')
-        .addUserOption(option => 
+        .addUserOption(option =>
             option.setName('user')
                 .setDescription('The user whose collection you want to view')
                 .setRequired(false)),
     async execute(interaction) {
         const targetUser = interaction.options.getUser('user') || interaction.user;
         const isSelf = targetUser.id === interaction.user.id;
-        
+
         const allUsers = await mongoose.model('UserHorses').find();
         const inventory = allUsers.find(u => u.userId === targetUser.id);
-        const allPossibleItems = Object.keys(HORSE_VALUES).filter(k => HORSE_VALUES[k].comp !== false);
+        const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(k => HORSE_VALUES[k].comp !== false);
+
         if (!inventory || !inventory.horses || Array.from(inventory.horses.values()).every(v => v === 0)) {
-            return interaction.reply(isSelf 
-                ? "Your stables are empty. Keep talking to find some horses!" 
+            return interaction.reply(isSelf
+                ? "Your stables are empty. Keep talking to find some horses!"
                 : `${targetUser.username}'s stables are empty.`);
         }
+
         const leaderboard = allUsers.map(u => {
             let worth = 0;
-            for (const [name, count] of u.horses) {
-                worth += ((HORSE_VALUES[name]?.value || 0) * count);
+            for (const [slug, count] of u.horses) {
+                worth += ((HORSE_VALUES[slug]?.value || 0) * count);
             }
             return { userId: u.userId, worth };
         }).sort((a, b) => b.worth - a.worth);
+
         const rank = leaderboard.findIndex(u => u.userId === targetUser.id) + 1;
         const userWorth = leaderboard.find(u => u.userId === targetUser.id)?.worth || 0;
+
         let horseListText = "";
         let ownedUniqueCount = 0;
-        const ownedItems = new Set();
-        for (const [name, count] of inventory.horses) {
-            if (count > 0 && HORSE_VALUES[name] && HORSE_VALUES[name].comp !== false) {
-                const val = HORSE_VALUES[name].value;
-                let prefix = name === "Dung Beetle" ? "🪲" : (name.includes("Providence") ? "✨" : "🐎");
-                horseListText += `* ${prefix} **${name}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
-                ownedItems.add(name);
+        const ownedSlugs = new Set();
+
+        for (const [slug, count] of inventory.horses) {
+            if (count > 0 && HORSE_VALUES[slug] && HORSE_VALUES[slug].comp !== false) {
+                const val = HORSE_VALUES[slug].value;
+                const display = horseName(slug);
+                let prefix = slug === "dung_beetle" ? "🪲" : (slug.includes("providence") ? "✨" : "🐎");
+                horseListText += `* ${prefix} **${display}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
+                ownedSlugs.add(slug);
                 ownedUniqueCount++;
             }
         }
-        const completionPercentage = Math.round((ownedUniqueCount / allPossibleItems.length) * 100);
-        const missing = allPossibleItems.filter(item => !ownedItems.has(item));
+
+        const completionPercentage = Math.round((ownedUniqueCount / allPossibleSlugs.length) * 100);
+        const missing = allPossibleSlugs.filter(slug => !ownedSlugs.has(slug));
+
         let missingHeader = isSelf ? "### Missing Thingamabobs" : `### Missing from ${targetUser.username}'s Stable`;
         let missingText = "";
         if (missing.length > 0) {
-            missingText = `\n${missingHeader}\n` + missing.map(m => {
-                const mVal = HORSE_VALUES[m]?.value || 0;
-                return `* *${m}* ($${mVal.toLocaleString()})`;
+            missingText = `\n${missingHeader}\n` + missing.map(slug => {
+                const mVal = HORSE_VALUES[slug]?.value || 0;
+                return `* *${horseName(slug)}* ($${mVal.toLocaleString()})`;
             }).join('\n');
         } else {
-            missingText = isSelf 
-                ? "\n### ✨ You have mastered the gustovian stables! ✨" 
+            missingText = isSelf
+                ? "\n### ✨ You have mastered the gustovian stables! ✨"
                 : `\n### ✨ ${targetUser.username} has mastered the stables! ✨`;
         }
+
         const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
         return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }

@@ -10,6 +10,10 @@ const HORSE_VALUES = require('../horses.json');
 
 const HORSES_PER_PAGE = 15;
 
+function horseName(slug) {
+    return HORSE_VALUES[slug]?.name ?? slug;
+}
+
 function gini(values) {
     if (!values.length) return 0;
     const sorted = [...values].sort((a, b) => a - b);
@@ -29,7 +33,7 @@ function buildBreakdownPage(sortedHorses, page) {
     const lines = [
         `🐴 **Horse Breakdown** (page ${page + 1}/${totalPages})`,
         '',
-        ...slice.map(([name, count]) => `* **${name}**: ${count}`),
+        ...slice.map(([slug, count]) => `* **${horseName(slug)}**: ${count}`),
     ];
     return lines.join('\n');
 }
@@ -49,7 +53,6 @@ function buildPageButtons(page, totalPages, statsId) {
     );
 }
 
-// In-memory store for breakdown data, keyed by a unique id per invocation
 const breakdownStore = new Map();
 
 module.exports = {
@@ -57,7 +60,6 @@ module.exports = {
         .setName('horsestats')
         .setDescription('View global horse economy statistics'),
 
-    // Called from interactionHandler for hstats:: buttons
     handleButton: async function(interaction) {
         const [, statsId, pageStr] = interaction.customId.split('::');
         const page = parseInt(pageStr);
@@ -70,7 +72,6 @@ module.exports = {
         const totalPages = Math.ceil(sortedHorses.length / HORSES_PER_PAGE);
         const content = buildBreakdownPage(sortedHorses, page);
         const row = buildPageButtons(page, totalPages, statsId);
-
         await interaction.update({ content, components: [row] });
     },
 
@@ -84,7 +85,7 @@ module.exports = {
 
         const horseCounts = {};
         const playerWealth = [];
-        const playerHorseCounts = []; // parallel array to playerWealth
+        const playerHorseCounts = [];
         let totalCoins = 0;
         let totalHorses = 0;
         let totalWealth = 0;
@@ -96,11 +97,11 @@ module.exports = {
             totalCoins += user.horseCoins || 0;
 
             if (user.horses) {
-                for (const [name, count] of user.horses.entries()) {
+                for (const [slug, count] of user.horses.entries()) {
                     if (count <= 0) continue;
-                    horseCounts[name] = (horseCounts[name] || 0) + count;
+                    horseCounts[slug] = (horseCounts[slug] || 0) + count;
                     totalHorses += count;
-                    userWealth += (HORSE_VALUES[name]?.value || 0) * count;
+                    userWealth += (HORSE_VALUES[slug]?.value || 0) * count;
                     userHorseCount += count;
                 }
             }
@@ -113,14 +114,12 @@ module.exports = {
             }
         }
 
-        // Sort players by wealth descending, keeping horse counts aligned
         const playersSorted = playerWealth
             .map((wealth, i) => ({ wealth, horses: playerHorseCounts[i] }))
             .sort((a, b) => b.wealth - a.wealth);
 
         const n = playersSorted.length;
 
-        // Helper: compute stats for a slice of playersSorted
         function sliceStats(players) {
             const wealth = players.reduce((sum, p) => sum + p.wealth, 0);
             const horses = players.reduce((sum, p) => sum + p.horses, 0);
@@ -133,15 +132,10 @@ module.exports = {
             };
         }
 
-        // Top 1%
         const top1Count = Math.max(1, Math.ceil(n * 0.01));
         const top1Stats = sliceStats(playersSorted.slice(0, top1Count));
-
-        // Top 10%
         const top10Count = Math.max(1, Math.ceil(n * 0.1));
         const top10Stats = sliceStats(playersSorted.slice(0, top10Count));
-
-        // Bottom 50%
         const bottom50Count = Math.max(1, Math.floor(n * 0.5));
         const bottom50Stats = sliceStats(playersSorted.slice(n - bottom50Count));
 
@@ -149,17 +143,13 @@ module.exports = {
         const avgWealth = playersWithHorses > 0 ? Math.round(totalWealth / playersWithHorses) : 0;
         const richest = Math.max(...playerWealth);
 
-        // Top 5 most common
         const sortedByCount = Object.entries(horseCounts).sort((a, b) => b[1] - a[1]);
         const top5Common = sortedByCount.slice(0, 5);
-
-        // Top 5 by total value in circulation
         const top5ByValue = Object.entries(horseCounts)
-            .map(([name, count]) => ({ name, count, totalValue: (HORSE_VALUES[name]?.value || 0) * count }))
+            .map(([slug, count]) => ({ slug, count, totalValue: (HORSE_VALUES[slug]?.value || 0) * count }))
             .sort((a, b) => b.totalValue - a.totalValue)
             .slice(0, 5);
 
-        // Rarest
         const rarest = Object.entries(horseCounts)
             .filter(([, count]) => count > 0)
             .sort((a, b) => a[1] !== b[1] ? a[1] - b[1] : (HORSE_VALUES[b[0]]?.value || 0) - (HORSE_VALUES[a[0]]?.value || 0))[0];
@@ -181,20 +171,19 @@ module.exports = {
             `* 📊 **Bottom 50%** (${bottom50Stats.count} player${bottom50Stats.count !== 1 ? 's' : ''}): $${bottom50Stats.wealth.toLocaleString()} — **${bottom50Stats.wealthPct}%** of wealth · **${bottom50Stats.horsesPct}%** of horses (${bottom50Stats.horses})`,
             ``,
             `🏆 **Most Common Horses**`,
-            ...top5Common.map(([name, count]) => `* **${name}**: ${count}`),
+            ...top5Common.map(([slug, count]) => `* **${horseName(slug)}**: ${count}`),
             ``,
             `💎 **Most Wealth in Circulation**`,
-            ...top5ByValue.map(({ name, count, totalValue }) => `* **${name}**: ${count}x ($${totalValue.toLocaleString()} total)`),
+            ...top5ByValue.map(({ slug, count, totalValue }) => `* **${horseName(slug)}**: ${count}x ($${totalValue.toLocaleString()} total)`),
             ``,
-            rarest ? `🦄 **Rarest Owned**: **${rarest[0]}** (only ${rarest[1]} exist)` : '',
+            rarest ? `🦄 **Rarest Owned**: **${horseName(rarest[0])}** (only ${rarest[1]} exist)` : '',
         ].filter(l => l !== undefined);
 
         await interaction.editReply({ content: statsLines.join('\n') });
 
-        // Send breakdown as a follow-up with pagination
         const statsId = `${interaction.user.id}-${Date.now()}`;
         breakdownStore.set(statsId, sortedByCount);
-        setTimeout(() => breakdownStore.delete(statsId), 5 * 60 * 1000); // expire after 5 min
+        setTimeout(() => breakdownStore.delete(statsId), 5 * 60 * 1000);
 
         const totalPages = Math.ceil(sortedByCount.length / HORSES_PER_PAGE);
         await interaction.followUp({
