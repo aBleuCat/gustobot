@@ -7,6 +7,7 @@ const {
     MessageFlags
 } = require('discord.js');
 const mongoose = require('mongoose');
+const HORSE_VALUES = require('../horses.json');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horseleaderboard')
