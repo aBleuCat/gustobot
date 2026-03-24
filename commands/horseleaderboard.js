@@ -54,16 +54,24 @@ module.exports = {
         if (currentPage < 0) currentPage = 0;
         if (currentPage >= totalPages) currentPage = totalPages - 1;
 
-        // Helper to fetch usernames for only the current page
+        // Helper to fetch usernames for only the current page, with timeout and cache
         const userCache = new Map();
         async function getUserNamesForPage(list, page) {
             const start = page * PAGE_SIZE;
             const current = list.slice(start, start + PAGE_SIZE);
             const ids = current.map(item => item.userId);
+            // Fetch all users in parallel, but with a timeout and cache
             const results = await Promise.all(ids.map(async userId => {
                 if (userCache.has(userId)) return userCache.get(userId);
+                // Timeout wrapper for fetch
+                function fetchWithTimeout(promise, ms) {
+                    return Promise.race([
+                        promise,
+                        new Promise(resolve => setTimeout(() => resolve(null), ms))
+                    ]);
+                }
                 try {
-                    const user = await interaction.client.users.fetch(userId);
+                    const user = await fetchWithTimeout(interaction.client.users.fetch(userId), 2000);
                     const name = user?.displayName || user?.username || 'Unknown User';
                     userCache.set(userId, name);
                     return name;
@@ -79,7 +87,12 @@ module.exports = {
         async function buildList(list, type, page) {
             const start = page * PAGE_SIZE;
             const current = list.slice(start, start + PAGE_SIZE);
-            const names = await getUserNamesForPage(list, page);
+            let names;
+            try {
+                names = await getUserNamesForPage(list, page);
+            } catch {
+                names = current.map(() => 'Unknown User');
+            }
             let str = '';
             for (let i = 0; i < current.length; i++) {
                 const item = current[i];
@@ -136,14 +149,19 @@ module.exports = {
                 return;
             }
             const [, direction, page] = i.customId.split('_');
-            const parsedPage = Number(page);
+            let parsedPage = Number(page);
+            if (isNaN(parsedPage)) parsedPage = 0;
             currentPage = direction === 'next' ? parsedPage + 1 : parsedPage - 1;
             if (currentPage < 0) currentPage = 0;
             if (currentPage >= totalPages) currentPage = totalPages - 1;
-            await i.update({
-                embeds: [await buildEmbed(currentPage)],
-                components: [getButtons(currentPage)]
-            });
+            try {
+                await i.update({
+                    embeds: [await buildEmbed(currentPage)],
+                    components: [getButtons(currentPage)]
+                });
+            } catch (err) {
+                await i.reply({ content: 'Failed to update leaderboard page.', ephemeral: true }).catch(() => {});
+            }
         });
 
         collector.on('end', async () => {
