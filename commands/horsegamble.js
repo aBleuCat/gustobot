@@ -444,7 +444,13 @@ module.exports = {
 
                 // ── Gamble pass ───────────────────────────────────────────────
                 const result = simulateBulkPass(cycleHorses, virtualInv);
-                const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+                const uniqueHorseTypes = [...new Set(cycleHorses)];
+                let horseLabel;
+                if (uniqueHorseTypes.length === 1) {
+                    horseLabel = `${cycleHorses.length} ${horseName(uniqueHorseTypes[0])}`;
+                } else {
+                    horseLabel = `${cycleHorses.length} horses`;
+                }
                 cycleLogBlocks.push(formatCycleLog(c, horseLabel, result, bankedThisCycle, virtualInv.horseCoins));
 
                 // Next cycle pool = only horses that came out of this cycle pass.
@@ -521,10 +527,10 @@ module.exports = {
             }
 
             // ── Final summary ──────────────────────────────────────────────────
-            const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+            const initialHorseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
             const finalLines = [
                 `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
-                `Gambled ${totalGambledCount} ${horseLabel}`,
+                `Gambled ${totalGambledCount} horses (started as ${initialHorsesToGamble.length} ${initialHorseLabel})`,
                 `Starting Value: $${originalValue}`,
                 `Final Active Value: $${finalActiveValue}`,
                 `Banked Value: $${bankedValue}`,
