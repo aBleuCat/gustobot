@@ -48,6 +48,15 @@ for (const file of guildCommandFiles) {
 client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
+    // Send startup message to modlog channel for each guild
+    for (const guild of client.guilds.cache.values()) {
+        try {
+            await logToModChannel(guild, 'Bot has started up and is online.');
+        } catch (e) {
+            console.error(`Failed to send modlog startup message for guild ${guild.id}:`, e);
+        }
+    }
+
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('db connected'))
         .catch(err => console.error(err));
