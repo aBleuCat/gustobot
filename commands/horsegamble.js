@@ -23,6 +23,10 @@ function getClosestHorse(targetValue) {
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+function requiredHorseCoins(coinAmount) {
+    return Math.floor(coinAmount / 50) + 1;
+}
+
 function normalizeHorseMap(inventory) {
     if (!inventory) return inventory;
     if (inventory.horses instanceof Map) return inventory;
@@ -138,7 +142,7 @@ function formatCycleLog(cycleNum, horseLabel, result, bankedThisCycle, coinsAfte
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
-        .setDescription('Play the hand of fate and gamble a horse!')
+        .setDescription('Gamble horses; minimum coin requirement scales with your coin balance')
         .addStringOption(option =>
             option.setName('horse')
                 .setDescription('The horse to gamble, "Horse Coin", "top", or "bottom".')
@@ -248,6 +252,16 @@ module.exports = {
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
                     flags: [MessageFlags.Ephemeral]
                 });
+            }
+
+            if (!isHorseCoin) {
+                const required = requiredHorseCoins(inventory.horseCoins || 0);
+                if ((inventory.horseCoins || 0) < required) {
+                    return interaction.reply({
+                        content: `You need at least **${required}** Horse Coins to gamble horses (floor(coins/50)+1). You have **${inventory.horseCoins || 0}**.`,
+                        flags: [MessageFlags.Ephemeral]
+                    });
+                }
             }
         }
 
