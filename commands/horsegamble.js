@@ -401,31 +401,36 @@ module.exports = {
             }
 
             // ── Diff original input vs final active horses ─────────────────────
-            // Banked horses excluded from both sides — they were never in play.
             const originalMap = new Map();
             for (const s of initialHorsesToGamble) originalMap.set(s, (originalMap.get(s) || 0) + 1);
 
-            const finalMap = new Map();
+            const finalActiveMap = new Map();
             for (const [s, cnt] of virtualInv.horses.entries()) {
-                if (HORSE_VALUES[s] && cnt > 0) finalMap.set(s, cnt);
+                if (HORSE_VALUES[s] && cnt > 0) finalActiveMap.set(s, cnt);
             }
 
-            // GustoBot receives: horses present in original but missing/reduced in final
+            // Final values should also include banked horses (they are protected and still owned).
+            const finalFullMap = new Map(finalActiveMap);
+            for (const [s, cnt] of bankedHorses.entries()) {
+                finalFullMap.set(s, (finalFullMap.get(s) || 0) + cnt);
+            }
+
+            // GustoBot receives: horses present in original but missing/reduced in active final
             const lostToHouse = new Map();
             for (const [s, origCnt] of originalMap.entries()) {
-                const lost = origCnt - (finalMap.get(s) || 0);
+                const lost = origCnt - (finalActiveMap.get(s) || 0);
                 if (lost > 0) lostToHouse.set(s, lost);
             }
 
-            // GustoBot pays out: horses present in final beyond original counts
+            // GustoBot pays out: horses present in active final beyond original counts
             const gainedFromHouse = new Map();
-            for (const [s, finalCnt] of finalMap.entries()) {
+            for (const [s, finalCnt] of finalActiveMap.entries()) {
                 const gained = finalCnt - (originalMap.get(s) || 0);
                 if (gained > 0) gainedFromHouse.set(s, gained);
             }
 
             const originalValue = [...originalMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
-            const finalValue = [...finalMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const finalValue = [...finalFullMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
             const totalNetChange = finalValue - originalValue;
             const totalGambledCount = initialHorsesToGamble.length;
             const totalAvgChange = totalGambledCount > 0 ? Math.round(totalNetChange / totalGambledCount) : 0;
@@ -462,12 +467,13 @@ module.exports = {
                 `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
                 `Gambled ${totalGambledCount} ${horseLabel}`,
                 `Net Change: $${totalNetChange >= 0 ? '+' : ''}${totalNetChange} ($${totalAvgChange >= 0 ? '+' : ''}${totalAvgChange} avg. per horse)`,
+                `Total Value (active + banked): $${finalValue}`,
                 `Final Horses:`,
             ];
 
             // Active horses sorted by value desc
             const finalGrouped = new Map();
-            [...finalMap.entries()]
+            [...finalActiveMap.entries()]
                 .flatMap(([s, cnt]) => Array(cnt).fill(s))
                 .sort((a, b) => (HORSE_VALUES[b]?.value ?? 0) - (HORSE_VALUES[a]?.value ?? 0))
                 .forEach(s => finalGrouped.set(s, (finalGrouped.get(s) || 0) + 1));
@@ -490,24 +496,25 @@ module.exports = {
             if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
             if (isTest) finalLines.push(`*(test mode — no horses or coins spent)*`);
 
-            // Chunk cycle logs + final summary and send
-            const chunks = [];
-            let current = '';
-            for (const block of cycleLogBlocks) {
-                if ((current + '\n\n' + block).length > 1800) {
-                    chunks.push(current);
-                    current = block;
-                } else {
-                    current = current ? current + '\n\n' + block : block;
-                }
-            }
-            if (current) chunks.push(current);
-            chunks.push(finalLines.join('\n'));
+            // Attach cycle logs + final summary in one file payload.
+            const fileContent = [
+                `// gamblelog.js generated at ${new Date().toISOString()}`,
+                '',
+                ...cycleLogBlocks,
+                '',
+                '=== FINAL SUMMARY ===',
+                finalLines.join('\n'),
+            ].join('\n\n');
 
-            await interaction.editReply(chunks[0]);
-            for (let i = 1; i < chunks.length; i++) {
-                await interaction.followUp(chunks[i]);
-            }
+            await interaction.editReply({
+                content: finalLines.join('\n'),
+                files: [
+                    {
+                        attachment: Buffer.from(fileContent, 'utf8'),
+                        name: 'gamblelog.js',
+                    },
+                ],
+            });
             return;
         }
 
