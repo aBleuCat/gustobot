@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { ORBITAL_ID, OWNER_ID_DELTA: DELTA } = require('../../commands/orbitalcannon');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -14,7 +15,6 @@ module.exports = {
         const ownerId = '934290747623096381';
         const isOwner = interaction.user.id === ownerId;
         const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
-// test
         if (!isOwner && !isAdmin) {
             return interaction.reply({ 
                 content: "You don't have permission to make me talk.", 
