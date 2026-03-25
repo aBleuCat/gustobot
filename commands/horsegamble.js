@@ -116,27 +116,35 @@ function formatCycleLog(cycleNum, horseLabel, result, bankedThisCycle, coinsAfte
     const totalGambled = wins + losses + completeLosses + noChange;
     const avgChange = totalGambled > 0 ? Math.round(netValueChange / totalGambled) : 0;
 
-    const lines = [];
-    lines.push(`**Cycle #${cycleNum}**`);
-    lines.push(`Gambled ${totalGambled} ${horseLabel}: ${wins} wins, ${losses} losses, ${completeLosses} complete losses, ${noChange} no-changes`);
-    lines.push(`Net Change: $${netValueChange >= 0 ? '+' : ''}${netValueChange} ($${avgChange >= 0 ? '+' : ''}${avgChange} avg. per horse)`);
-
+    let gainedLines = '';
     for (const [slug, cnt] of [...gained.entries()].sort((a, b) => b[1] - a[1])) {
-        lines.push(`+${cnt} ${horseName(slug)} ($${HORSE_VALUES[slug]?.value})`);
+        gainedLines += `\n+${cnt} ${horseName(slug)} ($${HORSE_VALUES[slug]?.value})`;
     }
 
+    let bankedLines = '';
     if (bankedThisCycle.length > 0) {
         const bankedMap = new Map();
         for (const slug of bankedThisCycle) bankedMap.set(slug, (bankedMap.get(slug) || 0) + 1);
         for (const [slug, cnt] of bankedMap.entries()) {
-            lines.push(`Horses Banked: ${cnt} ${horseName(slug)} (-${cnt} Horse Coin${cnt !== 1 ? 's' : ''})`);
+            bankedLines += `\n! Banked: ${cnt} ${horseName(slug)} (-${cnt} 🪙)`;
         }
     }
 
-    lines.push(`Horse Coins Spent: ${coinsSpent}`);
-    lines.push(`Horse Coins Remaining: ${coinsAfter}`);
-
-    return lines.join('\n');
+    return (
+        `**Cycle #${cycleNum}**\n` +
+        '```diff\n' +
+        `- Gambled: ${totalGambled} ${horseLabel}\n` +
+        `+ Wins:    ${wins}\n` +
+        `- Losses:  ${losses}\n` +
+        `- Complete Losses: ${completeLosses}\n` +
+        `= No Change: ${noChange}\n` +
+        `= Net:      ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)\n` +
+        `- Coins Spent: ${coinsSpent}\n` +
+        `+ Coins Left:  ${coinsAfter}\n` +
+        '```' +
+        (gainedLines ? '\n**Gained:**' + gainedLines : '') +
+        (bankedLines ? '\n' + bankedLines : '')
+    );
 }
 
 module.exports = {
@@ -284,7 +292,13 @@ module.exports = {
                     await inventory.save();
                 }
                 const testTag = isTest ? ' *(test — no coins spent)*' : '';
-                return interaction.reply(`You gambled 2 🪙 Horse Coins and got back **${winAmount}** 🪙!${testTag}`);
+                return interaction.reply({
+                    content:
+                        `**Horse Coin Gamble**\n\n` +
+                        '```diff\n' +
+                        `- 2 🪙 → +${winAmount} 🪙${testTag}\n` +
+                        '```',
+                });
             }
 
             let coinsDelta = 0, wins = 0, losses = 0;
@@ -297,10 +311,18 @@ module.exports = {
                 inventory.horseCoins = (inventory.horseCoins || 0) + coinsDelta;
                 await inventory.save();
             }
-            const testTag = isTest ? '\n*(test mode — no coins spent)*' : '';
-            return interaction.reply(
-                `🎲 **Gambling Results**\nGambled **${gamblesCount}** Horse Coins: ${wins} wins, ${losses} losses\nNet coins: ${coinsDelta >= 0 ? '+' : ''}${coinsDelta}${testTag}`
-            );
+            const testTag = isTest ? '\n(test mode — no coins spent)' : '';
+            return interaction.reply({
+                content:
+                    `**Horse Coin Gamble**\n\n` +
+                    '```diff\n' +
+                    `- Gambled: ${gamblesCount} 🪙\n` +
+                    `+ Wins:    ${wins}\n` +
+                    `- Losses:  ${losses}\n` +
+                    `= Net:     ${coinsDelta >= 0 ? '+' : ''}${coinsDelta} 🪙\n` +
+                    '```' +
+                    testTag,
+            });
         }
 
         // ── BUILD INITIAL HORSE LIST ───────────────────────────────────────────
@@ -740,15 +762,21 @@ module.exports = {
         const testTag = isTest ? '\n*(test mode — no horses or coins spent)*' : '';
 
         const summary = [
-            `🎲 **Gambling Results**`,
-            `Gambled **${totalGambled}** ${horseLabel}: ${totalWins} wins, ${totalLosses} losses, ${totalCompleteLosses} complete losses, ${totalNoChange} no-changes${remainingLine}`,
-            `Net Change: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange} avg. per horse)`,
-            gainedLines.trim() ? gainedLines.trimStart() : null,
-            `Horse Coins Spent: ${coinsSpent}`,
-            `Horse Coins Remaining: ${coinsRemaining}`,
-            testTag || null,
+            `**Horse Gamble Results**`,
+            '```diff',
+            `- Gambled: ${totalGambled} ${horseLabel}`,
+            `+ Wins:    ${totalWins}`,
+            `- Losses:  ${totalLosses}`,
+            `- Complete Losses: ${totalCompleteLosses}`,
+            `= No Change: ${totalNoChange}${remainingLine}`,
+            `= Net Value: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)`,
+            `- Coins Spent: ${coinsSpent}`,
+            `+ Coins Left:  ${coinsRemaining}`,
+            '```',
+            gainedLines.trim() ? '\n**Gained:**' + gainedLines : '',
+            testTag || '',
         ].filter(Boolean).join('\n');
 
-        return interaction.reply(summary);
+        return interaction.reply({ content: summary });
     }
 };
