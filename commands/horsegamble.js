@@ -7,7 +7,6 @@ const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
 const ADMIN_IDS = ['934290747623096381', '853658523786412063'];
 
-// Get display name from slug
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
 }
@@ -22,6 +21,10 @@ function getClosestHorse(targetValue) {
         else if (diff === minDiff) { candidates.push(slug); }
     }
     return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function requiredHorseCoins(coinAmount) {
+    return Math.floor(coinAmount / 50) + 1;
 }
 
 function normalizeHorseMap(inventory) {
@@ -52,10 +55,94 @@ function getSortedHorseList(inventory, sortDir = 'asc') {
     return list;
 }
 
+/**
+ * Simulate one bulk gamble pass over an array of slugs.
+ * Mutates virtualInv in place. Does NOT touch the DB.
+ */
+function simulateBulkPass(slugsToGamble, virtualInv) {
+    let wins = 0, losses = 0, completeLosses = 0, noChange = 0;
+    let netValueChange = 0, coinsSpent = 0;
+    const gained = new Map();
+
+    for (const slug of slugsToGamble) {
+        if ((virtualInv.horses.get(slug) || 0) <= 0) continue;
+
+        virtualInv.horseCoins -= 1;
+        coinsSpent += 1;
+
+        if (virtualInv.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
+            virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+            completeLosses++;
+            continue;
+        }
+
+        const startValue = HORSE_VALUES[slug].value;
+        const change = Math.floor(Math.random() * 201) - 100;
+        const targetValue = startValue + change;
+        const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+
+        if (change < effectivelossthresh) {
+            virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+            netValueChange -= startValue;
+            completeLosses++;
+        } else {
+            const closestSlug = getClosestHorse(targetValue);
+            const endValue = HORSE_VALUES[closestSlug].value;
+            const actualDiff = endValue - startValue;
+
+            virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+
+            if (closestSlug === slug) {
+                virtualInv.horses.set(slug, (virtualInv.horses.get(slug) || 0) + 1);
+                noChange++;
+            } else {
+                virtualInv.horses.set(closestSlug, (virtualInv.horses.get(closestSlug) || 0) + 1);
+                gained.set(closestSlug, (gained.get(closestSlug) || 0) + 1);
+                netValueChange += actualDiff;
+                if (actualDiff >= 0) wins++;
+                else losses++;
+            }
+        }
+    }
+
+    return { wins, losses, completeLosses, noChange, netValueChange, coinsSpent, gained };
+}
+
+/**
+ * Format a single per-cycle log block.
+ */
+function formatCycleLog(cycleNum, horseLabel, result, bankedThisCycle, coinsAfter) {
+    const { wins, losses, completeLosses, noChange, netValueChange, coinsSpent, gained } = result;
+    const totalGambled = wins + losses + completeLosses + noChange;
+    const avgChange = totalGambled > 0 ? Math.round(netValueChange / totalGambled) : 0;
+
+    const lines = [];
+    lines.push(`**Cycle #${cycleNum}**`);
+    lines.push(`Gambled ${totalGambled} ${horseLabel}: ${wins} wins, ${losses} losses, ${completeLosses} complete losses, ${noChange} no-changes`);
+    lines.push(`Net Change: $${netValueChange >= 0 ? '+' : ''}${netValueChange} ($${avgChange >= 0 ? '+' : ''}${avgChange} avg. per horse)`);
+
+    for (const [slug, cnt] of [...gained.entries()].sort((a, b) => b[1] - a[1])) {
+        lines.push(`+${cnt} ${horseName(slug)} ($${HORSE_VALUES[slug]?.value})`);
+    }
+
+    if (bankedThisCycle.length > 0) {
+        const bankedMap = new Map();
+        for (const slug of bankedThisCycle) bankedMap.set(slug, (bankedMap.get(slug) || 0) + 1);
+        for (const [slug, cnt] of bankedMap.entries()) {
+            lines.push(`Horses Banked: ${cnt} ${horseName(slug)} (-${cnt} Horse Coin${cnt !== 1 ? 's' : ''})`);
+        }
+    }
+
+    lines.push(`Horse Coins Spent: ${coinsSpent}`);
+    lines.push(`Horse Coins Remaining: ${coinsAfter}`);
+
+    return lines.join('\n');
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsegamble')
-        .setDescription('Play the hand of fate and gamble a horse!')
+        .setDescription('Gamble horses; minimum coin requirement scales with your coin balance')
         .addStringOption(option =>
             option.setName('horse')
                 .setDescription('The horse to gamble, "Horse Coin", "top", or "bottom".')
@@ -68,6 +155,19 @@ module.exports = {
                 .setRequired(false)
                 .setMinValue(0)
                 .setMaxValue(100)
+        )
+        .addIntegerOption(option =>
+            option.setName('cycles')
+                .setDescription('Number of times to re-gamble the resulting horses (2-20).')
+                .setRequired(false)
+                .setMinValue(2)
+                .setMaxValue(20)
+        )
+        .addIntegerOption(option =>
+            option.setName('bankhorses')
+                .setDescription('Protect horses valued above this amount. -0.3 coins banked.')
+                .setRequired(false)
+                .setMinValue(0)
         )
         .addBooleanOption(option =>
             option.setName('test')
@@ -82,8 +182,8 @@ module.exports = {
             const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
             const choices = [
-                { name: '📈 top — gamble your most valuable horses', value: 'top' },
-                { name: '📉 bottom — gamble your least valuable horses', value: 'bottom' },
+                { name: '📈 top — gamble most valuable horses', value: 'top' },
+                { name: '📉 bottom — gamble least valuable horses', value: 'bottom' },
             ];
 
             if ((inventory?.horseCoins || 0) >= 2) {
@@ -113,15 +213,22 @@ module.exports = {
         const UserHorses = mongoose.model('UserHorses');
         const horseSlug = interaction.options.getString('horse').trim().toLowerCase();
         let count = interaction.options.getInteger('count') ?? 1;
+        const cycles = interaction.options.getInteger('cycles') ?? null;
+        const bankAbove = interaction.options.getInteger('bankhorses') ?? null;
         const isTest = interaction.options.getBoolean('test') ?? false;
         const isHorseCoin = horseSlug === 'horse_coin';
         const isTop = horseSlug === 'top';
         const isBottom = horseSlug === 'bottom';
         const isTopBottom = isTop || isBottom;
         const isAdmin = ADMIN_IDS.includes(interaction.user.id);
+        const isCycleMode = cycles !== null && cycles >= 2;
 
         if (isTest && !isAdmin) {
             return interaction.reply({ content: `You don't have permission to use test mode.`, flags: [MessageFlags.Ephemeral] });
+        }
+
+        if (isCycleMode && isHorseCoin) {
+            return interaction.reply({ content: `Cycle mode cannot be used with Horse Coin gambling. Yet...`, flags: [MessageFlags.Ephemeral] });
         }
 
         if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseSlug]) {
@@ -145,6 +252,16 @@ module.exports = {
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
                     flags: [MessageFlags.Ephemeral]
                 });
+            }
+
+            if (!isHorseCoin) {
+                const required = requiredHorseCoins(inventory.horseCoins || 0);
+                if ((inventory.horseCoins || 0) < required) {
+                    return interaction.reply({
+                        content: `You need at least **${required}** Horse Coins to gamble horses (floor(coins/50)+1). You have **${inventory.horseCoins || 0}**.`,
+                        flags: [MessageFlags.Ephemeral]
+                    });
+                }
             }
         }
 
@@ -186,8 +303,8 @@ module.exports = {
             );
         }
 
-        // ── BUILD HORSE LIST FOR TOP/BOTTOM MODE ───────────────────────────────
-        let horsesToGamble = [];
+        // ── BUILD INITIAL HORSE LIST ───────────────────────────────────────────
+        let initialHorsesToGamble = [];
 
         if (isTopBottom) {
             if (isTest) {
@@ -199,23 +316,230 @@ module.exports = {
                 return interaction.reply({ content: `You don't have any horses to gamble!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? sorted.length : Math.min(count, sorted.length);
-            horsesToGamble = sorted.slice(0, take).map(h => h.slug);
+            initialHorsesToGamble = sorted.slice(0, take).map(h => h.slug);
         } else {
             const available = isTest ? 999 : (inventory.horses.get(horseSlug) || 0);
             if (!isTest && available === 0) {
                 return interaction.reply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? available : Math.min(count, available);
-            horsesToGamble = Array(take).fill(horseSlug);
+            initialHorsesToGamble = Array(take).fill(horseSlug);
         }
 
-        if (horsesToGamble.length === 0) {
+        if (initialHorsesToGamble.length === 0) {
             return interaction.reply({ content: `Nothing to gamble!`, flags: [MessageFlags.Ephemeral] });
         }
 
+        // ── CYCLE MODE ─────────────────────────────────────────────────────────
+        if (isCycleMode) {
+            await interaction.deferReply();
+
+            // virtualInv.horses: ACTIVE (non-banked) horses only — the gamble pool.
+            // bankedHorses: completely separate map, never touched by simulateBulkPass.
+            const virtualInv = {
+                horses: new Map(isTest
+                    ? initialHorsesToGamble.reduce((m, s) => { m.set(s, (m.get(s) || 0) + 1); return m; }, new Map())
+                    : new Map(inventory.horses)
+                ),
+                horseCoins: isTest ? 9999 : (inventory.horseCoins || 0),
+            };
+
+            const bankedHorses = new Map();     // slug -> total count banked across all cycles
+            let bankingCoinDebt = 0;            // accumulated fractional cost (0.3 per horse banked)
+            let totalCoinsSpentOnBanking = 0;   // whole coins actually deducted so far
+
+            let cycleHorses = [...initialHorsesToGamble];
+            const cycleLogBlocks = [];
+            let haltedEarly = false;
+            let haltReason = '';
+
+            for (let c = 1; c <= cycles; c++) {
+                // Halt check before each cycle
+                if (virtualInv.horseCoins < (config.MIN_CYCLE_COIN_COUNT ?? 0)) {
+                    haltedEarly = true;
+                    haltReason = `Halted before cycle ${c}: coins (${virtualInv.horseCoins}) fell below MIN_CYCLE_COIN_COUNT (${config.MIN_CYCLE_COIN_COUNT ?? 0}).`;
+                    break;
+                }
+                if (cycleHorses.length === 0) {
+                    haltedEarly = true;
+                    haltReason = `Halted before cycle ${c}: no horses left to gamble.`;
+                    break;
+                }
+
+                // ── Banking step ──────────────────────────────────────────────
+                // Each horse banked costs 0.3 coins, accumulated fractionally.
+                // Whole coins deducted incrementally as ceil(debt) ticks up.
+                const bankedThisCycle = [];
+                if (bankAbove !== null) {
+                    const toGamble = [];
+                    for (const slug of cycleHorses) {
+                        const val = HORSE_VALUES[slug]?.value ?? 0;
+                        if (val > bankAbove && (virtualInv.horses.get(slug) || 0) > 0) {
+                            // Move horse out of active pool into the separate bankedHorses map
+                            virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+                            bankedHorses.set(slug, (bankedHorses.get(slug) || 0) + 1);
+                            bankingCoinDebt += 0.3;
+                            bankedThisCycle.push(slug);
+                        } else {
+                            toGamble.push(slug);
+                        }
+                    }
+                    cycleHorses = toGamble;
+
+                    // Deduct newly-owed whole coins (ceil increments)
+                    const newWholeCoins = Math.ceil(bankingCoinDebt) - totalCoinsSpentOnBanking;
+                    if (newWholeCoins > 0) {
+                        virtualInv.horseCoins -= newWholeCoins;
+                        totalCoinsSpentOnBanking += newWholeCoins;
+                    }
+                }
+
+                if (cycleHorses.length === 0) {
+                    cycleLogBlocks.push(`**Cycle #${c}**\nAll horses were banked — nothing to gamble.\nHorse Coins Remaining: ${virtualInv.horseCoins}`);
+                    break;
+                }
+
+                // ── Gamble pass ───────────────────────────────────────────────
+                const result = simulateBulkPass(cycleHorses, virtualInv);
+                const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+                cycleLogBlocks.push(formatCycleLog(c, horseLabel, result, bankedThisCycle, virtualInv.horseCoins));
+
+                // Next cycle pool = everything in virtualInv.horses.
+                // bankedHorses is separate so no subtraction needed.
+                const nextCycleHorses = [];
+                for (const [slug, cnt] of virtualInv.horses.entries()) {
+                    if (!HORSE_VALUES[slug] || cnt <= 0) continue;
+                    for (let i = 0; i < cnt; i++) nextCycleHorses.push(slug);
+                }
+                cycleHorses = nextCycleHorses;
+            }
+
+            // ── Diff original input vs final active horses ─────────────────────
+            const originalMap = new Map();
+            for (const s of initialHorsesToGamble) originalMap.set(s, (originalMap.get(s) || 0) + 1);
+
+            const finalActiveMap = new Map();
+            for (const [s, cnt] of virtualInv.horses.entries()) {
+                if (HORSE_VALUES[s] && cnt > 0) finalActiveMap.set(s, cnt);
+            }
+
+            // Final values should also include banked horses (they are protected and still owned).
+            const finalFullMap = new Map(finalActiveMap);
+            for (const [s, cnt] of bankedHorses.entries()) {
+                finalFullMap.set(s, (finalFullMap.get(s) || 0) + cnt);
+            }
+
+            // GustoBot receives: horses present in original but missing/reduced in active final
+            const lostToHouse = new Map();
+            for (const [s, origCnt] of originalMap.entries()) {
+                const lost = origCnt - (finalActiveMap.get(s) || 0);
+                if (lost > 0) lostToHouse.set(s, lost);
+            }
+
+            // GustoBot pays out: horses present in active final beyond original counts
+            const gainedFromHouse = new Map();
+            for (const [s, finalCnt] of finalActiveMap.entries()) {
+                const gained = finalCnt - (originalMap.get(s) || 0);
+                if (gained > 0) gainedFromHouse.set(s, gained);
+            }
+
+            const originalValue = [...originalMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const finalActiveValue = [...finalActiveMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const bankedValue = [...bankedHorses.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const finalValue = finalActiveValue + bankedValue;
+            const totalNetChange = finalValue - originalValue;
+            const totalGambledCount = initialHorsesToGamble.length;
+            const totalAvgChange = totalGambledCount > 0 ? Math.round(totalNetChange / totalGambledCount) : 0;
+            const totalCoinsSpent = isTest ? 0 : ((inventory.horseCoins || 0) - virtualInv.horseCoins);
+
+            // ── Apply to DB ────────────────────────────────────────────────────
+            if (!isTest) {
+                // Write active horses back
+                for (const [slug, cnt] of virtualInv.horses.entries()) {
+                    inventory.horses.set(slug, cnt);
+                }
+                // Merge banked horses back in (protected, not consumed)
+                for (const [slug, cnt] of bankedHorses.entries()) {
+                    inventory.horses.set(slug, (inventory.horses.get(slug) || 0) + cnt);
+                }
+                inventory.horseCoins = virtualInv.horseCoins;
+                inventory.lastGamble = Date.now();
+
+                const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+                for (const [slug, cnt] of lostToHouse.entries()) {
+                    houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + cnt);
+                }
+                for (const [slug, cnt] of gainedFromHouse.entries()) {
+                    houseInv.horses.set(slug, Math.max(0, (houseInv.horses.get(slug) || 0) - cnt));
+                }
+
+                await houseInv.save();
+                await inventory.save();
+            }
+
+            // ── Final summary ──────────────────────────────────────────────────
+            const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+            const finalLines = [
+                `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
+                `Gambled ${totalGambledCount} ${horseLabel}`,
+                `Starting Value: $${originalValue}`,
+                `Final Active Value: $${finalActiveValue}`,
+                `Banked Value: $${bankedValue}`,
+                `Total Value (active + banked): $${finalValue}`,
+                `Net Change (active + banked): $${totalNetChange >= 0 ? '+' : ''}${totalNetChange} ($${totalAvgChange >= 0 ? '+' : ''}${totalAvgChange} avg. per horse)`,
+                `Final Horses:`,
+            ];
+
+            // Active horses sorted by value desc
+            const finalGrouped = new Map();
+            [...finalActiveMap.entries()]
+                .flatMap(([s, cnt]) => Array(cnt).fill(s))
+                .sort((a, b) => (HORSE_VALUES[b]?.value ?? 0) - (HORSE_VALUES[a]?.value ?? 0))
+                .forEach(s => finalGrouped.set(s, (finalGrouped.get(s) || 0) + 1));
+            for (const [s, cnt] of finalGrouped.entries()) {
+                finalLines.push(`${cnt} ${horseName(s)} ($${HORSE_VALUES[s]?.value})`);
+            }
+            if (finalGrouped.size === 0) finalLines.push(`*(none)*`);
+
+            // Banked horses sorted by value desc
+            if (bankedHorses.size > 0) {
+                const bankedSorted = [...bankedHorses.entries()]
+                    .sort((a, b) => (HORSE_VALUES[b[0]]?.value ?? 0) - (HORSE_VALUES[a[0]]?.value ?? 0));
+                for (const [s, cnt] of bankedSorted) {
+                    finalLines.push(`Horses Banked: ${cnt} ${horseName(s)} (-${totalCoinsSpentOnBanking} Horse Coin${totalCoinsSpentOnBanking !== 1 ? 's' : ''})`);
+                }
+            }
+
+            finalLines.push(`Horse Coins Spent: ${isTest ? '(test)' : totalCoinsSpent}`);
+            finalLines.push(`Horse Coins Remaining: ${isTest ? '(test)' : virtualInv.horseCoins}`);
+            if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
+            if (isTest) finalLines.push(`*(test mode — no horses or coins spent)*`);
+
+            // Attach cycle logs + final summary in one file payload.
+            const fileContent = [
+                `// gamblelog.js generated at ${new Date().toISOString()}`,
+                '',
+                ...cycleLogBlocks,
+                '',
+                '=== FINAL SUMMARY ===',
+                finalLines.join('\n'),
+            ].join('\n\n');
+
+            await interaction.editReply({
+                content: finalLines.join('\n'),
+                files: [
+                    {
+                        attachment: Buffer.from(fileContent, 'utf8'),
+                        name: 'gamblelog.js',
+                    },
+                ],
+            });
+            return;
+        }
+
         // ── SINGLE GAMBLE ──────────────────────────────────────────────────────
-        if (horsesToGamble.length === 1) {
-            const slug = horsesToGamble[0];
+        if (initialHorsesToGamble.length === 1) {
+            const slug = initialHorsesToGamble[0];
 
             if (!isTest) {
                 inventory.horseCoins -= 1;
@@ -254,6 +578,9 @@ module.exports = {
                             const fTarget = victim.value + fChange;
                             const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
                             if (fChange < effectivelossthresh) {
+                                const frenzyHouseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
+                                frenzyHouseInv.horses.set(victim.slug, (frenzyHouseInv.horses.get(victim.slug) || 0) + 1);
+                                await frenzyHouseInv.save();
                                 frenzyMessage += `\n* Your **${horseName(victim.slug)}** ran away in the confusion!`;
                             } else {
                                 const fClosest = getClosestHorse(fTarget);
@@ -302,7 +629,7 @@ module.exports = {
                     await houseInv.save();
                 }
 
-                inventory.lastGamble = now;
+                inventory.lastGamble = Date.now();
                 await inventory.save();
             }
 
@@ -327,7 +654,7 @@ module.exports = {
         const now = Date.now();
         let houseInv = isTest ? null : await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
 
-        for (const slug of horsesToGamble) {
+        for (const slug of initialHorsesToGamble) {
             if (!isTest && (inventory.horses.get(slug) || 0) <= 0) continue;
 
             if (!isTest) {
@@ -406,10 +733,10 @@ module.exports = {
         }
 
         const remainingLine = (!isTopBottom && !isTest)
-            ? `, remaining: ${inventory.horses.get(horsesToGamble[0]) || 0}`
+            ? `, remaining: ${inventory.horses.get(initialHorsesToGamble[0]) || 0}`
             : '';
 
-        const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horsesToGamble[0]);
+        const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(initialHorsesToGamble[0]);
         const testTag = isTest ? '\n*(test mode — no horses or coins spent)*' : '';
 
         const summary = [
