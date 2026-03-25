@@ -161,7 +161,7 @@ module.exports = {
         )
         .addIntegerOption(option =>
             option.setName('bankhorses')
-                .setDescription('Bank (protect) horses valued above this amount each cycle. Costs 0.3 coins per horse banked (ceil per cycle).')
+                .setDescription('Protect horses valued above this amount. -0.3 coins banked.')
                 .setRequired(false)
                 .setMinValue(0)
         )
@@ -178,8 +178,8 @@ module.exports = {
             const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
 
             const choices = [
-                { name: '📈 top — gamble your most valuable horses', value: 'top' },
-                { name: '📉 bottom — gamble your least valuable horses', value: 'bottom' },
+                { name: '📈 top — gamble most valuable horses', value: 'top' },
+                { name: '📉 bottom — gamble least valuable horses', value: 'bottom' },
             ];
 
             if ((inventory?.horseCoins || 0) >= 2) {
@@ -224,7 +224,7 @@ module.exports = {
         }
 
         if (isCycleMode && isHorseCoin) {
-            return interaction.reply({ content: `Cycle mode cannot be used with Horse Coin gambling.`, flags: [MessageFlags.Ephemeral] });
+            return interaction.reply({ content: `Cycle mode cannot be used with Horse Coin gambling. Yet...`, flags: [MessageFlags.Ephemeral] });
         }
 
         if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseSlug]) {
