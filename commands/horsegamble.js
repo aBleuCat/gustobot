@@ -63,6 +63,7 @@ function simulateBulkPass(slugsToGamble, virtualInv) {
     let wins = 0, losses = 0, completeLosses = 0, noChange = 0;
     let netValueChange = 0, coinsSpent = 0;
     const gained = new Map();
+    const cycleOutput = new Map();
 
     for (const slug of slugsToGamble) {
         if ((virtualInv.horses.get(slug) || 0) <= 0) continue;
@@ -95,9 +96,11 @@ function simulateBulkPass(slugsToGamble, virtualInv) {
             if (closestSlug === slug) {
                 virtualInv.horses.set(slug, (virtualInv.horses.get(slug) || 0) + 1);
                 noChange++;
+                cycleOutput.set(slug, (cycleOutput.get(slug) || 0) + 1);
             } else {
                 virtualInv.horses.set(closestSlug, (virtualInv.horses.get(closestSlug) || 0) + 1);
                 gained.set(closestSlug, (gained.get(closestSlug) || 0) + 1);
+                cycleOutput.set(closestSlug, (cycleOutput.get(closestSlug) || 0) + 1);
                 netValueChange += actualDiff;
                 if (actualDiff >= 0) wins++;
                 else losses++;
@@ -105,7 +108,7 @@ function simulateBulkPass(slugsToGamble, virtualInv) {
         }
     }
 
-    return { wins, losses, completeLosses, noChange, netValueChange, coinsSpent, gained };
+    return { wins, losses, completeLosses, noChange, netValueChange, coinsSpent, gained, cycleOutput };
 }
 
 /**
@@ -358,11 +361,29 @@ module.exports = {
 
             // virtualInv.horses: ACTIVE (non-banked) horses only — the gamble pool.
             // bankedHorses: completely separate map, never touched by simulateBulkPass.
+            // staticInventory: horses outside the cycle (top/bottom subset) that remain untouched.
+            const staticInventory = new Map();
+            const cycleInventory = new Map();
+
+            if (isTest) {
+                for (const slug of initialHorsesToGamble) {
+                    cycleInventory.set(slug, (cycleInventory.get(slug) || 0) + 1);
+                }
+            } else {
+                // Preserve non-cycled horses for final merge; use cycled subset in pool.
+                for (const [slug, count] of inventory.horses.entries()) {
+                    staticInventory.set(slug, count);
+                }
+                for (const slug of initialHorsesToGamble) {
+                    if ((staticInventory.get(slug) || 0) <= 0) continue;
+                    staticInventory.set(slug, staticInventory.get(slug) - 1);
+                    if (staticInventory.get(slug) === 0) staticInventory.delete(slug);
+                    cycleInventory.set(slug, (cycleInventory.get(slug) || 0) + 1);
+                }
+            }
+
             const virtualInv = {
-                horses: new Map(isTest
-                    ? initialHorsesToGamble.reduce((m, s) => { m.set(s, (m.get(s) || 0) + 1); return m; }, new Map())
-                    : new Map(inventory.horses)
-                ),
+                horses: cycleInventory,
                 horseCoins: isTest ? 9999 : (inventory.horseCoins || 0),
             };
 
@@ -423,13 +444,19 @@ module.exports = {
 
                 // ── Gamble pass ───────────────────────────────────────────────
                 const result = simulateBulkPass(cycleHorses, virtualInv);
-                const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+                const uniqueHorseTypes = [...new Set(cycleHorses)];
+                let horseLabel;
+                if (uniqueHorseTypes.length === 1) {
+                    horseLabel = `${cycleHorses.length} ${horseName(uniqueHorseTypes[0])}`;
+                } else {
+                    horseLabel = `${cycleHorses.length} horses`;
+                }
                 cycleLogBlocks.push(formatCycleLog(c, horseLabel, result, bankedThisCycle, virtualInv.horseCoins));
 
-                // Next cycle pool = everything in virtualInv.horses.
-                // bankedHorses is separate so no subtraction needed.
+                // Next cycle pool = only horses that came out of this cycle pass.
+                // Horses not in cycle remain in staticInventory until final merge.
                 const nextCycleHorses = [];
-                for (const [slug, cnt] of virtualInv.horses.entries()) {
+                for (const [slug, cnt] of result.cycleOutput.entries()) {
                     if (!HORSE_VALUES[slug] || cnt <= 0) continue;
                     for (let i = 0; i < cnt; i++) nextCycleHorses.push(slug);
                 }
@@ -476,11 +503,11 @@ module.exports = {
 
             // ── Apply to DB ────────────────────────────────────────────────────
             if (!isTest) {
-                // Write active horses back
+                // Write full inventory: unaffected horses + cycled horses + banked horses.
+                inventory.horses = new Map(staticInventory);
                 for (const [slug, cnt] of virtualInv.horses.entries()) {
-                    inventory.horses.set(slug, cnt);
+                    inventory.horses.set(slug, (inventory.horses.get(slug) || 0) + cnt);
                 }
-                // Merge banked horses back in (protected, not consumed)
                 for (const [slug, cnt] of bankedHorses.entries()) {
                     inventory.horses.set(slug, (inventory.horses.get(slug) || 0) + cnt);
                 }
@@ -500,10 +527,10 @@ module.exports = {
             }
 
             // ── Final summary ──────────────────────────────────────────────────
-            const horseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
+            const initialHorseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
             const finalLines = [
                 `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
-                `Gambled ${totalGambledCount} ${horseLabel}`,
+                `Gambled ${totalGambledCount} horses (started as ${initialHorsesToGamble.length} ${initialHorseLabel})`,
                 `Starting Value: $${originalValue}`,
                 `Final Active Value: $${finalActiveValue}`,
                 `Banked Value: $${bankedValue}`,
