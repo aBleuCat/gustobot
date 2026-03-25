@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { ORBITAL_ID, OWNER_ID_DELTA: DELTA } = require('../../commands/orbitalcannon');
+const { ORBITAL_ID, OWNER_ID_DELTA: DELTA } = require('./orbitalcannon');
 
 module.exports = {
     data: new SlashCommandBuilder()
