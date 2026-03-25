@@ -430,7 +430,9 @@ module.exports = {
             }
 
             const originalValue = [...originalMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
-            const finalValue = [...finalFullMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const finalActiveValue = [...finalActiveMap.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const bankedValue = [...bankedHorses.entries()].reduce((sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt, 0);
+            const finalValue = finalActiveValue + bankedValue;
             const totalNetChange = finalValue - originalValue;
             const totalGambledCount = initialHorsesToGamble.length;
             const totalAvgChange = totalGambledCount > 0 ? Math.round(totalNetChange / totalGambledCount) : 0;
@@ -466,8 +468,11 @@ module.exports = {
             const finalLines = [
                 `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
                 `Gambled ${totalGambledCount} ${horseLabel}`,
-                `Net Change: $${totalNetChange >= 0 ? '+' : ''}${totalNetChange} ($${totalAvgChange >= 0 ? '+' : ''}${totalAvgChange} avg. per horse)`,
+                `Starting Value: $${originalValue}`,
+                `Final Active Value: $${finalActiveValue}`,
+                `Banked Value: $${bankedValue}`,
                 `Total Value (active + banked): $${finalValue}`,
+                `Net Change (active + banked): $${totalNetChange >= 0 ? '+' : ''}${totalNetChange} ($${totalAvgChange >= 0 ? '+' : ''}${totalAvgChange} avg. per horse)`,
                 `Final Horses:`,
             ];
 
