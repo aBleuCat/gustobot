@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const UserHorses = mongoose.model('UserHorses');
 
-const horseChoices = Object.keys(HORSE_VALUES).map(name => ({
-    name: name,
-    value: name
+const horseChoices = Object.entries(HORSE_VALUES).map(([slug, data]) => ({
+    name: data.name,
+    value: slug
 }));
 
 module.exports = {
@@ -30,8 +30,9 @@ module.exports = {
         inventory.horses.set(type, currentCount + 1);
         
         await inventory.save();
+        const horseDisplay = HORSE_VALUES[type]?.name ?? type;
         await interaction.reply({ 
-            content: `<@${target.id}> has magically obtained a **${type}**`, 
+            content: `<@${target.id}> has magically obtained a **${horseDisplay}**`, 
             ephemeral: false 
         });
         const horseData = HORSE_VALUES[type];

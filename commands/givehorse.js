@@ -23,9 +23,9 @@ module.exports = {
 
         const choices = [];
         if (inventory?.horses) {
-            for (const [name, count] of inventory.horses.entries()) {
-                if (count > 0 && HORSE_VALUES[name]) {
-                    choices.push({ name: `${name} (x${count})`, value: name });
+            for (const [slug, count] of inventory.horses.entries()) {
+                if (count > 0 && HORSE_VALUES[slug]) {
+                    choices.push({ name: `${HORSE_VALUES[slug].name} (x${count})`, value: slug });
                 }
             }
         }
@@ -40,7 +40,7 @@ module.exports = {
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const targetUser = interaction.options.getUser('target');
-        const horseName = interaction.options.getString('horse');
+        const horseSlug = interaction.options.getString('horse');
         const botId = interaction.client.user.id;
 
         if (targetUser.id === interaction.user.id) {
@@ -52,8 +52,8 @@ module.exports = {
         }
 
         let giverInv = await UserHorses.findOne({ userId: interaction.user.id });
-        if (!giverInv || (giverInv.horses.get(horseName) || 0) <= 0) {
-            return interaction.reply({ content: `You don't have a **${horseName}**!`, flags: [MessageFlags.Ephemeral] });
+        if (!giverInv || (giverInv.horses.get(horseSlug) || 0) <= 0) {
+            return interaction.reply({ content: `You don't have a **${HORSE_VALUES[horseSlug]?.name ?? horseSlug}**!`, flags: [MessageFlags.Ephemeral] });
         }
 
         let receiverInv = await UserHorses.findOne({ userId: targetUser.id });
@@ -61,18 +61,19 @@ module.exports = {
             receiverInv = new UserHorses({ userId: targetUser.id, horses: new Map() });
         }
 
-        giverInv.horses.set(horseName, giverInv.horses.get(horseName) - 1);
-        receiverInv.horses.set(horseName, (receiverInv.horses.get(horseName) || 0) + 1);
+        giverInv.horses.set(horseSlug, giverInv.horses.get(horseSlug) - 1);
+        receiverInv.horses.set(horseSlug, (receiverInv.horses.get(horseSlug) || 0) + 1);
         await giverInv.save();
         await receiverInv.save();
 
+        const horseDisplay = HORSE_VALUES[horseSlug]?.name ?? horseSlug;
         const msg = targetUser.id === botId
-            ? `You offered a **${horseName}** to me! Nom nom nom.`
-            : `You gave your **${horseName}** to <@${targetUser.id}>!`;
+            ? `You offered a **${horseDisplay}** to me! Nom nom nom.`
+            : `You gave your **${horseDisplay}** to <@${targetUser.id}>!`;
         await interaction.reply({ content: msg });
 
         if (interaction.client.logToModChannel) {
-            interaction.client.logToModChannel(interaction.guild, `${interaction.user.tag} gave a ${horseName} to ${targetUser.tag}`);
+            interaction.client.logToModChannel(interaction.guild, `${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`);
         }
     }
 };
