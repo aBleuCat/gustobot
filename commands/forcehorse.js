@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const UserHorses = mongoose.model('UserHorses');
+const { conditionHorse } = require('../lib/helpers/horseFuncs');
 
 const horseChoices = Object.entries(HORSE_VALUES).map(([slug, data]) => ({
     name: data.name,
@@ -39,5 +40,7 @@ module.exports = {
         if (horseData && horseData.link) {
             await interaction.channel.send(horseData.link);
         }
+        await conditionHorse(inventory, interaction.channel);
+
     }
 };
