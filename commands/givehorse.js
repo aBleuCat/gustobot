@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
+const { conditionHorse } = require('../lib/helpers/horseFuncs');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -75,5 +76,6 @@ module.exports = {
         if (interaction.client.logToModChannel) {
             interaction.client.logToModChannel(interaction.guild, `${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`);
         }
+        await conditionHorse(receiverInv, interaction.channel);
     }
 };

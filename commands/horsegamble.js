@@ -2,6 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const HORSE_VALUES = require('../horses.json');
 const mongoose = require('mongoose');
 const { config } = require('../lib/config');
+const { conditionHorse } = require('../lib/helpers/horseFuncs');
 
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
@@ -524,6 +525,7 @@ module.exports = {
 
                 await houseInv.save();
                 await inventory.save();
+                await conditionHorse(inventory, interaction.channel);
             }
 
             // ── Final summary ──────────────────────────────────────────────────
@@ -655,6 +657,7 @@ module.exports = {
                     await inventory.save();
                 }
                 const testTag = isTest ? ' *(test)*' : '';
+                if (!isTest) await conditionHorse(inventory, interaction.channel);
                 return interaction.reply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
             }
 
@@ -691,6 +694,7 @@ module.exports = {
             }
             if (isTest) outcomeMsg += ' *(test)*';
 
+            if (!isTest) await conditionHorse(inventory, interaction.channel);
             return interaction.reply(outcomeMsg + frenzyMessage);
         }
 
@@ -770,6 +774,7 @@ module.exports = {
             inventory.lastGamble = now;
             await houseInv.save();
             await inventory.save();
+            await conditionHorse(inventory, interaction.channel);
         }
 
         const totalGambled = totalWins + totalLosses + totalCompleteLosses + totalNoChange;

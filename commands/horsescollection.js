@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
+const { conditionHorse } = require('../lib/helpers/horseFuncs');
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
@@ -27,6 +28,8 @@ module.exports = {
                 ? "Your stables are empty. Keep talking to find some horses!"
                 : `${targetUser.username}'s stables are empty.`);
         }
+
+        if (inventory) await conditionHorse(inventory, interaction.channel);
 
         const leaderboard = allUsers.map(u => {
             let worth = 0;
