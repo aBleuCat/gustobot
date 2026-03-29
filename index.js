@@ -65,7 +65,7 @@ client.once(Events.ClientReady, async () => {
     }
 
     // Initialize devLog and send startup message
-    initDevLog(client);
+    await initDevLog(client);
     await devLog('Bot system initialized and devLog is active.');
 
     mongoose.connect(process.env.MONGO_URI)
