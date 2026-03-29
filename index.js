@@ -11,6 +11,7 @@ const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/inte
 const { registerMessageHandler } = require('./lib/handlers/messageHandler');
 const { startRoleReverter } = require('./lib/tasks/roleReverter');
 const { startResourceMonitor } = require('./lib/tasks/resourceMonitor');
+const { startMessageCacheCleanup } = require('./lib/tasks/messageCacheCleanup');
 const { logToModChannel } = require('./lib/helpers/modLog');
 
 // Client init
@@ -93,6 +94,7 @@ registerInteractionHandler(client);
 registerMessageHandler(client);
 startRoleReverter(client);
 startResourceMonitor(client);
+startMessageCacheCleanup();
 
 client.login(process.env.TOKEN);
 
