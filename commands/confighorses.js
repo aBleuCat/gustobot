@@ -8,8 +8,20 @@ module.exports = {
         .setDescription('Configure horse spawning settings')
         .addBooleanOption(o => o.setName('enabled').setDescription('Enable or disable spawning').setRequired(true))
         .addChannelOption(o => o.setName('channel').setDescription('The channel where horse spawns are announced').setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .setContexts([0, 1, 2])
+        .setIntegrationTypes([0, 1]),
     async execute(interaction) {
+        const ownerId = '934290747623096381';
+        const isOwner = interaction.user.id === ownerId;
+        const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
+        if (!isOwner && !isAdmin) {
+            return interaction.reply({
+                content: "You don't have permission to configure horse spawning.",
+                ephemeral: true
+            });
+        }
+
         const enabled = interaction.options.getBoolean('enabled');
         const channel = interaction.options.getChannel('channel');
 
@@ -19,9 +31,9 @@ module.exports = {
             { upsert: true }
         );
 
-        return interaction.reply({ 
-            content: `Horse spawning now **${enabled ? 'ON' : 'OFF'}** in <#${channel.id}>.`, 
-            ephemeral: false 
+        return interaction.reply({
+            content: `Horse spawning now **${enabled ? 'ON' : 'OFF'}** in <#${channel.id}>.`,
+            ephemeral: false
         });
     }
 };
