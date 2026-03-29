@@ -5,6 +5,7 @@ const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
+const { initDevLog, devLog } = require('./lib/helpers/devLog');
 
 // Handlers & tasks
 const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/interactionHandler');
@@ -63,6 +64,10 @@ client.once(Events.ClientReady, async () => {
         }
     }
 
+    // Initialize devLog and send startup message
+    initDevLog(client);
+    await devLog('Bot system initialized and devLog is active.');
+
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log('db connected'))
         .catch(err => console.error(err));
@@ -70,11 +75,14 @@ client.once(Events.ClientReady, async () => {
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('Refreshing commands...');
+        await devLog('Refreshing commands...');
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
         console.log('Commands reloaded');
+        await devLog('Commands reloaded');
     } catch (error) {
         console.error(error);
+        await devLog(error);
     }
 
     try {
@@ -89,6 +97,7 @@ client.once(Events.ClientReady, async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
     await dmAdmin(client, `[DMLOG] Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
+    await devLog(`Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
 });
 
 // Health check server
