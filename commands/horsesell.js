@@ -2,7 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const { config } = require('../lib/config');
-const { devLog } = require('..lib/helpers/devLog');
+const { devLog } = require('../lib/helpers/devLog');
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
