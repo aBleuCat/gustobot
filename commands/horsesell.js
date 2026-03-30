@@ -2,6 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const { config } = require('../lib/config');
+const { devLog } = require('..lib/helpers/devLog');
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
@@ -68,5 +69,6 @@ module.exports = {
         return interaction.reply(
             `You sold ${amount > 1 ? `**${amount}x** ` : 'your '}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned !== 1 ? 's' : ''}!`
         );
+        await devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
     }
 };

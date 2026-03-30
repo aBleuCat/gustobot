@@ -97,13 +97,13 @@ client.once(Events.ClientReady, async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
     await dmAdmin(client, `[DMLOG] Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
-    await devLog(`Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
+    devLog(`Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
 });
 
 // Health check server
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('online');
+    res.end('online');e
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
 // Attach log helper to client so commands can use it
