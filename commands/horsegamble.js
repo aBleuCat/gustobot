@@ -259,16 +259,16 @@ module.exports = {
         }
 
         let inventory = isTest ? null : normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
-        devLog(`/horsegamble: Loaded inventory for user ${interaction.user.id} | coins=${inventory?.horseCoins || 0}`);
+        devLog(`/horsegamble: Loaded inventory for user ${interaction.user.id} | coins=${inventory?.horseCoins || 0}`, 'micro');
 
         if (!isTest) {
             if (!inventory) {
-                devLog(`/horsegamble: Creating new inventory for user ${interaction.user.id}`);
+                devLog(`/horsegamble: Creating new inventory for user ${interaction.user.id}`, 'micro');
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
             normalizeHorseMap(inventory);
             if ((inventory.horseCoins || 0) < 0) {
-                devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`);
+                devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`, 'micro');
                 return interaction.reply({
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
                     flags: [MessageFlags.Ephemeral]
@@ -278,7 +278,7 @@ module.exports = {
             if (!isHorseCoin) {
                 const required = requiredHorseCoins(inventory.horseCoins || 0);
                 if ((inventory.horseCoins || 0) < required) {
-                    devLog(`/horsegamble: User ${interaction.user.id} insufficient coins for horse gamble | required=${required} have=${inventory.horseCoins}`);
+                    devLog(`/horsegamble: User ${interaction.user.id} insufficient coins for horse gamble | required=${required} have=${inventory.horseCoins}`, 'micro');
                     return interaction.reply({
                         content: `You need at least **${required}** Horse Coins to gamble horses (floor(coins/50)+1). You have **${inventory.horseCoins || 0}**.`,
                         flags: [MessageFlags.Ephemeral]
@@ -287,7 +287,7 @@ module.exports = {
             }
         }
 
-        // ── HORSE COIN GAMBLE ──────────────────────────────────────────────────
+        // horse coin gamble
         if (isHorseCoin) {
             devLog(`/horsegamble: Starting horse coin gamble for user ${interaction.user.id} | available=${isTest ? 'test' : inventory.horseCoins}`);
             const available = isTest ? Infinity : (inventory.horseCoins || 0);
@@ -302,11 +302,11 @@ module.exports = {
 
             if (gamblesCount === 1) {
                 const winAmount = Math.floor(Math.random() * 5);
-                devLog(`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - 2}`);
+                devLog(`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - 2}`, 'micro');
                 if (!isTest) {
                     inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
                     await inventory.save();
-                    devLog(`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`);
+                    devLog(`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`, 'micro');
                 }
                 const testTag = isTest ? ' *(test — no coins spent)*' : '';
                 return interaction.reply({
@@ -344,9 +344,9 @@ module.exports = {
             });
         }
 
-        // ── BUILD INITIAL HORSE LIST ───────────────────────────────────────────
+        // build initial horse list
         let initialHorsesToGamble = [];
-        devLog(`/horsegamble: Building horse list for user ${interaction.user.id} | isTopBottom=${isTopBottom}`);
+        devLog(`/horsegamble: Building horse list for user ${interaction.user.id} | isTopBottom=${isTopBottom}`, 'micro');
 
         if (isTopBottom) {
             if (isTest) {
@@ -362,22 +362,22 @@ module.exports = {
         } else {
             const available = isTest ? 999 : (inventory.horses.get(horseSlug) || 0);
             if (!isTest && available === 0) {
-                devLog(`/horsegamble: User ${interaction.user.id} has no ${horseSlug} to gamble`);
+                devLog(`/horsegamble: User ${interaction.user.id} has no ${horseSlug} to gamble`, 'micro');
                 return interaction.reply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? available : Math.min(count, available);
             initialHorsesToGamble = Array(take).fill(horseSlug);
-            devLog(`/horsegamble: Building list for user ${interaction.user.id} | slug=${horseSlug} available=${available} taking=${take}`);
+            devLog(`/horsegamble: Building list for user ${interaction.user.id} | slug=${horseSlug} available=${available} taking=${take}`, 'micro');
         }
 
         if (initialHorsesToGamble.length === 0) {
             return interaction.reply({ content: `Nothing to gamble!`, flags: [MessageFlags.Ephemeral] });
         }
 
-        // ── CYCLE MODE ─────────────────────────────────────────────────────────
-        if (isCycleMode) {            devLog(`/horsegamble: Starting cycle mode for user ${interaction.user.id} | cycles=${cycles} bankAbove=${bankAbove}`);            await interaction.deferReply();
+        // cycle mode
+        if (isCycleMode) {            devLog(`/horsegamble: Starting cycle mode for user ${interaction.user.id} | cycles=${cycles} bankAbove=${bankAbove}`, 'micro');            await interaction.deferReply();
 
-            // virtualInv.horses: ACTIVE (non-banked) horses only — the gamble pool.
+            // virtualInv.horses: ACTIVE (non-banked) horses only, the gamble pool.
             // bankedHorses: completely separate map, never touched by simulateBulkPass.
             // staticInventory: horses outside the cycle (top/bottom subset) that remain untouched.
             const staticInventory = new Map();
@@ -415,24 +415,24 @@ module.exports = {
             let haltReason = '';
 
             for (let c = 1; c <= cycles; c++) {
-                devLog(`/horsegamble: Cycle mode - user ${interaction.user.id} - starting cycle ${c}/${cycles} | horses=${cycleHorses.length} coins=${virtualInv.horseCoins}`);
+                devLog(`/horsegamble: Cycle mode - user ${interaction.user.id} - starting cycle ${c}/${cycles} | horses=${cycleHorses.length} coins=${virtualInv.horseCoins}`, 'micro');
                 // Halt check before each cycle
                 if (virtualInv.horseCoins < (config.MIN_CYCLE_COIN_COUNT ?? 0)) {
                     haltedEarly = true;
                     haltReason = `Halted before cycle ${c}: coins (${virtualInv.horseCoins}) fell below MIN_CYCLE_COIN_COUNT (${config.MIN_CYCLE_COIN_COUNT ?? 0}).`;
-                    devLog(`/horsegamble: Cycle halted due to low coins: ${haltReason}`);
+                    devLog(`/horsegamble: Cycle halted due to low coins: ${haltReason}`, 'micro');
                     break;
                 }
                 if (cycleHorses.length === 0) {
                     haltedEarly = true;
                     haltReason = `Halted before cycle ${c}: no horses left to gamble.`;
-                    devLog(`/horsegamble: Cycle halted due to no horses`);
+                    devLog(`/horsegamble: Cycle halted due to no horses`, 'micro');
                     break;
                 }
 
-                // ── Banking step ──────────────────────────────────────────────
-                // Each horse banked costs 0.3 coins, accumulated fractionally.
-                // Whole coins deducted incrementally as ceil(debt) ticks up.
+                // banking setup
+                // Each horse banked costs 0.3 coins
+                // Whole coins deducted incrementally as ceil(debt) ticks up
                 const bankedThisCycle = [];
                 if (bankAbove !== null) {
                     const toGamble = [];
@@ -463,10 +463,10 @@ module.exports = {
                     break;
                 }
 
-                // ── Gamble pass ───────────────────────────────────────────────
-                devLog(`/horsegamble: Cycle ${c} - executing gamble pass for user ${interaction.user.id} | count=${cycleHorses.length}`);
+                // gamble pass
+                devLog(`/horsegamble: Cycle ${c} - executing gamble pass for user ${interaction.user.id} | count=${cycleHorses.length}`, 'micro');
                 const result = simulateBulkPass(cycleHorses, virtualInv);
-                devLog(`/horsegamble: Cycle ${c} results: wins=${result.wins} losses=${result.losses} completeLosses=${result.completeLosses} netChange=${result.netValueChange}`);
+                devLog(`/horsegamble: Cycle ${c} results: wins=${result.wins} losses=${result.losses} completeLosses=${result.completeLosses} netChange=${result.netValueChange}`, 'micro');
                 const uniqueHorseTypes = [...new Set(cycleHorses)];
                 let horseLabel;
                 if (uniqueHorseTypes.length === 1) {
@@ -486,7 +486,7 @@ module.exports = {
                 cycleHorses = nextCycleHorses;
             }
 
-            // ── Diff original input vs final active horses ─────────────────────
+            // diff original input vs final horses to determine net losses/gains to the house, for db updates and final summary
             const originalMap = new Map();
             for (const s of initialHorsesToGamble) originalMap.set(s, (originalMap.get(s) || 0) + 1);
 
@@ -495,7 +495,7 @@ module.exports = {
                 if (HORSE_VALUES[s] && cnt > 0) finalActiveMap.set(s, cnt);
             }
 
-            // Final values should also include banked horses (they are protected and still owned).
+            // Final values should also include banked horses (they are protected and still owned)
             const finalFullMap = new Map(finalActiveMap);
             for (const [s, cnt] of bankedHorses.entries()) {
                 finalFullMap.set(s, (finalFullMap.get(s) || 0) + cnt);
@@ -524,9 +524,9 @@ module.exports = {
             const totalAvgChange = totalGambledCount > 0 ? Math.round(totalNetChange / totalGambledCount) : 0;
             const totalCoinsSpent = isTest ? 0 : ((inventory.horseCoins || 0) - virtualInv.horseCoins);
 
-            // ── Apply to DB ────────────────────────────────────────────────────
+            // db updates
             if (!isTest) {
-                devLog(`/horsegamble: Cycle mode finalized for user ${interaction.user.id} | totalNetChange=${totalNetChange} finalCoins=${virtualInv.horseCoins}`);
+                devLog(`/horsegamble: Cycle mode finalized for user ${interaction.user.id} | totalNetChange=${totalNetChange} finalCoins=${virtualInv.horseCoins}`, 'micro');
                 // Write full inventory: unaffected horses + cycled horses + banked horses.
                 inventory.horses = new Map(staticInventory);
                 for (const [slug, cnt] of virtualInv.horses.entries()) {
@@ -537,7 +537,7 @@ module.exports = {
                 }
                 inventory.horseCoins = virtualInv.horseCoins;
                 inventory.lastGamble = Date.now();
-                devLog(`/horsegamble: Saving cycle mode inventory for user ${interaction.user.id}`);
+                devLog(`/horsegamble: Saving cycle mode inventory for user ${interaction.user.id}`, 'micro');
 
                 const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
                 for (const [slug, cnt] of lostToHouse.entries()) {
@@ -549,11 +549,11 @@ module.exports = {
 
                 await houseInv.save();
                 await inventory.save();
-                devLog(`/horsegamble: Cycle mode inventory saved and conditioned for user ${interaction.user.id}`);
+                devLog(`/horsegamble: Cycle mode inventory saved and conditioned for user ${interaction.user.id}`, 'micro');
                 await conditionHorse(inventory, interaction.channel);
             }
 
-            // ── Final summary ──────────────────────────────────────────────────
+            // final summary
             const initialHorseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
             const finalLines = [
                 `🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length !== 1 ? 's' : ''}**`,
@@ -591,7 +591,7 @@ module.exports = {
             if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
             if (isTest) finalLines.push(`*(test mode — no horses or coins spent)*`);
 
-            // Attach cycle logs + final summary in one file payload.
+            // Attach cycle logs + final summary in one file
             const fileContent = [
                 `// gamblelog.js generated at ${new Date().toISOString()}`,
                 '',
@@ -613,7 +613,7 @@ module.exports = {
             return;
         }
 
-        // ── SINGLE GAMBLE ──────────────────────────────────────────────────────
+        // original single gamble logic (cycle=1, count=1)
         if (initialHorsesToGamble.length === 1) {
             const slug = initialHorsesToGamble[0];
             devLog(`/horsegamble: Single gamble for user ${interaction.user.id} | horse=${slug}`);
@@ -676,7 +676,7 @@ module.exports = {
             const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
             if (change < effectivelossthresh) {
-                devLog(`/horsegamble: Single gamble loss for user ${interaction.user.id} | horse=${slug} startValue=${startValue} change=${change}`);
+                devLog(`/horsegamble: Single gamble loss for user ${interaction.user.id} | horse=${slug} startValue=${startValue} change=${change}`, 'micro');
                 if (!isTest) {
                     inventory.horses.set(slug, inventory.horses.get(slug) - 1);
                     const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
@@ -692,7 +692,7 @@ module.exports = {
             const closestSlug = getClosestHorse(targetValue);
             const endValue = HORSE_VALUES[closestSlug].value;
             const actualDiff = endValue - startValue;
-            devLog(`/horsegamble: Single gamble win for user ${interaction.user.id} | from=${slug}(${startValue}) to=${closestSlug}(${endValue}) diff=${actualDiff}`);
+            devLog(`/horsegamble: Single gamble win for user ${interaction.user.id} | from=${slug}(${startValue}) to=${closestSlug}(${endValue}) diff=${actualDiff}`, 'micro');
 
             if (!isTest) {
                 inventory.horses.set(slug, inventory.horses.get(slug) - 1);
@@ -703,11 +703,11 @@ module.exports = {
                     const houseInv = await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
                     if (actualDiff < 0) {
                         houseInv.horses.set(COMMON_HORSE, (houseInv.horses.get(COMMON_HORSE) || 0) + commonTransfer);
-                        devLog(`/horsegamble: House gained ${commonTransfer} common horses from user ${interaction.user.id}`);
+                        devLog(`/horsegamble: House gained ${commonTransfer} common horses from user ${interaction.user.id}`, 'micro');
                     } else if (actualDiff > 0) {
                         const houseCurrentCommon = houseInv.horses.get(COMMON_HORSE) || 0;
                         houseInv.horses.set(COMMON_HORSE, Math.max(0, houseCurrentCommon - commonTransfer));
-                        devLog(`/horsegamble: House lost ${commonTransfer} common horses to user ${interaction.user.id}`);
+                        devLog(`/horsegamble: House lost ${commonTransfer} common horses to user ${interaction.user.id}`, 'micro');
                     }
                     await houseInv.save();
                 }
@@ -729,8 +729,8 @@ module.exports = {
             return interaction.reply(outcomeMsg + frenzyMessage);
         }
 
-        // ── BULK GAMBLE ────────────────────────────────────────────────────────
-        devLog(`/horsegamble: Starting bulk gamble for user ${interaction.user.id} | count=${initialHorsesToGamble.length}`);
+        // bulk gamble logic (cycle=1, count>1)
+        devLog(`/horsegamble: Starting bulk gamble for user ${interaction.user.id} | count=${initialHorsesToGamble.length}`, 'micro');
         let totalWins = 0, totalLosses = 0, totalCompleteLosses = 0, totalNoChange = 0;
         let coinsSpent = 0;
         let netValueChange = 0;
@@ -803,11 +803,11 @@ module.exports = {
         }
 
         if (!isTest) {
-            devLog(`/horsegamble: Bulk gamble completed for user ${interaction.user.id} | wins=${totalWins} losses=${totalLosses} completeLosses=${totalCompleteLosses} netChange=${netValueChange}`);
+            devLog(`/horsegamble: Bulk gamble completed for user ${interaction.user.id} | wins=${totalWins} losses=${totalLosses} completeLosses=${totalCompleteLosses} netChange=${netValueChange}`, 'micro');
             inventory.lastGamble = now;
             await houseInv.save();
             await inventory.save();
-            devLog(`/horsegamble: Bulk gamble inventory saved for user ${interaction.user.id}`);
+            devLog(`/horsegamble: Bulk gamble inventory saved for user ${interaction.user.id}`, 'micro');
             await conditionHorse(inventory, interaction.channel);
         }
 
