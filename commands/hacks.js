@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const { config, descriptions } = require('../lib/config');
 
 const OWNER_ID = '934290747623096381';
@@ -68,10 +68,37 @@ module.exports = {
 
             // No variable specified — list all
             if (!varName) {
-                const lines = Object.entries(config).map(([k, v]) =>
-                    `**${k}**: \`${v}\` — ${descriptions[k] || ''}`
+                const items = Object.entries(config).map(([k, v]) =>
+                    `**${k}**: \`${v}\`\n${descriptions[k] || ''}`
                 );
-                return interaction.reply({ content: `**Runtime Config**\n\n${lines.join('\n')}`, flags: [MessageFlags.Ephemeral] });
+                
+                // Split into chunks to avoid 2000 char limit
+                const chunks = [];
+                let currentChunk = '';
+                for (const item of items) {
+                    if ((currentChunk + '\n' + item).length > 1900) {
+                        chunks.push(currentChunk);
+                        currentChunk = item;
+                    } else {
+                        currentChunk += (currentChunk ? '\n' : '') + item;
+                    }
+                }
+                if (currentChunk) chunks.push(currentChunk);
+
+                // Send each chunk as a separate embed
+                for (let i = 0; i < chunks.length; i++) {
+                    const embed = new EmbedBuilder()
+                        .setColor(0x0099ff)
+                        .setTitle(`Runtime Config (${i + 1}/${chunks.length})`)
+                        .setDescription(chunks[i]);
+                    
+                    if (i === 0) {
+                        await interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+                    } else {
+                        await interaction.followUp({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+                    }
+                }
+                return;
             }
 
             if (!(varName in config)) {
