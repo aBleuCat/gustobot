@@ -1,11 +1,13 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
+const { config } = require('../lib/config');
+const { devLog } = require('../lib/helpers/devLog');
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
 }
-
+const SELL_PRICE = config.COMMON_SELL_PRICE;
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horsesell')
@@ -59,7 +61,7 @@ module.exports = {
         }
 
         const horseValue = HORSE_VALUES[horseSlug].value;
-        const coinsEarned = Math.max(1, Math.floor(horseValue * 4 / 25)) * amount;
+        const coinsEarned = Math.max(1, Math.floor(horseValue * SELL_PRICE / 25)) * amount;
         inventory.horses.set(horseSlug, inventory.horses.get(horseSlug) - amount);
         inventory.horseCoins = (inventory.horseCoins || 0) + coinsEarned;
         await inventory.save();
@@ -67,5 +69,6 @@ module.exports = {
         return interaction.reply(
             `You sold ${amount > 1 ? `**${amount}x** ` : 'your '}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned !== 1 ? 's' : ''}!`
         );
+        await devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
     }
 };
