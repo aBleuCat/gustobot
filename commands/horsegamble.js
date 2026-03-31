@@ -196,7 +196,7 @@ module.exports = {
         try {
             const UserHorses = mongoose.model('UserHorses');
             const focused = interaction.options.getFocused().toLowerCase();
-            const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
+            const inventory = normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }).lean());
 
             const choices = [
                 { name: '📈 top — gamble most valuable horses', value: 'top' },
