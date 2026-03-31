@@ -42,7 +42,7 @@ module.exports = {
         const name = horseName(COMMON_SLUG);
         devLog(`/horsebuy:${interaction.user.tag} bought \`${count}x\` ${name} for ${totalCost} coins. Remaining balance: ${inventory.horseCoins} coins.`);
         return interaction.reply(
-            `You bought \`${count > 1 ? `**${count}x** ` : 'a '}\`**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost !== 1 ? 's' : ''}\nBalance: **${inventory.horseCoins}** 🪙`
+            `You bought ${count > 1 ? `**${count}x** ` : 'a '}**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost !== 1 ? 's' : ''}\nBalance: **${inventory.horseCoins}** 🪙`
         );
     }
 };

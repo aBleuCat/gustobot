@@ -9,7 +9,7 @@ module.exports = {
 
     async execute(interaction) {
         const Timeout = mongoose.model('Timeout');
-        const activeTimeouts = await Timeout.find({});
+        const activeTimeouts = await Timeout.find({}).lean();
 
         if (activeTimeouts.length === 0) {
             return interaction.reply({ content: "There are no active role-swap timeouts.", ephemeral: true });
