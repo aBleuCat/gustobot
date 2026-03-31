@@ -835,7 +835,7 @@ module.exports = {
             `- Losses:  ${totalLosses}`,
             `- Complete Losses: ${totalCompleteLosses}`,
             `= No Change: ${totalNoChange}${remainingLine}`,
-            `= Net Value: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)`,
+            `${netValueChange >= 0 ? '+' : '-'} Net Value: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)`,
             `- Coins Spent: ${coinsSpent}`,
             `+ Coins Left:  ${coinsRemaining}`,
             '```',
