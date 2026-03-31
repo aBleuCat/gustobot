@@ -816,8 +816,47 @@ module.exports = {
         const coinsRemaining = isTest ? '(test)' : (inventory.horseCoins || 0);
 
         let gainedLines = '';
-        for (const [slug, gainedCount] of [...gained.entries()].sort((a, b) => b[1] - a[1])) {
-            gainedLines += `\n+${gainedCount} **${horseName(slug)}** ($${HORSE_VALUES[slug]?.value})`;
+
+        // Compute all horse changes (gained and lost)
+        const horseChangeMap = new Map();
+        // Count initial horses
+        const initialHorseCounts = new Map();
+        for (const slug of initialHorsesToGamble) {
+            initialHorseCounts.set(slug, (initialHorseCounts.get(slug) || 0) + 1);
+        }
+        // Count final horses
+        const finalHorseCounts = new Map();
+        if (!isTest) {
+            for (const [slug, cnt] of inventory.horses.entries()) {
+                if (cnt > 0) finalHorseCounts.set(slug, cnt);
+            }
+        } else {
+            // In test mode, we can't know the real inventory, so just show gained
+            for (const [slug, gainedCount] of gained.entries()) {
+                finalHorseCounts.set(slug, (finalHorseCounts.get(slug) || 0) + gainedCount);
+            }
+        }
+        // Compute net change for each horse
+        const allHorseSlugs = new Set([...initialHorseCounts.keys(), ...finalHorseCounts.keys()]);
+        for (const slug of allHorseSlugs) {
+            const before = initialHorseCounts.get(slug) || 0;
+            const after = finalHorseCounts.get(slug) || 0;
+            const diff = after - before;
+            if (diff !== 0) horseChangeMap.set(slug, diff);
+        }
+
+        let changeLines = '';
+        for (const [slug, diff] of [...horseChangeMap.entries()].sort((a, b) => {
+            // Sort by absolute value of change, then by value desc
+            const av = Math.abs(b[1]) - Math.abs(a[1]);
+            if (av !== 0) return av;
+            return (HORSE_VALUES[b[0]]?.value ?? 0) - (HORSE_VALUES[a[0]]?.value ?? 0);
+        })) {
+            const value = HORSE_VALUES[slug]?.value || 0;
+            const sign = diff > 0 ? '+' : '';
+            const total = value * diff;
+            const totalSign = total > 0 ? '+' : '';
+            changeLines += `\n${sign}${diff} ${horseName(slug)} ($${value} * ${sign}${diff} = ${totalSign}$${total})`;
         }
 
         const remainingLine = (!isTopBottom && !isTest)
@@ -838,8 +877,8 @@ module.exports = {
             `${netValueChange >= 0 ? '+' : '-'} Net Value: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)`,
             `- Coins Spent: ${coinsSpent}`,
             `+ Coins Left:  ${coinsRemaining}`,
+            (changeLines.trim() ? changeLines : ''),
             '```',
-            gainedLines.trim() ? '\n**Gained:**' + gainedLines : '',
             testTag || '',
         ].filter(Boolean).join('\n');
 
