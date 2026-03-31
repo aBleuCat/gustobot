@@ -25,8 +25,12 @@ function getClosestHorse(targetValue) {
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+function calculateCoinCostPerHorse(coinAmount) {
+    return Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX) || 1;
+}
+
 function requiredHorseCoins(coinAmount) {
-    return Math.floor(coinAmount / 50) + 1;
+    return Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX) || 1;
 }
 
 function normalizeHorseMap(inventory) {
@@ -61,7 +65,7 @@ function getSortedHorseList(inventory, sortDir = 'asc') {
  * Simulate one bulk gamble pass over an array of slugs.
  * Mutates virtualInv in place. Does NOT touch the DB.
  */
-function simulateBulkPass(slugsToGamble, virtualInv) {
+function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
     let wins = 0, losses = 0, completeLosses = 0, noChange = 0;
     let netValueChange = 0, coinsSpent = 0;
     const gained = new Map();
@@ -70,8 +74,8 @@ function simulateBulkPass(slugsToGamble, virtualInv) {
     for (const slug of slugsToGamble) {
         if ((virtualInv.horses.get(slug) || 0) <= 0) continue;
 
-        virtualInv.horseCoins -= 1;
-        coinsSpent += 1;
+        virtualInv.horseCoins -= costPerHorse;
+        coinsSpent += costPerHorse;
 
         if (virtualInv.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
             virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
@@ -280,7 +284,7 @@ module.exports = {
                 if ((inventory.horseCoins || 0) < required) {
                     devLog(`/horsegamble: User ${interaction.user.id} insufficient coins for horse gamble | required=${required} have=${inventory.horseCoins}`, 'micro');
                     return interaction.reply({
-                        content: `You need at least **${required}** Horse Coins to gamble horses (floor(coins/50)+1). You have **${inventory.horseCoins || 0}**.`,
+                        content: `You need at least **${required}** Horse Coins to gamble horses (ceil(coins/50*TAX)). You have **${inventory.horseCoins || 0}**.`,
                         flags: [MessageFlags.Ephemeral]
                     });
                 }
@@ -416,6 +420,10 @@ module.exports = {
 
             for (let c = 1; c <= cycles; c++) {
                 devLog(`/horsegamble: Cycle mode - user ${interaction.user.id} - starting cycle ${c}/${cycles} | horses=${cycleHorses.length} coins=${virtualInv.horseCoins}`, 'micro');
+                
+                // Recalculate cost per horse since coins have changed
+                const currentCostPerHorse = calculateCoinCostPerHorse(virtualInv.horseCoins);
+                
                 // Halt check before each cycle
                 if (virtualInv.horseCoins < (config.MIN_CYCLE_COIN_COUNT ?? 0)) {
                     haltedEarly = true;
@@ -465,7 +473,7 @@ module.exports = {
 
                 // gamble pass
                 devLog(`/horsegamble: Cycle ${c} - executing gamble pass for user ${interaction.user.id} | count=${cycleHorses.length}`, 'micro');
-                const result = simulateBulkPass(cycleHorses, virtualInv);
+                const result = simulateBulkPass(cycleHorses, virtualInv, currentCostPerHorse);
                 devLog(`/horsegamble: Cycle ${c} results: wins=${result.wins} losses=${result.losses} completeLosses=${result.completeLosses} netChange=${result.netValueChange}`, 'micro');
                 const uniqueHorseTypes = [...new Set(cycleHorses)];
                 let horseLabel;
@@ -616,10 +624,11 @@ module.exports = {
         // original single gamble logic (cycle=1, count=1)
         if (initialHorsesToGamble.length === 1) {
             const slug = initialHorsesToGamble[0];
-            devLog(`/horsegamble: Single gamble for user ${interaction.user.id} | horse=${slug}`);
+            const costPerHorse = calculateCoinCostPerHorse(isTest ? 100 : (inventory.horseCoins || 0));
+            devLog(`/horsegamble: Single gamble for user ${interaction.user.id} | horse=${slug} costPerHorse=${costPerHorse}`);
 
             if (!isTest) {
-                inventory.horseCoins -= 1;
+                inventory.horseCoins -= costPerHorse;
                 if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
                     devLog(`/horsegamble: Confiscation triggered for user ${interaction.user.id} | horse=${slug} debt=${inventory.horseCoins}`);
                     inventory.horses.set(slug, inventory.horses.get(slug) - 1);
@@ -735,6 +744,7 @@ module.exports = {
         let coinsSpent = 0;
         let netValueChange = 0;
         const gained = new Map();
+        const costPerHorse = calculateCoinCostPerHorse(isTest ? 100 : (inventory.horseCoins || 0));
 
         const now = Date.now();
         let houseInv = isTest ? null : await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
@@ -743,8 +753,8 @@ module.exports = {
             if (!isTest && (inventory.horses.get(slug) || 0) <= 0) continue;
 
             if (!isTest) {
-                inventory.horseCoins -= 1;
-                coinsSpent += 1;
+                inventory.horseCoins -= costPerHorse;
+                coinsSpent += costPerHorse;
                 if (inventory.horseCoins < 0 && Math.random() < config.CONFISCATE_CHANCE) {
                     inventory.horses.set(slug, inventory.horses.get(slug) - 1);
                     houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
@@ -752,7 +762,7 @@ module.exports = {
                     continue;
                 }
             } else {
-                coinsSpent += 1;
+                coinsSpent += costPerHorse;
             }
 
             const startValue = HORSE_VALUES[slug].value;
