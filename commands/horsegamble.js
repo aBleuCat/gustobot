@@ -136,7 +136,7 @@ function formatCycleLog(cycleNum, horseLabel, result, bankedThisCycle, coinsAfte
 
     return (
         `**Cycle #${cycleNum}**\n` +
-        '```diff\n' +
+        '```patch\n' +
         `- Gambled: ${totalGambled} ${horseLabel}\n` +
         `+ Wins:    ${wins}\n` +
         `- Losses:  ${losses}\n` +
@@ -299,7 +299,7 @@ module.exports = {
                 return interaction.reply({
                     content:
                         `**Horse Coin Gamble**\n\n` +
-                        '```diff\n' +
+                        '```patch\n' +
                         `- 2 🪙 → +${winAmount} 🪙${testTag}\n` +
                         '```',
                 });
@@ -319,7 +319,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     `**Horse Coin Gamble**\n\n` +
-                    '```diff\n' +
+                    '```patch\n' +
                     `- Gambled: ${gamblesCount} 🪙\n` +
                     `+ Wins:    ${wins}\n` +
                     `- Losses:  ${losses}\n` +
@@ -795,7 +795,7 @@ module.exports = {
 
         const summary = [
             `**Horse Gamble Results**`,
-            '```diff',
+            '```patch',
             `- Gambled: ${totalGambled} ${horseLabel}`,
             `+ Wins:    ${totalWins}`,
             `- Losses:  ${totalLosses}`,
