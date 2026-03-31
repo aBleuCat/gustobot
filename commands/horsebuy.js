@@ -5,7 +5,6 @@ const { config } = require('../lib/config');
 const { devLog } = require('../lib/helpers/devLog');
 
 const COMMON_SLUG = 'common_horse';
-const COMMON_PRICE = config.COMMON_BUY_PRICE;
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
@@ -21,7 +20,7 @@ module.exports = {
     async execute(interaction) {
         const UserHorses = mongoose.model('UserHorses');
         const count = interaction.options.getInteger('count') || 1;
-        const totalCost = COMMON_PRICE * count;
+        const totalCost = config.COMMON_BUY_PRICE * count;
 
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
         const currentCoins = inventory?.horseCoins || 0;
