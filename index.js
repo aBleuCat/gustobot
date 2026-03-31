@@ -103,7 +103,7 @@ client.on('interactionCreate', async interaction => {
 // Health check server
 http.createServer((req, res) => {
     res.writeHead(200);
-    res.end('online');e
+    res.end('online');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
 
 // Attach log helper to client so commands can use it
