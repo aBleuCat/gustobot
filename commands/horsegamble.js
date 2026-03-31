@@ -853,10 +853,17 @@ module.exports = {
             return (HORSE_VALUES[b[0]]?.value ?? 0) - (HORSE_VALUES[a[0]]?.value ?? 0);
         })) {
             const value = HORSE_VALUES[slug]?.value || 0;
-            const sign = diff > 0 ? '+' : '';
+            const before = initialHorseCounts.get(slug) || 0;
+            const after = finalHorseCounts.get(slug) || 0;
+            let prefix = '';
+            if (diff > 0) {
+                prefix = before === 0 ? '!' : '+';
+            } else if (diff < 0) {
+                prefix = '-';
+            }
             const total = value * diff;
             const totalSign = total > 0 ? '+' : '';
-            changeLines += `\n${sign}${diff} ${horseName(slug)} ($${value} * ${sign}${diff} = ${totalSign}$${total})`;
+            changeLines += `\n${prefix}${Math.abs(diff)} ${horseName(slug)} ($${value} * ${prefix}${Math.abs(diff)} = ${totalSign}$${total}) (${before} -> ${after})`;
         }
 
         const remainingLine = (!isTopBottom && !isTest)
