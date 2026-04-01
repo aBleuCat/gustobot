@@ -279,6 +279,7 @@ module.exports = {
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
             normalizeHorseMap(inventory);
+            /* used to be, now removed for april fools update:
             if ((inventory.horseCoins || 0) < 0) {
                 devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`, 'micro');
                 return interaction.reply({
@@ -286,7 +287,7 @@ module.exports = {
                     flags: [MessageFlags.Ephemeral]
                 });
             }
-
+            */
             if (!isHorseCoin) {
                 const required = requiredHorseCoins(inventory.horseCoins || 0);
                 if ((inventory.horseCoins || 0) < required) {
