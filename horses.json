@@ -67,7 +67,8 @@
     "value": 100,
     "link": "muy confusado",
     "spawn": false,
-    "getByGamble": false
+    "getByGamble": false,
+    "comp": false
   },
   "truth_affirmation": {
     "name": "Horse of Truth and Affirmation",
