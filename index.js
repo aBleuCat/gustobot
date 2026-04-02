@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
 const { initDevLog, devLog } = require('./lib/helpers/devLog');
+const { startStatusChecker } = require('./lib/tasks/statusChecker');
 
 // Handlers & tasks
 const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/interactionHandler');
@@ -134,6 +135,7 @@ client.logToModChannel = logToModChannel;
 registerInteractionHandler(client);
 startResourceMonitor(client);
 startMessageCacheCleanup();
+startStatusChecker();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 mongoose.connect(process.env.MONGO_URI)
