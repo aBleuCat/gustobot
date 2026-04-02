@@ -1,8 +1,10 @@
 /*
-node dbstash.js [pull/push/compare] [model|d] [file|d] [force (optional)]
+node dbstash.js [pull/push/compare] [model|d] [file|d] [force/merge (optional)]
 d defaults to UserHorses model and dbbackup.json file
 pull: pulls data from specified model and saves to file. If file exists, it will be overwritten.
-push: pushes data from file to specified model. WARNING: THIS WILL DELETE ALL DATA IN THE MODEL BEFORE PUSHING. Use 'force' flag to override model name mismatch.
+push: pushes data from file to specified model. WARNING: THIS WILL DELETE ALL DATA IN THE MODEL BEFORE PUSHING. 
+Use 'force' flag to override model name mismatch.
+Use 'merge' flag to merge data instead of deleting all records.
 before pushing it asks for confirmation and gives a quick comparison
 compare: compares the record count and fields of the file and database for the specified model without making any changes.
 */
@@ -48,15 +50,14 @@ async function pull(modelArg, fileArg) {
     const docs = await Model.find({}).lean();
     
     const output = {
-        modelName, // Storing the name for future push verification
+        modelName,
         timestamp: Date.now(),
-        fields: Object.keys(Model.schema.paths).filter(p => p !== '__v'),
+        fields: Object.keys(Model.schema.paths).filter(p => p !== '__v' && p !== '_id'),
         data: docs.map(({ _id, __v, ...rest }) => rest)
     };
 
     fs.writeFileSync(fileName, JSON.stringify(output, null, 2));
     console.log(`Success: Saved ${docs.length} records.`);
-    process.exit(0);
 }
 
 async function compare(modelArg, fileArg) {
@@ -70,106 +71,109 @@ async function compare(modelArg, fileArg) {
     await connectDB();
     
     const dbData = await Model.find({}).lean();
-    const dbFields = Object.keys(Model.schema.paths).filter(p => p !== '__v').sort();
+    const dbFields = Object.keys(Model.schema.paths).filter(p => p !== '__v' && p !== '_id').sort();
     const fileFields = (fileContent.fields || []).sort();
 
     const nameMatch = fileContent.modelName === modelName;
     const fieldsMatch = JSON.stringify(dbFields) === JSON.stringify(fileFields);
-    const timeDiffHours = ((Date.now() - fileContent.timestamp) / 3600000).toFixed(2);
-
+    
     console.log(`--- Comparison: ${modelName} ---`);
     console.log(`Backup Model: ${fileContent.modelName} [${nameMatch ? 'MATCH' : 'MISMATCH'}]`);
-    console.log(`Backup Time:  ${new Date(fileContent.timestamp).toLocaleString()} (${timeDiffHours}h ago)`);
     console.log(`Fields Match: ${fieldsMatch ? '✅' : '❌'}`);
     console.log(`Counts:       File(${fileContent.data.length}) vs DB(${dbData.length})`);
 
-    // Record Matching logic
-    const primaryKey = dbFields.find(f => ['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(f)) || '_id';
-    const fileMap = new Map(fileContent.data.map(item => [String(item[primaryKey]), item]));
-    const dbMap = new Map(dbData.map(item => [String(item[primaryKey]), item]));
+    const primaryKey = dbFields.find(f => ['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(f));
+    const fileMap = new Map(fileContent.data.map((item, idx) => [primaryKey ? String(item[primaryKey]) : idx, item]));
+    const dbMap = new Map(dbData.map((item, idx) => [primaryKey ? String(item[primaryKey]) : idx, item]));
 
     let diffCount = 0;
-    for (const [id, dbItem] of dbMap) {
-        if (!fileMap.has(id)) {
-            console.log(`[MISSING IN FILE] ID: ${id}`);
+    for (const [key, dbItem] of dbMap) {
+        if (!fileMap.has(key)) {
+            console.log(`[MISSING IN FILE] Key: ${key}`);
             diffCount++;
             continue;
         }
-        const fileItem = fileMap.get(id);
+        const fileItem = fileMap.get(key);
         const changes = [];
+        
         dbFields.forEach(field => {
-            if (JSON.stringify(dbItem[field]) !== JSON.stringify(fileItem[field])) {
+            if (fileItem[field] !== undefined && JSON.stringify(dbItem[field]) !== JSON.stringify(fileItem[field])) {
                 changes.push(`${field}: (DB) ${JSON.stringify(dbItem[field])} != (File) ${JSON.stringify(fileItem[field])}`);
             }
         });
+
         if (changes.length > 0) {
-            console.log(`[MODIFIED] ID: ${id}`);
+            console.log(`[MODIFIED] Key: ${key}`);
             changes.forEach(c => console.log(`   └─ ${c}`));
             diffCount++;
         }
     }
 
-    for (const id of fileMap.keys()) {
-        if (!dbMap.has(id)) {
-            console.log(`[NEW IN FILE] ID: ${id}`);
-            diffCount++;
-        }
-    }
-
-    if (diffCount === 0) console.log("noice No value differences found.");
+    if (diffCount === 0) console.log("✨ No value differences found.");
     console.log(`-----------------------------`);
 
-    return { fileContent, modelName, nameMatch, fieldsMatch };
+    return { fileContent, modelName, nameMatch, fieldsMatch, primaryKey };
 }
 
-async function push(modelArg, fileArg, forceArg) {
-    const { fileContent, modelName, nameMatch, fieldsMatch } = await compare(modelArg, fileArg);
-    const isForced = forceArg === 'force';
+async function push(modelArg, fileArg, optionArg) {
+    const { fileContent, modelName, nameMatch, fieldsMatch, primaryKey } = await compare(modelArg, fileArg);
+    const isForced = optionArg === 'force';
+    const isMerge = optionArg === 'merge';
 
-    // STRICT VALIDATION
-    if (!nameMatch || !fieldsMatch) {
+    if (!nameMatch || (!fieldsMatch && !isMerge)) {
         console.log(`\n❌ PUSH PREVENTED: Data mismatch.`);
-        if (!nameMatch) console.log(`   Expected Model: ${modelName} | File contains: ${fileContent.modelName}`);
-        if (!fieldsMatch) console.log(`   Schema fields do not match.`);
-        
-        if (!isForced) {
-            console.error("\nAborting. Use 'force' at the end of the command to ignore this.");
+        if (!isForced && !isMerge) {
+            console.error("Aborting. Use 'force' to overwrite or 'merge' to update existing fields.");
             process.exit(1);
         }
-        console.log("Force flag detected. Overriding safety checks. Proceeding with push...");
     }
 
-    const confirm = await askQuestion(`\n⚠️ WARNING: This will WIPE ALL ${modelName} data in the DB.\nType 'yes' to proceed: `);
+    const modeText = isMerge ? "MERGE (update existing, keep new fields)" : "OVERWRITE (delete everything first)";
+    const confirm = await askQuestion(`\n⚠️  MODE: ${modeText}\nType 'yes' to proceed: `);
     
     if (confirm.toLowerCase() === 'yes') {
         const { Model } = resolveArgs(modelArg, fileArg);
-        await Model.deleteMany({});
-        await Model.insertMany(fileContent.data);
-        console.log(`\n✅ Database for ${modelName} successfully updated.`);
+
+        if (isMerge) {
+            if (!primaryKey) {
+                console.error("Merge failed: Could not find a unique key (userId/ruleId) to match records.");
+                process.exit(1);
+            }
+            const ops = fileContent.data.map(item => ({
+                updateOne: {
+                    filter: { [primaryKey]: item[primaryKey] },
+                    update: { $set: item },
+                    upsert: true // Creates the user if they exist in file but not in DB
+                }
+            }));
+            await Model.bulkWrite(ops);
+            console.log(`\n✅ Successfully merged ${ops.length} records.`);
+        } else {
+            await Model.deleteMany({});
+            await Model.insertMany(fileContent.data);
+            console.log(`\n✅ Database for ${modelName} successfully overwritten.`);
+        }
     } else {
         console.log("\nPush cancelled.");
     }
-    process.exit(0);
 }
 
-const [,, command, model, file, force] = process.argv;
+// CLI Logic
+const [,, command, model, file, option] = process.argv;
 if (!command || !model || !file) {
-    console.log("Usage: node dbstash.js [pull|push|compare] [model|d] [file|d] [force]");
+    console.log("Usage: node dbstash.js [pull|push|compare] [model|d] [file|d] [force|merge]");
     process.exit(1);
 }
 
 const actions = { pull, push, compare };
 if (actions[command]) {
-    actions[command](model, file, force)
-    .then(() => {
-        // close connection and exit
-        mongoose.connection.close();
-        process.exit(0);
-    })
-    .catch(err => {
-        console.error(err);
-        process.exit(1);
-    });
-} else {
-    console.log("Invalid command.");
+    actions[command](model, file, option)
+        .then(() => {
+            mongoose.connection.close();
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
 }
