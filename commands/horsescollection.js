@@ -16,6 +16,7 @@ module.exports = {
                 .setDescription('The user whose collection you want to view')
                 .setRequired(false)),
     async execute(interaction) {
+        await interaction.deferReply();
         const targetUser = interaction.options.getUser('user') || interaction.user;
         const isSelf = targetUser.id === interaction.user.id;
 
@@ -24,7 +25,7 @@ module.exports = {
         const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(k => HORSE_VALUES[k].comp !== false);
 
         if (!inventory || !inventory.horses || Array.from(inventory.horses.values()).every(v => v === 0)) {
-            return interaction.reply(isSelf
+            return interaction.editReply(isSelf
                 ? "Your stables are empty. Keep talking to find some horses!"
                 : `${targetUser.username}'s stables are empty.`);
         }
@@ -74,6 +75,6 @@ module.exports = {
         }
 
         const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
-        return interaction.reply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
+        return interaction.editReply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
     }
 };

@@ -245,14 +245,16 @@ module.exports = {
         const isAdmin = ADMIN_IDS.includes(interaction.user.id);
         const isCycleMode = cycles !== null && cycles >= 2;
 
+        await interaction.deferReply();
+
         if (isTest && !isAdmin) {
             devLog(`/horsegamble: Test mode denied for non-admin user ${interaction.user.id}`);
-            return interaction.reply({ content: `You don't have permission to use test mode.`, flags: [MessageFlags.Ephemeral] });
+            return interaction.editReply({ content: `You don't have permission to use test mode.` });
         }
 
         if (isCycleMode && isHorseCoin) {
             devLog(`/horsegamble: Cycle mode rejected for horse coin gambling from user ${interaction.user.id}`);
-            return interaction.reply({ content: `Cycle mode cannot be used with Horse Coin gambling. Yet...`, flags: [MessageFlags.Ephemeral] });
+            return interaction.editReply({ content: `Cycle mode cannot be used with Horse Coin gambling. Yet...` });
         }
 
         if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseSlug]) {
@@ -262,7 +264,7 @@ module.exports = {
                 k.toLowerCase() === horseSlug
             );
             const suggestion = match ? ` Did you mean **${horseName(match)}**?` : '';
-            return interaction.reply({ content: `**${horseSlug}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
+            return interaction.editReply({ content: `**${horseSlug}** isn't a valid horse.${suggestion}` });
         }
 
 
@@ -278,7 +280,7 @@ module.exports = {
             /* used to be, now removed for april fools update:
             if ((inventory.horseCoins || 0) < 0) {
                 devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`, 'micro');
-                return interaction.reply({
+                return interaction.editReply({
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
                     flags: [MessageFlags.Ephemeral]
                 });
@@ -288,7 +290,7 @@ module.exports = {
                 const required = requiredHorseCoins(inventory.horseCoins || 0);
                 if ((inventory.horseCoins || 0) < required) {
                     devLog(`/horsegamble: User ${interaction.user.id} insufficient coins for horse gamble | required=${required} have=${inventory.horseCoins}`, 'micro');
-                    return interaction.reply({
+                    return interaction.editReply({
                         content: `You need at least **${required}** Horse Coins to gamble horses (ceil(coins/50*TAX)). You have **${inventory.horseCoins || 0}**.`,
                         flags: [MessageFlags.Ephemeral]
                     });
@@ -301,12 +303,12 @@ module.exports = {
             devLog(`/horsegamble: Starting horse coin gamble for user ${interaction.user.id} | available=${isTest ? 'test' : inventory.horseCoins}`);
             const available = isTest ? Infinity : (inventory.horseCoins || 0);
             if (!isTest && available < 2) {
-                return interaction.reply({ content: `You need **2 Horse Coins** to gamble a Horse Coin!`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `You need **2 Horse Coins** to gamble a Horse Coin!`, flags: [MessageFlags.Ephemeral] });
             }
 
             let gamblesCount = count === 0 ? Math.floor(available / 2) : count;
             if (gamblesCount <= 0) {
-                return interaction.reply({ content: `You need at least **2 Horse Coins** to gamble.`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `You need at least **2 Horse Coins** to gamble.`, flags: [MessageFlags.Ephemeral] });
             }
 
             if (gamblesCount === 1) {
@@ -318,7 +320,7 @@ module.exports = {
                     devLog(`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`, 'micro');
                 }
                 const testTag = isTest ? ' *(test — no coins spent)*' : '';
-                return interaction.reply({
+                return interaction.editReply({
                     content:
                         `**Horse Coin Gamble**\n\n` +
                         '```patch\n' +
@@ -340,7 +342,7 @@ module.exports = {
                 devLog(`/horsegamble: Saved user ${interaction.user.id} bulk coin balance: ${inventory.horseCoins}`);
             }
             const testTag = isTest ? '\n(test mode — no coins spent)' : '';
-            return interaction.reply({
+            return interaction.editReply({
                 content:
                     `**Horse Coin Gamble**\n\n` +
                     '```patch\n' +
@@ -359,12 +361,12 @@ module.exports = {
 
         if (isTopBottom) {
             if (isTest) {
-                return interaction.reply({ content: `Test mode is not supported with top/bottom (no inventory to simulate against).`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `Test mode is not supported with top/bottom (no inventory to simulate against).`, flags: [MessageFlags.Ephemeral] });
             }
             const sortDir = isTop ? 'desc' : 'asc';
             const sorted = getSortedHorseList(inventory, sortDir);
             if (sorted.length === 0) {
-                return interaction.reply({ content: `You don't have any horses to gamble!`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `You don't have any horses to gamble!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? sorted.length : Math.min(count, sorted.length);
             initialHorsesToGamble = sorted.slice(0, take).map(h => h.slug);
@@ -372,7 +374,7 @@ module.exports = {
             const available = isTest ? 999 : (inventory.horses.get(horseSlug) || 0);
             if (!isTest && available === 0) {
                 devLog(`/horsegamble: User ${interaction.user.id} has no ${horseSlug} to gamble`, 'micro');
-                return interaction.reply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
             }
             const take = count === 0 ? available : Math.min(count, available);
             initialHorsesToGamble = Array(take).fill(horseSlug);
@@ -380,11 +382,11 @@ module.exports = {
         }
 
         if (initialHorsesToGamble.length === 0) {
-            return interaction.reply({ content: `Nothing to gamble!`, flags: [MessageFlags.Ephemeral] });
+            return interaction.editReply({ content: `Nothing to gamble!`, flags: [MessageFlags.Ephemeral] });
         }
 
         // cycle mode
-        if (isCycleMode) {            devLog(`/horsegamble: Starting cycle mode for user ${interaction.user.id} | cycles=${cycles} bankAbove=${bankAbove}`, 'micro');            await interaction.deferReply();
+        if (isCycleMode) {            devLog(`/horsegamble: Starting cycle mode for user ${interaction.user.id} | cycles=${cycles} bankAbove=${bankAbove}`, 'micro');
 
             // virtualInv.horses: ACTIVE (non-banked) horses only, the gamble pool.
             // bankedHorses: completely separate map, never touched by simulateBulkPass.
@@ -641,7 +643,7 @@ module.exports = {
                     houseInv.horses.set(slug, (houseInv.horses.get(slug) || 0) + 1);
                     await houseInv.save();
                     await inventory.save();
-                    return interaction.reply(`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`);
+                    return interaction.editReply(`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`);
                 }
             }
 
@@ -700,7 +702,7 @@ module.exports = {
                 }
                 const testTag = isTest ? ' *(test)*' : '';
                 if (!isTest) await conditionHorse(inventory, interaction.channel);
-                return interaction.reply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
+                return interaction.editReply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
             }
 
             const closestSlug = getClosestHorse(targetValue);
@@ -740,7 +742,7 @@ module.exports = {
             if (isTest) outcomeMsg += ' *(test)*';
 
             if (!isTest) await conditionHorse(inventory, interaction.channel);
-            return interaction.reply(outcomeMsg + frenzyMessage);
+            return interaction.editReply(outcomeMsg + frenzyMessage);
         }
 
         // bulk gamble logic (cycle=1, count>1)
@@ -904,6 +906,6 @@ module.exports = {
             testTag || '',
         ].filter(Boolean).join('\n');
 
-        return interaction.reply({ content: summary });
+        return interaction.editReply({ content: summary });
     }
 };

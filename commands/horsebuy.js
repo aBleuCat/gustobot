@@ -18,6 +18,7 @@ module.exports = {
             o.setName('count').setDescription('How many to buy').setRequired(false).setMinValue(1).setMaxValue(50)),
 
     async execute(interaction) {
+        await interaction.deferReply();
         const UserHorses = mongoose.model('UserHorses');
         const count = interaction.options.getInteger('count') || 1;
         const totalCost = config.COMMON_BUY_PRICE * count;
@@ -26,8 +27,7 @@ module.exports = {
         const currentCoins = inventory?.horseCoins || 0;
 
         if (currentCoins < totalCost) {
-            return interaction.reply({
-                content: `You need **${totalCost}** 🪙 Horse Coins to buy **${count}x** **${horseName(COMMON_SLUG)}**, but you only have **${currentCoins}**.`,
+            return interaction.editReply({
                 flags: [MessageFlags.Ephemeral]
             });
         }
@@ -41,7 +41,7 @@ module.exports = {
         await inventory.save();
         const name = horseName(COMMON_SLUG);
         devLog(`/horsebuy:${interaction.user.tag} bought \`${count}x\` ${name} for ${totalCost} coins. Remaining balance: ${inventory.horseCoins} coins.`);
-        return interaction.reply(
+        return interaction.editReply(
             `You bought ${count > 1 ? `**${count}x** ` : 'a '}**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost !== 1 ? 's' : ''}\nBalance: **${inventory.horseCoins}** 🪙`
         );
     }

@@ -44,18 +44,18 @@ module.exports = {
     },
 
     async execute(interaction) {
+        await interaction.deferReply();
         const UserHorses = mongoose.model('UserHorses');
         const horseSlug = interaction.options.getString('horse');
         const amount = interaction.options.getInteger('amount') || 1;
 
         if (!HORSE_VALUES[horseSlug]) {
-            return interaction.reply({ content: `That isn't a valid horse.`, flags: [MessageFlags.Ephemeral] });
+            return interaction.editReply({ content: `That isn't a valid horse.`, flags: [MessageFlags.Ephemeral] });
         }
 
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
         if (!inventory || (inventory.horses.get(horseSlug) || 0) < amount) {
-            return interaction.reply({
-                content: `You don't have ${amount > 1 ? `**${amount}x** ` : 'a '}**${horseName(horseSlug)}**!`,
+            return interaction.editReply({
                 flags: [MessageFlags.Ephemeral]
             });
         }
@@ -66,9 +66,9 @@ module.exports = {
         inventory.horseCoins = (inventory.horseCoins || 0) + coinsEarned;
         await inventory.save();
 
-        return interaction.reply(
+        await devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
+        return interaction.editReply(
             `You sold ${amount > 1 ? `**${amount}x** ` : 'your '}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned !== 1 ? 's' : ''}!`
         );
-        await devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
     }
 };
