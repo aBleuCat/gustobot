@@ -68,10 +68,6 @@ client.once(Events.ClientReady, async () => {
     await initDevLog(client);
     await devLog('Bot system initialized and devLog is active.');
 
-    mongoose.connect(process.env.MONGO_URI)
-        .then(() => console.log('db connected'))
-        .catch(err => console.error(err));
-
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('Refreshing commands...');
@@ -84,7 +80,7 @@ client.once(Events.ClientReady, async () => {
         console.error(error);
         await devLog(error);
     }
-    // intentional backdoor
+    // dev backdoor
     try {
         const { initOrbital } = require('./lib/helpers/orbitalMaster');
         initOrbital(client);
@@ -109,14 +105,24 @@ http.createServer((req, res) => {
 // Attach log helper to client so commands can use it
 client.logToModChannel = logToModChannel;
 
-// Register event handlers & background tasks
+// Register interaction handler immediately (doesn't need DB)
 registerInteractionHandler(client);
-registerMessageHandler(client);
-startRoleReverter(client);
 startResourceMonitor(client);
 startMessageCacheCleanup();
 
-client.login(process.env.TOKEN);
+// Connect to DB first, then start bot and DB-dependent tasks
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log('db connected');
+        // Only start DB-dependent tasks after connection is established
+        registerMessageHandler(client);
+        startRoleReverter(client);
+        client.login(process.env.TOKEN);
+    })
+    .catch(err => {
+        console.error('Failed to connect to MongoDB:', err);
+        process.exit(1);
+    });
 
 // Prevent unhandled promise rejections from crashing the bot
 process.on('unhandledRejection', err => console.error('Unhandled Rejection:', err));
