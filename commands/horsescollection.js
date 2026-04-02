@@ -30,8 +30,6 @@ module.exports = {
                 : `${targetUser.username}'s stables are empty.`);
         }
 
-        if (inventory) await conditionHorse(inventory, interaction.channel);
-
         const leaderboard = allUsers.map(u => {
             let worth = 0;
             for (const [slug, count] of u.horses) {
@@ -75,6 +73,9 @@ module.exports = {
         }
 
         const title = isSelf ? "## 🐎 Your Collection 🐎" : `## 🐎 ${targetUser.username}'s Collection 🐎`;
-        return interaction.editReply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
+        await interaction.editReply(`${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n` + horseListText + missingText);
+
+        // Run after reply so it never blocks the interaction response
+        conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
     }
 };

@@ -565,7 +565,6 @@ module.exports = {
                 await houseInv.save();
                 await inventory.save();
                 devLog(`/horsegamble: Cycle mode inventory saved and conditioned for user ${interaction.user.id}`, 'micro');
-                await conditionHorse(inventory, interaction.channel);
             }
 
             // final summary
@@ -625,6 +624,7 @@ module.exports = {
                     },
                 ],
             });
+            if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
             return;
         }
 
@@ -701,7 +701,7 @@ module.exports = {
                     await inventory.save();
                 }
                 const testTag = isTest ? ' *(test)*' : '';
-                if (!isTest) await conditionHorse(inventory, interaction.channel);
+                if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
                 return interaction.editReply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
             }
 
@@ -741,7 +741,7 @@ module.exports = {
             }
             if (isTest) outcomeMsg += ' *(test)*';
 
-            if (!isTest) await conditionHorse(inventory, interaction.channel);
+            if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
             return interaction.editReply(outcomeMsg + frenzyMessage);
         }
 
@@ -825,7 +825,6 @@ module.exports = {
             await houseInv.save();
             await inventory.save();
             devLog(`/horsegamble: Bulk gamble inventory saved for user ${interaction.user.id}`, 'micro');
-            await conditionHorse(inventory, interaction.channel);
         }
 
         const totalGambled = totalWins + totalLosses + totalCompleteLosses + totalNoChange;
@@ -906,6 +905,7 @@ module.exports = {
             testTag || '',
         ].filter(Boolean).join('\n');
 
-        return interaction.editReply({ content: summary });
+        await interaction.editReply({ content: summary });
+        if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
     }
 };
