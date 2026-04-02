@@ -96,8 +96,33 @@ client.on('interactionCreate', async interaction => {
     devLog(`Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
 });
 
-// Health check server
-http.createServer((req, res) => {
+// health check and webhook server
+http.createServer(async (req, res) => {
+    // render webhooks
+    if (req.method === 'POST' && req.url === '/render-webhook') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
+                // Extract useful info from Render's payload
+                const type = data.type; // e.g., 'deploy_succeeded', 'deploy_failed'
+                const serviceName = data.service.name;
+                
+                // Log it to devLog or a specific channel
+                await devLog(`🚀 **Render Update [${serviceName}]**: ${type.replace('_', ' ')}`);
+                
+                res.writeHead(200);
+                res.end('Webhook received');
+            } catch (err) {
+                res.writeHead(400);
+                res.end('Invalid JSON');
+            }
+        });
+        return;
+    }
+
+    // health check
     res.writeHead(200);
     res.end('online');
 }).listen(process.env.PORT || 8000, '0.0.0.0');
