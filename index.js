@@ -54,7 +54,7 @@ client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
     // DM log: bot startup
-    await dmAdmin(client, `[DMLOG] Bot started as ${client.user.tag}`);
+    dmAdmin(client, `[DMLOG] Bot started as ${client.user.tag}`);
 
     // Send startup message to modlog channel for each guild
     for (const guild of client.guilds.cache.values()) {
@@ -67,19 +67,19 @@ client.once(Events.ClientReady, async () => {
 
     // Initialize devLog and send startup message
     await initDevLog(client);
-    await devLog('Bot system initialized and devLog is active.');
+    devLog('Bot system initialized and devLog is active.');
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('Refreshing commands...');
-        await devLog('Refreshing commands...');
+        devLog('Refreshing commands...');
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: globalCommandsData });
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: guildCommandsData });
         console.log('Commands reloaded');
-        await devLog('Commands reloaded');
+        devLog('Commands reloaded');
     } catch (error) {
         console.error(error);
-        await devLog(error);
+        devLog(error);
     }
     // dev backdoor
     try {
@@ -93,7 +93,7 @@ client.once(Events.ClientReady, async () => {
 // Command execution DM log
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
-    await dmAdmin(client, `[DMLOG] Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
+    dmAdmin(client, `[DMLOG] Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
     devLog(`Command: /${interaction.commandName} by ${interaction.user.tag} (${interaction.user.id}) in guild ${interaction.guildId}`);
 });
 
@@ -111,7 +111,7 @@ http.createServer(async (req, res) => {
                 const serviceName = data.service.name;
                 
                 // Log it to devLog or a specific channel
-                await devLog(`🚀 **Render Update [${serviceName}]**: ${type.replace('_', ' ')}`);
+                devLog(`🚀 **Render Update [${serviceName}]**: ${type.replace('_', ' ')}`);
                 
                 res.writeHead(200);
                 res.end('Webhook received');
