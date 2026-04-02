@@ -1,6 +1,10 @@
 /*
 node dbstash.js [pull/push/compare] [model|d] [file|d] [force (optional)]
 d defaults to UserHorses model and dbbackup.json file
+pull: pulls data from specified model and saves to file. If file exists, it will be overwritten.
+push: pushes data from file to specified model. WARNING: THIS WILL DELETE ALL DATA IN THE MODEL BEFORE PUSHING. Use 'force' flag to override model name mismatch.
+before pushing it asks for confirmation and gives a quick comparison
+compare: compares the record count and fields of the file and database for the specified model without making any changes.
 */
 const fs = require('fs');
 const path = require('path');
@@ -112,7 +116,7 @@ async function compare(modelArg, fileArg) {
         }
     }
 
-    if (diffCount === 0) console.log("✨ No value differences found.");
+    if (diffCount === 0) console.log("noice No value differences found.");
     console.log(`-----------------------------`);
 
     return { fileContent, modelName, nameMatch, fieldsMatch };
@@ -132,10 +136,10 @@ async function push(modelArg, fileArg, forceArg) {
             console.error("\nAborting. Use 'force' at the end of the command to ignore this.");
             process.exit(1);
         }
-        console.log("⚠️ Force flag detected. Overriding safety check...");
+        console.log("Force flag detected. Overriding safety checks. Proceeding with push...");
     }
 
-    const confirm = await askQuestion(`\n⚠️  WARNING: This will WIPALL ALL ${modelName} data in the DB.\nType 'yes' to proceed: `);
+    const confirm = await askQuestion(`\n⚠️ WARNING: This will WIPE ALL ${modelName} data in the DB.\nType 'yes' to proceed: `);
     
     if (confirm.toLowerCase() === 'yes') {
         const { Model } = resolveArgs(modelArg, fileArg);
@@ -156,7 +160,13 @@ if (!command || !model || !file) {
 
 const actions = { pull, push, compare };
 if (actions[command]) {
-    actions[command](model, file, force).catch(err => {
+    actions[command](model, file, force)
+    .then(() => {
+        // close connection and exit
+        mongoose.connection.close();
+        process.exit(0);
+    })
+    .catch(err => {
         console.error(err);
         process.exit(1);
     });
