@@ -54,7 +54,7 @@ async function getOrCreateInventory(UserHorses, userId) {
 function getSortedHorseList(inventory, sortDir = 'asc') {
     const list = [];
     for (const [slug, count] of inventory.horses.entries()) {
-        if (count > 0 && HORSE_VALUES[slug] && HORSE_VALUES[slug].getByGamble !== false) {
+        if (count > 0 && HORSE_VALUES[slug]) {
             for (let i = 0; i < count; i++) {
                 list.push({ slug, value: HORSE_VALUES[slug].value });
             }
@@ -265,10 +265,6 @@ module.exports = {
             return interaction.reply({ content: `**${horseSlug}** isn't a valid horse.${suggestion}`, flags: [MessageFlags.Ephemeral] });
         }
 
-        if (!isHorseCoin && !isTopBottom && HORSE_VALUES[horseSlug]?.getByGamble === false) {
-            devLog(`/horsegamble: User ${interaction.user.id} attempted to gamble non-gambable horse "${horseSlug}"`);
-            return interaction.reply({ content: `**${horseName(horseSlug)}** cannot be obtained through gambling.`, flags: [MessageFlags.Ephemeral] });
-        }
 
         let inventory = isTest ? null : normalizeHorseMap(await UserHorses.findOne({ userId: interaction.user.id }));
         devLog(`/horsegamble: Loaded inventory for user ${interaction.user.id} | coins=${inventory?.horseCoins || 0}`, 'micro');
