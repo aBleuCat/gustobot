@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const { config } = require('../lib/config');
 const { devLog } = require('../lib/helpers/devLog');
+const maxAmount = 10 ** 9
 
 const COMMON_SLUG = 'common_horse';
 
@@ -15,7 +16,7 @@ module.exports = {
         .setName('horsebuy')
         .setDescription('Buy common horses for Horse Coins')
         .addIntegerOption(o =>
-            o.setName('count').setDescription('How many to buy').setRequired(false).setMinValue(1).setMaxValue(1000)),
+            o.setName('count').setDescription('How many to buy').setRequired(false).setMinValue(1).setMaxValue(maxAmount)),
 
     async execute(interaction) {
         await interaction.deferReply();
