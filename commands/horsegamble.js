@@ -51,13 +51,12 @@ async function getOrCreateInventory(UserHorses, userId) {
     return normalizeHorseMap(inv);
 }
 
+// Returns [{slug, value, count}] sorted by value — does NOT expand by count to avoid OOM
 function getSortedHorseList(inventory, sortDir = 'asc') {
     const list = [];
     for (const [slug, count] of inventory.horses.entries()) {
         if (count > 0 && HORSE_VALUES[slug]) {
-            for (let i = 0; i < count; i++) {
-                list.push({ slug, value: HORSE_VALUES[slug].value });
-            }
+            list.push({ slug, value: HORSE_VALUES[slug].value, count });
         }
     }
     list.sort((a, b) => sortDir === 'asc' ? a.value - b.value : b.value - a.value);
@@ -368,16 +367,22 @@ module.exports = {
             if (sorted.length === 0) {
                 return interaction.editReply({ content: `You don't have any horses to gamble!`, flags: [MessageFlags.Ephemeral] });
             }
-            const take = count === 0 ? sorted.length : Math.min(count, sorted.length);
-            initialHorsesToGamble = sorted.slice(0, take).map(h => h.slug);
+            // Build slug list from count-aware entries without expanding billions of entries
+            let remaining = count === 0 ? Infinity : count;
+            for (const { slug, count: slugCount } of sorted) {
+                if (remaining <= 0) break;
+                const take = Math.min(slugCount, remaining);
+                for (let i = 0; i < Math.min(take, 100000); i++) initialHorsesToGamble.push(slug);
+                remaining -= take;
+            }
         } else {
             const available = isTest ? 999 : (inventory.horses.get(horseSlug) || 0);
             if (!isTest && available === 0) {
                 devLog(`/horsegamble: User ${interaction.user.id} has no ${horseSlug} to gamble`, 'micro');
                 return interaction.editReply({ content: `You don't have any **${horseName(horseSlug)}**!`, flags: [MessageFlags.Ephemeral] });
             }
-            const take = count === 0 ? available : Math.min(count, available);
-            initialHorsesToGamble = Array(take).fill(horseSlug);
+            const take = Math.min(count === 0 ? available : Math.min(count, available), 100000);
+            initialHorsesToGamble = Array.from({ length: take }, () => horseSlug);
             devLog(`/horsegamble: Building list for user ${interaction.user.id} | slug=${horseSlug} available=${available} taking=${take}`, 'micro');
         }
 

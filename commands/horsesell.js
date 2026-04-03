@@ -9,13 +9,12 @@ function horseName(slug) {
 }
 const SELL_PRICE = config.COMMON_SELL_PRICE;
 
+// Returns [{slug, value, count}] sorted by value — does NOT expand by count to avoid OOM
 function getSortedHorseList(inventory, sortDir = 'asc') {
     const list = [];
     for (const [slug, count] of inventory.horses.entries()) {
         if (count > 0 && HORSE_VALUES[slug]) {
-            for (let i = 0; i < count; i++) {
-                list.push({ slug, value: HORSE_VALUES[slug].value });
-            }
+            list.push({ slug, value: HORSE_VALUES[slug].value, count });
         }
     }
     list.sort((a, b) => sortDir === 'asc' ? a.value - b.value : b.value - a.value);
@@ -83,13 +82,18 @@ module.exports = {
             if (sorted.length === 0) {
                 return interaction.editReply({ content: `You don't have any horses to sell!`, flags: [MessageFlags.Ephemeral] });
             }
-            const take = amount === 0 ? sorted.length : Math.min(amount, sorted.length);
-            const toSell = sorted.slice(0, take);
 
+            // Walk sorted slugs, taking up to `amount` total horses across slugs
             const sellMap = new Map();
-            for (const { slug } of toSell) {
-                sellMap.set(slug, (sellMap.get(slug) || 0) + 1);
+            let remaining = amount === 0 ? Infinity : amount;
+            for (const { slug, count } of sorted) {
+                if (remaining <= 0) break;
+                const take = amount === 0 ? count : Math.min(count, remaining);
+                sellMap.set(slug, take);
+                remaining -= take;
             }
+
+            const totalTaken = [...sellMap.values()].reduce((a, b) => a + b, 0);
             let totalCoins = 0;
             for (const [slug, cnt] of sellMap.entries()) {
                 inventory.horses.set(slug, (inventory.horses.get(slug) || 0) - cnt);
@@ -105,9 +109,9 @@ module.exports = {
                 .map(([slug, cnt]) => `* ${cnt}x **${horseName(slug)}** → ${coinValueForSlug(slug) * cnt} 🪙`)
                 .join('\n');
 
-            devLog(`/horsesell: ${interaction.user.tag} sold ${take} ${label} horses for ${totalCoins} coins.`);
+            devLog(`/horsesell: ${interaction.user.tag} sold ${totalTaken} ${label} horses for ${totalCoins} coins.`);
             return interaction.editReply(
-                `Sold **${take}** ${label} horse${take !== 1 ? 's' : ''} for **${totalCoins}** 🪙 total!\n${lines}`
+                `Sold **${totalTaken}** ${label} horse${totalTaken !== 1 ? 's' : ''} for **${totalCoins}** 🪙 total!\n${lines}`
             );
         }
 
