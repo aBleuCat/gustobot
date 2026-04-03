@@ -29,7 +29,7 @@ function getClosestHorse(targetValue) {
 }
 
 function calculateCoinCostPerHorse(coinAmount) {
-    return Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX) || 1;
+    return Math.max(1, Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX));
 }
 
 function requiredHorseCoins(coinAmount) {
