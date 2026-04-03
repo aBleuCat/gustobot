@@ -15,7 +15,7 @@ module.exports = {
         .setName('horsebuy')
         .setDescription('Buy common horses for Horse Coins')
         .addIntegerOption(o =>
-            o.setName('count').setDescription('How many to buy').setRequired(false).setMinValue(1).setMaxValue(50)),
+            o.setName('count').setDescription('How many to buy').setRequired(false).setMinValue(1).setMaxValue(1000)),
 
     async execute(interaction) {
         await interaction.deferReply();
@@ -28,6 +28,7 @@ module.exports = {
 
         if (currentCoins < totalCost) {
             return interaction.editReply({
+                content: `You need **${totalCost}** 🪙 Horse Coins to buy **${count}x** **${horseName(COMMON_SLUG)}**, but you only have **${currentCoins}**.`,
                 flags: [MessageFlags.Ephemeral]
             });
         }

@@ -15,7 +15,7 @@ module.exports = {
         .addStringOption(o =>
             o.setName('horse').setDescription('The horse to sell').setRequired(true).setAutocomplete(true))
         .addIntegerOption(o =>
-            o.setName('amount').setDescription('How many to sell').setRequired(false).setMinValue(1)),
+            o.setName('amount').setDescription('How many to sell').setRequired(false).setMinValue(1).setMaxValue(1000)),
 
     async autocomplete(interaction) {
         try {
@@ -56,6 +56,7 @@ module.exports = {
         let inventory = await UserHorses.findOne({ userId: interaction.user.id });
         if (!inventory || (inventory.horses.get(horseSlug) || 0) < amount) {
             return interaction.editReply({
+                content: `You don't have ${amount > 1 ? `**${amount}x** ` : 'a '}**${horseName(horseSlug)}**!`,
                 flags: [MessageFlags.Ephemeral]
             });
         }
@@ -66,7 +67,7 @@ module.exports = {
         inventory.horseCoins = (inventory.horseCoins || 0) + coinsEarned;
         await inventory.save();
 
-        await devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
+        devLog(`/horsesell: ${interaction.user.tag} sold \`${amount}x\` ${horseName(horseSlug)} for ${coinsEarned} coins. New balance: ${inventory.horseCoins} coins.`);
         return interaction.editReply(
             `You sold ${amount > 1 ? `**${amount}x** ` : 'your '}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned !== 1 ? 's' : ''}!`
         );
