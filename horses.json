@@ -32,6 +32,14 @@
     "spawn": false,
     "getByGamble": false
   },
+  "jokery_confusion": {
+    "name": "Horse of Jokery and Confusion",
+    "value": 200,
+    "link": "muy confusado",
+    "spawn": false,
+    "getByGamble": false,
+    "comp": false
+  },
   "curses_slurs": {
     "name": "Horse of Curses and Slurs",
     "value": 175,
@@ -61,14 +69,6 @@
     "name": "Horse of Logic and Reason",
     "value": 125,
     "link": "https://tenor.com/view/smart-horse-genius-beautiful-gif-3961863791999148625"
-  },
-  "jokery_confusion": {
-    "name": "Horse of Jokery and Confusion",
-    "value": 100,
-    "link": "muy confusado",
-    "spawn": false,
-    "getByGamble": false,
-    "comp": false
   },
   "truth_affirmation": {
     "name": "Horse of Truth and Affirmation",
