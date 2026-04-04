@@ -9,8 +9,9 @@ const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
 const ADMIN_IDS = ['934290747623096381', '853658523786412063'];
 const safeLength = 1800;
-
-// ALL APRIL FOOLS CHANGES HAVE A COMMENT THAT BEGINS WITH "USED TO"
+const minRoll = config.MIN_ROLL;
+const maxRoll = config.MAX_ROLL;
+const rollFactor = maxRoll - minRoll + 1;
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
@@ -34,7 +35,7 @@ function calculateCoinCostPerHorse(coinAmount) {
 }
 
 function requiredHorseCoins(coinAmount) {
-    return -10000000; // used to be Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX) || 1
+    return Math.ceil(coinAmount / 50 * config.PROGRESSIVE_COIN_GAMBLE_TAX) || 1; 
 }
 
 function normalizeHorseMap(inventory) {
@@ -87,7 +88,7 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
         }
 
         const startValue = HORSE_VALUES[slug].value;
-        const change = Math.floor(Math.random() * 201); // used to be const change = Math.floor(Math.random() * 201) - 100;
+        const change = Math.floor(Math.random() * rollFactor) + minRoll;
         const targetValue = startValue + change;
         const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
@@ -277,7 +278,6 @@ module.exports = {
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
             normalizeHorseMap(inventory);
-            /* used to be, now removed for april fools update:
             if ((inventory.horseCoins || 0) < 0) {
                 devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`, 'micro');
                 return interaction.editReply({
@@ -295,7 +295,7 @@ module.exports = {
                         flags: [MessageFlags.Ephemeral]
                     });
                 }
-            }   */
+            }   
         }
 
         // horse coin gamble
@@ -312,7 +312,7 @@ module.exports = {
             }
 
             if (gamblesCount === 1) {
-                const winAmount = Math.floor(Math.random() * 10); // used to be * 5 instead of * 10
+                const winAmount = Math.floor(Math.random() * 5); 
                 devLog(`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - 2}`, 'micro');
                 if (!isTest) {
                     inventory.horseCoins = (inventory.horseCoins - 2) + winAmount;
@@ -677,7 +677,7 @@ module.exports = {
                         frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
                         for (const victim of victims) {
                             inventory.horses.set(victim.slug, inventory.horses.get(victim.slug) - 1);
-                            const fChange = Math.floor(Math.random() * 201) ; // used to be const fChange = Math.floor(Math.random() * 201) - 100;
+                            const fChange = Math.floor(Math.random() * rollFactor) + minRoll; 
                             const fTarget = victim.value + fChange;
                             const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (victim.value - 100) / 10);
                             if (fChange < effectivelossthresh) {
@@ -696,7 +696,7 @@ module.exports = {
             }
 
             const startValue = HORSE_VALUES[slug].value;
-            const change = Math.floor(Math.random() * 201); // used to be const change = Math.floor(Math.random() * 201) - 100
+            const change = Math.floor(Math.random() * rollFactor) + minRoll;
             const targetValue = startValue + change;
             const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
@@ -782,7 +782,7 @@ module.exports = {
             }
 
             const startValue = HORSE_VALUES[slug].value;
-            const change = Math.floor(Math.random() * 201); // used to be const change = Math.floor(Math.random() * 201) - 100
+            const change = Math.floor(Math.random() * rollFactor) + minRoll;
             const targetValue = startValue + change;
             const effectivelossthresh = config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 
