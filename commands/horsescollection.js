@@ -42,19 +42,29 @@ module.exports = {
         const userWorth = leaderboard.find(u => u.userId === targetUser.id)?.worth || 0;
 
         let horseListText = "";
+        let compHorseText = "";
+        let nonCompHorseText = "";
         let ownedUniqueCount = 0;
         const ownedSlugs = new Set();
 
         for (const [slug, count] of inventory.horses) {
-            if (count > 0 && HORSE_VALUES[slug] && HORSE_VALUES[slug].comp !== false) {
-                const val = HORSE_VALUES[slug].value;
-                const display = horseName(slug);
-                let prefix = slug === "dung_beetle" ? "🪲" : (slug.includes("providence") ? "✨" : "🐎");
-                horseListText += `* ${prefix} **${display}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
+            if (count <= 0 || !HORSE_VALUES[slug]) continue;
+            const val = HORSE_VALUES[slug].value;
+            const display = horseName(slug);
+            const isComp = HORSE_VALUES[slug].comp !== false;
+            const prefix = slug === "dung_beetle" ? "🪲" : (slug.includes("providence") ? "✨" : "🐎");
+
+            if (isComp) {
+                compHorseText += `* ${prefix} **${display}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
                 ownedSlugs.add(slug);
                 ownedUniqueCount++;
+            } else {
+                // comp:false - show if owned, counts to wealth but not completion
+                nonCompHorseText += `* 👻 **${display}**: \`x${count}\` — ($${val.toLocaleString()})\n`;
             }
         }
+
+        horseListText = compHorseText + (nonCompHorseText ? `\n### 👻 Specials and Secrets\n${nonCompHorseText}` : '');
 
         const completionPercentage = Math.round((ownedUniqueCount / allPossibleSlugs.length) * 100);
         const missing = allPossibleSlugs.filter(slug => !ownedSlugs.has(slug));
