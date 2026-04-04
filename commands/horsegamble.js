@@ -8,6 +8,7 @@ const { devLog } = require('../lib/helpers/devLog');
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
 const ADMIN_IDS = ['934290747623096381', '853658523786412063'];
+const safeLength = 1800;
 
 // ALL APRIL FOOLS CHANGES HAVE A COMMENT THAT BEGINS WITH "USED TO"
 
@@ -284,7 +285,7 @@ module.exports = {
                     flags: [MessageFlags.Ephemeral]
                 });
             }
-            */
+            
             if (!isHorseCoin) {
                 const required = requiredHorseCoins(inventory.horseCoins || 0);
                 if ((inventory.horseCoins || 0) < required) {
@@ -294,7 +295,7 @@ module.exports = {
                         flags: [MessageFlags.Ephemeral]
                     });
                 }
-            }
+            }   */
         }
 
         // horse coin gamble
@@ -620,8 +621,11 @@ module.exports = {
                 finalLines.join('\n'),
             ].join('\n\n');
 
+            // in case of humongous outputs (cough cough nathan)
+            const finalText = finalLines.join('\n');
+            const trueFinalLines = finalText.length > safeLength ? finalLines.slice(0, 10).concat(['... (full in attached file)']).concat(finalLines.slice(-10)) : finalLines;
             await interaction.editReply({
-                content: finalLines.join('\n'),
+                content: trueFinalLines.join('\n'),
                 files: [
                     {
                         attachment: Buffer.from(fileContent, 'utf8'),
@@ -910,7 +914,17 @@ module.exports = {
             testTag || '',
         ].filter(Boolean).join('\n');
 
-        await interaction.editReply({ content: summary });
+        if (summary.length > safeLength) {
+            await interaction.editReply({
+                content: `Output too large, see attached file.`,
+                files: [{
+                    attachment: Buffer.from(summary, 'utf8'),
+                    name: 'gamble.txt'
+                }]
+            });
+        } else {
+            await interaction.editReply({ content: summary });
+        }
         if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
     }
 };
