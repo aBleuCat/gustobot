@@ -5,8 +5,6 @@ const { Client, GatewayIntentBits, Collection, Events } = require('discord.js');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const { REST, Routes } = require('discord.js');
-const { initDevLog, devLog } = require('./lib/helpers/devLog');
-const { startStatusChecker } = require('./lib/tasks/statusChecker');
 
 // Handlers & tasks
 const { registerInteractionHandler, runNukeCode } = require('./lib/handlers/interactionHandler');
@@ -16,6 +14,9 @@ const { startResourceMonitor } = require('./lib/tasks/resourceMonitor');
 const { startMessageCacheCleanup } = require('./lib/tasks/messageCacheCleanup');
 const { logToModChannel } = require('./lib/helpers/modLog');
 const { dmAdmin } = require('./lib/helpers/dmlog');
+const { initDevLog, devLog } = require('./lib/helpers/devLog');
+const { startStatusChecker } = require('./lib/tasks/statusChecker');
+
 
 // Client init
 const client = new Client({
@@ -52,7 +53,35 @@ for (const file of guildCommandFiles) {
 
 client.once(Events.ClientReady, async () => {
     console.log(`Logged in as ${client.user.tag}`);
+    // api request diagnostic
+    const https = require('https');
+        const options = {
+            hostname: 'discord.com',
+            port: 443, 
+            path: '/api/v10/gateway',
+            method: 'GET',
+            headers: { 'User-Agent': 'RenderDiagnostic/1.0' }
+        };
 
+        const req = https.request(options, (res) => {
+            console.log(`[DIAGNOSTIC] Discord API Status: ${res.statusCode}`);
+            if (res.statusCode === 429) {
+                devLog(`⚠️ **ERROR**: IP Banned. Discord is rate-limiting this Render IP.`);
+                console.log(`⚠️ **ERROR**: IP Banned. Discord is rate-limiting this Render IP. Status ${res.statusCode}`);
+            } else if (res.statusCode !== 200) {
+                devLog(`⚠️ **API Warning**: Received status ${res.statusCode} from Discord.`);
+                console.log(`⚠️ **API Warning**: Received status ${res.statusCode} from Discord.`);
+            } else {
+                devLog(`✅ **Network OK**: Discord API is reachable.`);
+                console.log(`✅ **Network OK**: Discord API is reachable.`);
+            }
+        });
+
+        req.on('error', (e) => {
+            console.error(`[DIAGNOSTIC] Network Error: ${e.message}`);
+            devLog(`❌ **Network Failure**: Could not reach Discord. Error: ${e.message}`);
+        });
+        req.end();
     // DM log: bot startup
     dmAdmin(client, `[DMLOG] Bot started as ${client.user.tag}`);
 
