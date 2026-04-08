@@ -18,7 +18,7 @@ module.exports = {
         if (!isOwner && !isAdmin) {
             return interaction.reply({
                 content: "You don't have permission to configure horse spawning.",
-                ephemeral: true
+                flags: [MessageFlags.Ephemeral]
             });
         }
 

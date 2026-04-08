@@ -7,7 +7,7 @@ module.exports = {
         .setDescription('Shows all learned actions'),
     async execute(interaction) {
         if (interaction.user.id !== '934290747623096381') {
-            return interaction.reply({ content: "Only the great .i.exist can view these.", ephemeral: true });
+            return interaction.reply({ content: "Only the great .i.exist can view these.", flags: [MessageFlags.Ephemeral] });
         }
 
         const ActionResponse = mongoose.model('ActionResponse');
@@ -45,7 +45,7 @@ module.exports = {
         const response = await interaction.reply({
             embeds: [generateEmbed(0)],
             components: [generateButtons(0)],
-            ephemeral: true
+            flags: [MessageFlags.Ephemeral]
         });
 
         const collector = response.createMessageComponentCollector({ time: 60000 });

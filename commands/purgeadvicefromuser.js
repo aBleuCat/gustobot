@@ -15,7 +15,7 @@ module.exports = {
         if (interaction.user.id !== '934290747623096381') {
             return interaction.reply({ 
                 content: 'You do not have permission to use this command. This is an owner-only action.', 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
@@ -28,7 +28,7 @@ module.exports = {
             if (result.deletedCount === 0) {
                 return interaction.reply({ 
                     content: `No advice found from **${target.username}**.`, 
-                    ephemeral: true 
+                    flags: [MessageFlags.Ephemeral] 
                 });
             }
 
@@ -37,7 +37,7 @@ module.exports = {
             });
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: 'Error trying to purge advice.', ephemeral: true });
+            return interaction.reply({ content: 'Error trying to purge advice.', flags: [MessageFlags.Ephemeral] });
         }
     },
 };

@@ -50,12 +50,12 @@ module.exports = {
             await webhook.delete();
 
             await interaction.client.logToModChannel(interaction.guild, `**Spawn**: ${interaction.user.tag} spawned **${ans}** impersonating ${target.tag}.`);
-            await interaction.reply({ content: 'Spawned successfully!', ephemeral: true });
+            await interaction.reply({ content: 'Spawned successfully!', flags: [MessageFlags.Ephemeral] });
 
         } catch (e) {
             console.error('[deximpersonate]', e);
             if (!interaction.replied) {
-                await interaction.reply({ content: `Error: ${e.message}`, ephemeral: true }).catch(() => {});
+                await interaction.reply({ content: `Error: ${e.message}`, flags: [MessageFlags.Ephemeral] }).catch(() => {});
             }
         }
     },

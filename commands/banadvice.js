@@ -15,7 +15,7 @@ module.exports = {
         if (interaction.user.id !== '934290747623096381') {
             return interaction.reply({ 
                 content: 'You do not have permission to use this command.', 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
@@ -34,7 +34,7 @@ module.exports = {
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: 'Error updating advice ban status.', ephemeral: true });
+            return interaction.reply({ content: 'Error updating advice ban status.', flags: [MessageFlags.Ephemeral] });
         }
     },
 };

@@ -22,7 +22,7 @@ module.exports = {
         if (!DM_ALLOWED_USER_IDS.has(interaction.user.id)) {
             return interaction.reply({
                 content: 'You do not have permission to use this command.',
-                ephemeral: true
+                flags: [MessageFlags.Ephemeral]
             });
         }
 
@@ -33,13 +33,13 @@ module.exports = {
             await targetUser.send(messageText);
             await interaction.reply({ 
                 content: `Successfully sent message to **${targetUser.displayName}**.`, 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         } catch (error) {
             console.error(error);
             await interaction.reply({ 
                 content: `I couldn't DM **${targetUser.displayName}**. They might have their DMs closed.`, 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
     },

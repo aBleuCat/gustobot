@@ -9,7 +9,7 @@ module.exports = {
         .addStringOption(opt => opt.setName('response').setDescription('The bot response').setRequired(true)),
     async execute(interaction) {
         if (interaction.user.id !== '934290747623096381') {
-            return interaction.reply({ content: "You can't do that brochacho", ephemeral: true });
+            return interaction.reply({ content: "You can't do that brochacho", flags: [MessageFlags.Ephemeral] });
         }
 
         const ActionResponse = mongoose.model('ActionResponse');
@@ -22,6 +22,6 @@ module.exports = {
             { upsert: true }
         );
 
-        return interaction.reply({ content: `Ok sir, when someone says **${trigger}**, I'll say **${response}**`, ephemeral: true });
+        return interaction.reply({ content: `Ok sir, when someone says **${trigger}**, I'll say **${response}**`, flags: [MessageFlags.Ephemeral] });
     }
 };

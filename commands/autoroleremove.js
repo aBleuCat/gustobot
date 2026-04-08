@@ -23,13 +23,13 @@ module.exports = {
         if (result.deletedCount === 0) {
             return interaction.reply({ 
                 content: `Could not find a rule with ID \`${id}\` in the database.`, 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
         await interaction.reply({ 
             content: `Rule \`${id}\` has been removed from the cloud database.`, 
-            ephemeral: true 
+            flags: [MessageFlags.Ephemeral] 
         });
     }
 };

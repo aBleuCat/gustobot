@@ -8,10 +8,10 @@ module.exports = {
     async execute(interaction) {
         // Owner Check
         if (interaction.user.id !== '934290747623096381') {
-            return interaction.reply({ content: "Only the owner can scrub the database.", ephemeral: true });
+            return interaction.reply({ content: "Only the owner can scrub the database.", flags: [MessageFlags.Ephemeral] });
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
         const Advice = mongoose.model('Advice');
 
         try {

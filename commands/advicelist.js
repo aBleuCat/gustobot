@@ -43,7 +43,7 @@ module.exports = {
         const response = await interaction.reply({
             embeds: [generateEmbed(0)],
             components: [generateButtons(0)],
-            ephemeral: true
+            flags: [MessageFlags.Ephemeral]
         });
 
         // Collector to handle button clicks

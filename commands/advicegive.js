@@ -22,7 +22,7 @@ module.exports = {
         if (isBanned) {
             return interaction.reply({ 
                 content: 'You are banned from contributing wisdom to the circle.', 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
@@ -30,14 +30,14 @@ module.exports = {
         if (text.length > 100) {
             return interaction.reply({
                 content: `That's too much wisdom! Please keep it under 100 characters (Current: ${text.length}).`,
-                ephemeral: true
+                flags: [MessageFlags.Ephemeral]
             });
         }
         
         if (text.length < 3) {
             return interaction.reply({
                 content: 'Wisdom must be at least 3 characters long.',
-                ephemeral: true
+                flags: [MessageFlags.Ephemeral]
             });
         }
 
@@ -49,7 +49,7 @@ module.exports = {
         if (existingAdvice) {
             return interaction.reply({ 
                 content: 'This wisdom has already been propagated. Try something more original.', 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
@@ -60,10 +60,10 @@ module.exports = {
                 authorId: interaction.user.id
             });
             await newAdvice.save();
-            await interaction.reply({ content: 'Your wisdom shall be propagated', ephemeral: true });
+            await interaction.reply({ content: 'Your wisdom shall be propagated', flags: [MessageFlags.Ephemeral] });
         } catch (error) {
             console.error(error);
-            await interaction.reply({ content: 'Failed to save advice.', ephemeral: true });
+            await interaction.reply({ content: 'Failed to save advice.', flags: [MessageFlags.Ephemeral] });
         }
     },
 };

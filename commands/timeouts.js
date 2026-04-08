@@ -12,7 +12,7 @@ module.exports = {
         const activeTimeouts = await Timeout.find({}).lean();
 
         if (activeTimeouts.length === 0) {
-            return interaction.reply({ content: "There are no active role-swap timeouts.", ephemeral: true });
+            return interaction.reply({ content: "There are no active role-swap timeouts.", flags: [MessageFlags.Ephemeral] });
         }
 
         const embed = new EmbedBuilder()
