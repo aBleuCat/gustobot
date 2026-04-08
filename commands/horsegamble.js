@@ -18,7 +18,7 @@ const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
 const rollFactor = maxRoll - minRoll + 1;
 
-// ── Gamble streak helpers ──────────────────────────────────────────────────
+// Gamble streak helpers 
 function loadStreaks() {
     try {
         return JSON.parse(fs.readFileSync(STREAKS_PATH, 'utf8'));
@@ -57,7 +57,6 @@ function updateStreak(userId, isNetWin) {
     saveStreaks(streaks);
     return { newStreak, awarded };
 }
-// ──────────────────────────────────────────────────────────────────────────
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;

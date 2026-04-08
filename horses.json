@@ -60,6 +60,14 @@
     "value": 150,
     "link": "https://tenor.com/view/horse-horse-smile-horse-teeth-gif-15651902"
   },
+  "gamble_streak": {
+    "name": "Horse of Gambling and Money",
+    "value": 100,
+    "link": "moola",
+    "spawn": false,
+    "getByGamble": false,
+    "comp": false
+  },
   "gymnastics_acrobatics": {
     "name": "Horse of Gymnastics and Acrobatics",
     "value": 125,
