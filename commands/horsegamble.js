@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const HORSE_VALUES = require('../horses.json');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const { config } = require('../lib/config');
 const { conditionHorse } = require('../lib/helpers/horseFuncs');
 const { devLog } = require('../lib/helpers/devLog');
@@ -8,10 +10,54 @@ const { devLog } = require('../lib/helpers/devLog');
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
 const ADMIN_IDS = ['934290747623096381', '853658523786412063'];
+const STREAK_HORSE = 'gamble_streak';
+const STREAK_REQUIRED = 6;
+const STREAKS_PATH = path.join(__dirname, '../runtime_jsons/gamble_streaks.json');
 const safeLength = 1800;
 const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
 const rollFactor = maxRoll - minRoll + 1;
+
+// ── Gamble streak helpers ──────────────────────────────────────────────────
+function loadStreaks() {
+    try {
+        return JSON.parse(fs.readFileSync(STREAKS_PATH, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+
+function saveStreaks(streaks) {
+    try {
+        fs.writeFileSync(STREAKS_PATH, JSON.stringify(streaks, null, 2), 'utf8');
+    } catch (e) {
+        console.error('Failed to save gamble_streaks.json:', e);
+    }
+}
+
+/**
+ * Update the streak for a user after a gamble outcome.
+ * isNetWin = true if net value change > 0.
+ * Returns { newStreak, awarded } — awarded=true means user hit STREAK_REQUIRED.
+ */
+function updateStreak(userId, isNetWin) {
+    const streaks = loadStreaks();
+    if (!isNetWin) {
+        streaks[userId] = 0;
+        saveStreaks(streaks);
+        return { newStreak: 0, awarded: false };
+    }
+    streaks[userId] = (streaks[userId] || 0) + 1;
+    const newStreak = streaks[userId];
+    let awarded = false;
+    if (newStreak >= STREAK_REQUIRED) {
+        streaks[userId] = 0;
+        awarded = true;
+    }
+    saveStreaks(streaks);
+    return { newStreak, awarded };
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 function horseName(slug) {
     return HORSE_VALUES[slug]?.name ?? slug;
@@ -573,6 +619,20 @@ module.exports = {
                 devLog(`/horsegamble: Cycle mode inventory saved and conditioned for user ${interaction.user.id}`, 'micro');
             }
 
+            // Streak tracking: cycle counts as one outcome based on total net change
+            let cycleStreakMsg = '';
+            if (!isTest) {
+                const { newStreak: cycleStreak, awarded: cycleAwarded } = updateStreak(interaction.user.id, totalNetChange > 0);
+                if (cycleAwarded) {
+                    inventory.horses.set(STREAK_HORSE, (inventory.horses.get(STREAK_HORSE) || 0) + 1);
+                    await inventory.save();
+                    cycleStreakMsg = `🏆 **GAMBLING STREAK!** You won ${STREAK_REQUIRED} in a row and received a **${horseName(STREAK_HORSE)}**!`;
+                    devLog(`/horsegamble: Streak horse awarded to user ${interaction.user.id}`);
+                } else if (totalNetChange > 0) {
+                    cycleStreakMsg = `*(Win streak: ${cycleStreak}/${STREAK_REQUIRED})*`;
+                }
+            }
+
             // final summary
             const initialHorseLabel = isTop ? 'top horses' : isBottom ? 'bottom horses' : horseName(horseSlug);
             const finalLines = [
@@ -610,6 +670,7 @@ module.exports = {
             finalLines.push(`Horse Coins Remaining: ${isTest ? '(test)' : virtualInv.horseCoins}`);
             if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
             if (isTest) finalLines.push(`*(test mode — no horses or coins spent)*`);
+            if (cycleStreakMsg) finalLines.push(cycleStreakMsg);
 
             // Attach cycle logs + final summary in one file
             const fileContent = [
@@ -710,6 +771,7 @@ module.exports = {
                     await inventory.save();
                 }
                 const testTag = isTest ? ' *(test)*' : '';
+                if (!isTest) updateStreak(interaction.user.id, false);
                 if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
                 return interaction.editReply(`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`);
             }
@@ -745,13 +807,28 @@ module.exports = {
             if (closestSlug === slug) {
                 outcomeMsg = `The gamble resulted in no change ($0). You kept your **${horseName(slug)}**.`;
             } else {
-                const resultText = actualDiff >= 0 ? `won +$${actualDiff}` : `lost $${Math.abs(actualDiff)}`;
-                outcomeMsg = `You gambled your **${horseName(slug)}** ($${startValue}) and ${resultText}. You got a **${horseName(closestSlug)}** ($${endValue})!`;
+                const resultText = actualDiff >= 0 ? `won +${actualDiff}` : `lost ${Math.abs(actualDiff)}`;
+                outcomeMsg = `You gambled your **${horseName(slug)}** (${startValue}) and ${resultText}. You got a **${horseName(closestSlug)}** (${endValue})!`;
             }
             if (isTest) outcomeMsg += ' *(test)*';
 
+            // Streak: a net value gain counts as a win
+            let singleStreakMsg = '';
+            if (!isTest) {
+                const isNetWin = actualDiff > 0;
+                const { newStreak, awarded } = updateStreak(interaction.user.id, isNetWin);
+                if (awarded) {
+                    inventory.horses.set(STREAK_HORSE, (inventory.horses.get(STREAK_HORSE) || 0) + 1);
+                    await inventory.save();
+                    singleStreakMsg = `\n\n🏆 **GAMBLING STREAK!** You won ${STREAK_REQUIRED} in a row and received a **${horseName(STREAK_HORSE)}**!`;
+                    devLog(`/horsegamble: Streak horse awarded to user ${interaction.user.id}`);
+                } else if (isNetWin) {
+                    singleStreakMsg = `\n*(Win streak: ${newStreak}/${STREAK_REQUIRED})*`;
+                }
+            }
+
             if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
-            return interaction.editReply(outcomeMsg + frenzyMessage);
+            return interaction.editReply(outcomeMsg + frenzyMessage + singleStreakMsg);
         }
 
         // bulk gamble logic (cycle=1, count>1)
@@ -828,9 +905,19 @@ module.exports = {
             }
         }
 
+        let bulkStreakMsg = '';
         if (!isTest) {
             devLog(`/horsegamble: Bulk gamble completed for user ${interaction.user.id} | wins=${totalWins} losses=${totalLosses} completeLosses=${totalCompleteLosses} netChange=${netValueChange}`, 'micro');
             inventory.lastGamble = now;
+            // Streak: bulk counts as one outcome based on net value
+            const { newStreak, awarded } = updateStreak(interaction.user.id, netValueChange > 0);
+            if (awarded) {
+                inventory.horses.set(STREAK_HORSE, (inventory.horses.get(STREAK_HORSE) || 0) + 1);
+                bulkStreakMsg = `\n🏆 **GAMBLING STREAK!** You won ${STREAK_REQUIRED} in a row and received a **${horseName(STREAK_HORSE)}**!`;
+                devLog(`/horsegamble: Streak horse awarded to user ${interaction.user.id}`);
+            } else if (netValueChange > 0) {
+                bulkStreakMsg = `\n*(Win streak: ${newStreak}/${STREAK_REQUIRED})*`;
+            }
             await houseInv.save();
             await inventory.save();
             devLog(`/horsegamble: Bulk gamble inventory saved for user ${interaction.user.id}`, 'micro');
@@ -916,14 +1003,14 @@ module.exports = {
 
         if (summary.length > safeLength) {
             await interaction.editReply({
-                content: `Output too large, see attached file.`,
+                content: `Output too large, see attached file.` + bulkStreakMsg,
                 files: [{
                     attachment: Buffer.from(summary, 'utf8'),
                     name: 'gamble.txt'
                 }]
             });
         } else {
-            await interaction.editReply({ content: summary });
+            await interaction.editReply({ content: summary + bulkStreakMsg });
         }
         if (!isTest) conditionHorse(inventory, interaction.channel).catch(e => console.error('conditionHorse error:', e));
     }
