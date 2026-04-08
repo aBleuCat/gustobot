@@ -90,12 +90,29 @@ module.exports = {
                 triggers.forEach(t => lines.push(`• \`${t._id}\` \`${t.trigger.type}:${t.trigger.text}\`\n  → ${t.message.slice(0, 60)}${t.message.length > 60 ? '…' : ''}`));
             }
 
-            let out = '';
+            // Split into chunks of 1900 characters to be safe
+            const chunks = [];
+            let currentChunk = '';
+
             for (const line of lines) {
-                if ((out + '\n' + line).length > 1900) { out += '\n…(truncated)'; break; }
-                out += (out ? '\n' : '') + line;
+                if ((currentChunk + '\n' + line).length > 1900) {
+                    chunks.push(currentChunk);
+                    currentChunk = line;
+                } else {
+                    currentChunk += (currentChunk ? '\n' : '') + line;
+                }
             }
-            return interaction.editReply(out);
+            if (currentChunk) chunks.push(currentChunk);
+
+            // Edit the initial deferred reply with the first chunk
+            await interaction.editReply(chunks[0]);
+
+            // Send subsequent chunks as follow-up messages
+            if (chunks.length > 1) {
+                for (let i = 1; i < chunks.length; i++) {
+                    await interaction.followUp({ content: chunks[i], ephemeral: true });
+                }
+            }
         }
     },
 };
