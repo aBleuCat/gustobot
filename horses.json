@@ -40,6 +40,16 @@
     "getByGamble": false,
     "comp": false
   },
+  "strength_energy": {
+    "name": "Horse of Strength and Energy",
+    "value": 175,
+    "link": "https://i.imgur.com/xMey98N.png"
+  },
+  "bloated_chonky": {
+    "name": "Horse of Bloatedness and Chonkyness",
+    "value": 175,
+    "link": "https://i.imgur.com/Hku8yKf.png"
+  },
   "curses_slurs": {
     "name": "Horse of Curses and Slurs",
     "value": 175,
@@ -60,6 +70,11 @@
     "value": 150,
     "link": "https://tenor.com/view/horse-horse-smile-horse-teeth-gif-15651902"
   },
+  "illusion_trickery": {
+    "name": "Horse of Illusion and Trickery",
+    "value": 150,
+    "link": ""
+  },
   "gamble_streak": {
     "name": "Horse of Gambling and Money",
     "value": 100,
@@ -67,6 +82,11 @@
     "spawn": false,
     "getByGamble": false,
     "comp": false
+  },
+  "coding_hacking": {
+    "name": "Horse of Coding and Hacking",
+    "value": 100,
+    "link": "https://static.wikia.nocookie.net/theamazingworldofgumball/images/9/94/S5E07_The_Code_19.png/revision/latest?cb=20161021005239"
   },
   "gymnastics_acrobatics": {
     "name": "Horse of Gymnastics and Acrobatics",
