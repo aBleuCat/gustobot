@@ -36,6 +36,36 @@ module.exports = {
         .addSubcommand(sub => sub
             .setName('killbot')
             .setDescription('Shut down the bot')
+        )
+        .addSubcommand(sub => sub
+          .setName('lists')
+           .setDescription('Manage whitelists and blacklists')
+          .addStringOption(o => o
+              .setName('listname')
+              .setDescription('Which list to modify')
+              .setRequired(true)
+              .addChoices(
+                  { name: 'Primary Whitelist', value: 'primaryTrigWhitelist' },
+                 { name: 'Primary Blacklist', value: 'primaryTrigBlacklist' },
+                 { name: 'Secondary Whitelist', value: 'secondaryTrigWhitelist' },
+                 { name: 'Secondary Blacklist', value: 'secondaryTrigBlacklist' },
+             )
+        )
+          .addStringOption(o => o
+               .setName('action')
+               .setDescription('Add or remove an ID')
+               .setRequired(true)
+              .addChoices(
+                  { name: 'add', value: 'add' },
+                 { name: 'remove', value: 'remove' },
+               { name: 'view', value: 'view' }
+              )
+           )
+           .addStringOption(o => o
+               .setName('id')
+               .setDescription('The User/Bot ID to add or remove')
+               .setRequired(false)
+           )
         ),
 
     async autocomplete(interaction) {
@@ -54,13 +84,13 @@ module.exports = {
 
         const sub = interaction.options.getSubcommand();
 
-        // ── killbot ──────────────────────────────────────────────────
+        // kills bot
         if (sub === 'killbot') {
             await interaction.reply({ content: 'Shutting down...', flags: [MessageFlags.Ephemeral] });
             process.exit(0);
         }
 
-        // ── vars ─────────────────────────────────────────────────────
+        // vars
         if (sub === 'vars') {
             const varName = interaction.options.getString('variable');
             const action = interaction.options.getString('action');
@@ -131,6 +161,33 @@ module.exports = {
                 config[varName] += value;
                 return interaction.reply({ content: `✅ **${varName}**: \`${oldVal}\` + \`${value}\` = \`${config[varName]}\``, flags: [MessageFlags.Ephemeral] });
             }
+        }
+        if (sub === 'lists') {
+         const listName = interaction.options.getString('listname');
+            const action = interaction.options.getString('action');
+            const targetId = interaction.options.getString('id');
+
+            // Ensure the list exists in config object (e.g., config.lists)
+           if (!config.lists[listName]) config.lists[listName] = [];
+
+            if (action === 'view') {
+              const listStr = config.lists[listName].join(', ') || 'Empty';
+               return interaction.reply({ content: `**${listName}**: ${listStr}`, flags: [MessageFlags.Ephemeral] });
+         }
+
+           if (!targetId) return interaction.reply({ content: "ID required for this action.", flags: [MessageFlags.Ephemeral] });
+
+           if (action === 'add') {
+               if (!config.lists[listName].includes(targetId)) {
+                   config.lists[listName].push(targetId);
+                  return interaction.reply({ content: `Added \`${targetId}\` to ${listName}`, flags: [MessageFlags.Ephemeral] });
+              }
+           }
+
+           if (action === 'remove') {
+              config.lists[listName] = config.lists[listName].filter(id => id !== targetId);
+              return interaction.reply({ content: `Removed \`${targetId}\` from ${listName}`, flags: [MessageFlags.Ephemeral] });
+           }
         }
     }
 };
