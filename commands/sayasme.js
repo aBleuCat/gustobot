@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { ORBITAL_ID, OWNER_ID_DELTA: DELTA } = require('./orbitalcannon');
 
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
         if (!isOwner && !isAdmin) {
             return interaction.reply({ 
                 content: "You don't have permission to make me talk.", 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral]
             });
         }
 
@@ -31,10 +31,10 @@ module.exports = {
 
         try {
             await interaction.channel.send(text);
-            return interaction.reply({ content: "Message sent.", ephemeral: true });
+            return interaction.reply({ content: "Message sent.", flags: [MessageFlags.Ephemeral] });
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: "I couldn't send the message here.", ephemeral: true });
+            return interaction.reply({ content: "I couldn't send the message here.", flags: [MessageFlags.Ephemeral] });
         }
     }
 };
