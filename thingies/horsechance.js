@@ -80,3 +80,5 @@ if (mode === 'stats') {
 } else {
     console.log("Usage: node horsechance.js [stats|wheel]");
 }
+
+module.exports = { getStats, spinWheel };
