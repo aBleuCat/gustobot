@@ -1,0 +1,1 @@
+{"version":3,"file":"advicebanlist.js","sourceRoot":"","sources":["../../src/commands/advicebanlist.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,mBAAmB,EAA+B,MAAM,YAAY,CAAC;AAE9E,eAAe;IACX,IAAI,EAAE,IAAI,mBAAmB,EAAE;SAC1B,OAAO,CAAC,eAAe,CAAC;SACxB,cAAc,CAAC,sDAAsD,CAAC;IAC3E,KAAK,CAAC,OAAO,CAAC,WAAwC;QAClD,sBAAsB;IAC1B,CAAC;CACJ,CAAC"}
