@@ -20,6 +20,26 @@ const OPERATIONS = {
     'insert': 'Insert a new document (use --set for values)'
 };
 
+// Split long messages into chunks
+async function sendChunks(interaction, message, chunkSize = 1900) {
+    if (message.length <= chunkSize) {
+        await interaction.reply({ content: message, flags: [MessageFlags.Ephemeral] });
+        return;
+    }
+
+    const chunks = [];
+    while (message.length > chunkSize) {
+        chunks.push(message.slice(0, chunkSize));
+        message = message.slice(chunkSize);
+    }
+    if (message.length > 0) chunks.push(message);
+
+    await interaction.reply({ content: chunks[0], flags: [MessageFlags.Ephemeral] });
+    for (let i = 1; i < chunks.length; i++) {
+        await interaction.followUp({ content: chunks[i], flags: [MessageFlags.Ephemeral] });
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('mongotool')
@@ -43,6 +63,10 @@ module.exports = {
         .addStringOption(option =>
             option.setName('filter')
                 .setDescription('JSON filter query (e.g., {"authorId": "123"})')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('contains')
+                .setDescription('Search field contains value (e.g., "content:hello")')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('set')
@@ -82,15 +106,13 @@ module.exports = {
     async execute(interaction) {
         // Owner ID Check
         if (interaction.user.id !== '934290747623096381') {
-            return interaction.reply({
-                content: '❌ You do not have permission to use this command. This is an owner-only action.',
-                flags: [MessageFlags.Ephemeral]
-            });
+            return sendChunks(interaction, '❌ You do not have permission to use this command. This is an owner-only action.');
         }
 
         const modelName = interaction.options.getString('model').toLowerCase();
         const action = interaction.options.getString('action');
         const filterStr = interaction.options.getString('filter');
+        const containsStr = interaction.options.getString('contains');
         const setStr = interaction.options.getString('set');
         const limit = interaction.options.getInteger('limit');
         const projectionStr = interaction.options.getString('projection');
@@ -99,10 +121,7 @@ module.exports = {
         // Validate model exists
         if (!AVAILABLE_MODELS[modelName]) {
             const available = Object.keys(AVAILABLE_MODELS).map(k => `\`${k}\``).join(', ');
-            return interaction.reply({
-                content: `❌ Unknown model: **${modelName}**\nAvailable models: ${available}`,
-                flags: [MessageFlags.Ephemeral]
-            });
+            return sendChunks(interaction, `❌ Unknown model: **${modelName}**\nAvailable models: ${available}`);
         }
 
         const Model = mongoose.model(AVAILABLE_MODELS[modelName]);
@@ -116,11 +135,19 @@ module.exports = {
             try {
                 filter = JSON.parse(filterStr);
             } catch (e) {
-                return interaction.reply({
-                    content: `❌ Invalid filter JSON: ${e.message}`,
-                    flags: [MessageFlags.Ephemeral]
-                });
+                return sendChunks(interaction, `❌ Invalid filter JSON: ${e.message}`);
             }
+        }
+
+        // Parse contains (field:value format, e.g., "content:hello")
+        if (containsStr) {
+            const colonIndex = containsStr.indexOf(':');
+            if (colonIndex === -1) {
+                return sendChunks(interaction, '❌ Invalid --contains format. Use "field:value" (e.g., "content:hello")');
+            }
+            const field = containsStr.slice(0, colonIndex);
+            const value = containsStr.slice(colonIndex + 1);
+            filter[field] = { $regex: value, $options: 'i' };
         }
 
         // Parse set data
@@ -128,10 +155,7 @@ module.exports = {
             try {
                 setData = JSON.parse(setStr);
             } catch (e) {
-                return interaction.reply({
-                    content: `❌ Invalid set JSON: ${e.message}`,
-                    flags: [MessageFlags.Ephemeral]
-                });
+                return sendChunks(interaction, `❌ Invalid set JSON: ${e.message}`);
             }
         }
 
@@ -140,10 +164,7 @@ module.exports = {
             try {
                 projection = JSON.parse(projectionStr);
             } catch (e) {
-                return interaction.reply({
-                    content: `❌ Invalid projection JSON: ${e.message}`,
-                    flags: [MessageFlags.Ephemeral]
-                });
+                return sendChunks(interaction, `❌ Invalid projection JSON: ${e.message}`);
             }
         }
 
@@ -163,10 +184,7 @@ module.exports = {
                     result = await query.lean();
 
                     if (result.length === 0) {
-                        return interaction.reply({
-                            content: `🔍 No documents found for model **${modelName}** with filter: \`${JSON.stringify(filter)}\``,
-                            flags: [MessageFlags.Ephemeral]
-                        });
+                        return sendChunks(interaction, `🔍 No documents found for model **${modelName}** with filter: \`${JSON.stringify(filter)}\``);
                     }
 
                     const displayLimit = verbose ? result.length : Math.min(result.length, 5);
@@ -176,68 +194,37 @@ module.exports = {
 
                     const response = `📋 Found **${result.length}** documents (showing ${displayLimit}${result.length > displayLimit ? ` of ${result.length}` : ''}):\n\`\`\`json\n${preview}\n\`\`\`${result.length > displayLimit ? `\n_Use \`limit\` option to see more (max 100)_` : ''}`;
                     
-                    // Handle long responses
-                    if (response.length > 4000) {
-                        return interaction.reply({
-                            content: `📋 Found **${result.length}** documents. First 5:\n\`\`\`json\n${preview}\n\`\`\``,
-                            flags: [MessageFlags.Ephemeral]
-                        });
-                    }
-                    return interaction.reply({ content: response });
+                    return sendChunks(interaction, response);
 
                 case 'count':
                     result = await Model.countDocuments(filter);
-                    return interaction.reply({
-                        content: `📊 **${result}** documents match filter: \`${JSON.stringify(filter)}\``,
-                        flags: [MessageFlags.Ephemeral]
-                    });
+                    return sendChunks(interaction, `📊 **${result}** documents match filter: \`${JSON.stringify(filter)}\``);
 
                 case 'delete':
                     result = await Model.deleteMany(filter);
-                    return interaction.reply({
-                        content: `🗑️ Deleted **${result.deletedCount}** documents from **${modelName}**`,
-                        flags: [MessageFlags.Ephemeral]
-                    });
+                    return sendChunks(interaction, `🗑️ Deleted **${result.deletedCount}** documents from **${modelName}**`);
 
                 case 'update':
                     if (Object.keys(setData).length === 0) {
-                        return interaction.reply({
-                            content: '❌ Update operation requires --set with fields to update',
-                            flags: [MessageFlags.Ephemeral]
-                        });
+                        return sendChunks(interaction, '❌ Update operation requires --set with fields to update');
                     }
                     result = await Model.updateMany(filter, { $set: setData });
-                    return interaction.reply({
-                        content: `✏️ Updated **${result.modifiedCount}** documents in **${modelName}**`,
-                        flags: [MessageFlags.Ephemeral]
-                    });
+                    return sendChunks(interaction, `✏️ Updated **${result.modifiedCount}** documents in **${modelName}**`);
 
                 case 'insert':
                     if (Object.keys(setData).length === 0) {
-                        return interaction.reply({
-                            content: '❌ Insert operation requires --set with document fields',
-                            flags: [MessageFlags.Ephemeral]
-                        });
+                        return sendChunks(interaction, '❌ Insert operation requires --set with document fields');
                     }
                     const newDoc = new Model(setData);
                     result = await newDoc.save();
-                    return interaction.reply({
-                        content: `✅ Inserted new document into **${modelName}**:\n\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``,
-                        flags: [MessageFlags.Ephemeral]
-                    });
+                    return sendChunks(interaction, `✅ Inserted new document into **${modelName}**:\n\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``);
 
                 default:
-                    return interaction.reply({
-                        content: '❌ Unknown operation',
-                        flags: [MessageFlags.Ephemeral]
-                    });
+                    return sendChunks(interaction, '❌ Unknown operation');
             }
         } catch (error) {
             console.error('MongoTool Error:', error);
-            return interaction.reply({
-                content: `❌ Error: ${error.message}`,
-                flags: [MessageFlags.Ephemeral]
-            });
+            return sendChunks(interaction, `❌ Error: ${error.message}`);
         }
     }
 };
