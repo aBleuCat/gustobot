@@ -128,14 +128,6 @@ client.on('interactionCreate', async interaction => {
 
 // health check and webhook server
 http.createServer(async (req, res) => {
-    const info = {
-        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-        device: req.headers['user-agent'],
-        from: req.headers['referer'] || 'Direct/Bookmark',
-        language: req.headers['accept-language']?.split(',')[0], 
-        intent: `${req.method} ${req.url}`
-    };
-    console.log(info);
 
     // render webhooks
     if (req.method === 'POST' && req.url === '/render-webhook') {
