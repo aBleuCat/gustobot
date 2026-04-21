@@ -17,6 +17,7 @@ const safeLength = 1800;
 const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
 const rollFactor = maxRoll - minRoll + 1;
+const MIN_GAMBLE_COIN_COUNT = -5;
 
 // Gamble streak helpers 
 function loadStreaks() {
@@ -323,14 +324,14 @@ module.exports = {
                 inventory = new UserHorses({ userId: interaction.user.id, horses: new Map(), horseCoins: 0 });
             }
             normalizeHorseMap(inventory);
-            if ((inventory.horseCoins || 0) < 0) {
+            if ((inventory.horseCoins || 0) < MIN_GAMBLE_COIN_COUNT) {
                 devLog(`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`, 'micro');
                 return interaction.editReply({
                     content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
                     flags: [MessageFlags.Ephemeral]
                 });
             }
-            
+            /* do we really need this
             if (!isHorseCoin) {
                 const required = requiredHorseCoins(inventory.horseCoins || 0);
                 if ((inventory.horseCoins || 0) < required) {
@@ -340,7 +341,7 @@ module.exports = {
                         flags: [MessageFlags.Ephemeral]
                     });
                 }
-            }   
+            } */
         }
 
         // horse coin gamble
