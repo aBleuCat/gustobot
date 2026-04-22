@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const mongoose = require('mongoose');
 const HORSE_VALUES = require('../horses.json');
 const UserHorses = mongoose.model('UserHorses');
@@ -36,7 +36,7 @@ module.exports = {
 
     async execute(interaction) {
         if (interaction.user.id !== '934290747623096381') {
-            return interaction.reply({ content: "You are not authorized to use this command.", ephemeral: true });
+            return interaction.reply({ content: "You are not authorized to use this command.", flags: [MessageFlags.Ephemeral] });
         }
 
         const target = interaction.options.getUser('target');
@@ -45,7 +45,7 @@ module.exports = {
         // Verify the horse type exists in our data
         const horseData = HORSE_VALUES[type];
         if (!horseData) {
-            return interaction.reply({ content: "Invalid horse type selected.", ephemeral: true });
+            return interaction.reply({ content: "Invalid horse type selected.", flags: [MessageFlags.Ephemeral] });
         }
 
         let inventory = await UserHorses.findOne({ userId: target.id });
@@ -61,7 +61,7 @@ module.exports = {
         const horseDisplay = horseData.name;
         await interaction.reply({ 
             content: `<@${target.id}> has magically obtained a **${horseDisplay}**`, 
-            ephemeral: false 
+            flags: [MessageFlags.Ephemeral]
         });
 
         if (horseData.link) {
