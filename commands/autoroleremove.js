@@ -12,6 +12,9 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        if (interaction.user.id !== '934290747623096381') {
+            return interaction.reply({ content: "Owner only.", flags: [MessageFlags.Ephemeral] });
+        }
         const id = interaction.options.getString('id');
         
         // Access the Rule model we defined in index.js

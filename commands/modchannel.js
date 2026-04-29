@@ -9,6 +9,12 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return await interaction.editReply({ 
+                content: "You do not have permission to use this command.", 
+                flags: [MessageFlags.Ephemeral]
+            });
+        }
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
         
         const channel = interaction.options.getChannel('channel');
