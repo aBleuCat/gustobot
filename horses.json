@@ -5,6 +5,11 @@
     "link": "https://i.imgur.com/wE9RoNz.png",
     "comp": false
   },
+  "unicorn": {
+	"name": "Unicorn",
+	"value": 500,
+	"link": "https://tenor.com/view/cat-kitten-unicorn-rainbow-yeah-gif-27324049"
+  },
   "trojan_horse": {
     "name": "Trojan Horse",
     "value": 300,
@@ -23,7 +28,7 @@
   "omniscience": {
     "name": "Horse of Omniscience and All Knowing",
     "value": 200,
-    "link": "https://tenor.com/view/magic-horse-wise-horse-gambling-gambling-horse-all-knowing-horse-gif-14785671275428921392"
+    "link": "https://tenor.com/view/nasa-horsehead-nebula-outer-space-gif-9363091"
   },
   "equality_parallelism": {
     "name": "Horse of Equality and Parallelism",
@@ -73,7 +78,17 @@
   "illusion_trickery": {
     "name": "Horse of Illusion and Trickery",
     "value": 150,
-    "link": ""
+    "link": "‎"
+  },
+  "gymnastics_acrobatics": {
+    "name": "Horse of Gymnastics and Acrobatics",
+    "value": 125,
+    "link": "https://tenor.com/view/xd-horses-gif-19635108"
+  },
+  "logic_reason": {
+    "name": "Horse of Logic and Reason",
+    "value": 125,
+    "link": "https://tenor.com/view/smart-horse-genius-beautiful-gif-3961863791999148625"
   },
   "gamble_streak": {
     "name": "Horse of Gambling and Money",
@@ -88,15 +103,10 @@
     "value": 100,
     "link": "https://static.wikia.nocookie.net/theamazingworldofgumball/images/9/94/S5E07_The_Code_19.png/revision/latest?cb=20161021005239"
   },
-  "gymnastics_acrobatics": {
-    "name": "Horse of Gymnastics and Acrobatics",
-    "value": 125,
-    "link": "https://tenor.com/view/xd-horses-gif-19635108"
-  },
-  "logic_reason": {
-    "name": "Horse of Logic and Reason",
-    "value": 125,
-    "link": "https://tenor.com/view/smart-horse-genius-beautiful-gif-3961863791999148625"
+  "ballsacks_testicles": {
+	"name": "Horse of Ballsacks and Testicular Cancer",
+	"value": 100,
+	"link": "https://i.imgur.com/L5BNjJA.jpeg"
   },
   "truth_affirmation": {
     "name": "Horse of Truth and Affirmation",
