@@ -29,8 +29,8 @@ module.exports = {
 			return embed;
 		};
 
-		const generateButtons = page => {
-			return new ActionRowBuilder().addComponents(
+		const generateButtons = page =>
+			new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId(`act_prev_${page}`)
 					.setLabel('⬅️')
@@ -42,7 +42,6 @@ module.exports = {
 					.setStyle(ButtonStyle.Secondary)
 					.setDisabled((page + 1) * 10 >= actions.length)
 			);
-		};
 
 		const response = await interaction.reply({
 			embeds: [generateEmbed(0)],
@@ -54,11 +53,11 @@ module.exports = {
 
 		collector.on('collect', async i => {
 			const [, direction, currentPage] = i.customId.split('_');
-			const newPage = direction === 'next' ? parseInt(currentPage) + 1 : parseInt(currentPage) - 1;
-			
+			const newPage = direction === 'next' ? Number.parseInt(currentPage, 10) + 1 : Number.parseInt(currentPage, 10) - 1;
+
 			await i.update({
 				embeds: [generateEmbed(newPage)],
-				components: [generateButtons(newPage)]
+				components: [generateButtons(newPage)],
 			});
 		});
 	}
