@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
-const { ORBITAL_ID, OWNER_ID_DELTA: DELTA } = require('./orbitalcannon');
+import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
+import { ORBITAL_ID, OWNER_ID_DELTA: DELTA } from './orbitalcannon.js'; // nathan you got that
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,7 +12,7 @@ module.exports = {
         .setContexts([0, 1, 2]) 
         .setIntegrationTypes([0, 1]),
 
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         const ownerId = '934290747623096381';
         const isOwner = interaction.user.id === ownerId;
         const isAdmin = interaction.memberPermissions && interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
@@ -30,7 +31,7 @@ module.exports = {
         }
 
         try {
-            await interaction.channel.send(text);
+            if (interaction.channel && 'send' in interaction.channel && text !== null) { await interaction.channel.send(text); }
             return interaction.reply({ content: "Message sent.", flags: [MessageFlags.Ephemeral] });
         } catch (error) {
             console.error(error);

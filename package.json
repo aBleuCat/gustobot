@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-	"dev": "tsx src/index.ts",
-	"start": "node dist/index.js",
-	"lint": "xo",
-	"fix": "xo --fix"
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "xo",
+    "fix": "xo --fix"
   },
   "keywords": [],
   "author": "",
@@ -32,13 +32,30 @@
     "eslint-config-xo-typescript": "^11.0.0",
     "prettier": "^3.8.3",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
+    "typescript": "^5.7.3",
     "xo": "^2.0.2"
   },
   "xo": {
     "prettier": true,
     "space": false,
     "rules": {
+	  "@typescript-eslint/naming-convention": [
+		  "error",
+		  {
+	    	"selector": "variable",
+	    	"format": ["camelCase", "UPPER_CASE"],
+		    "leadingUnderscore": "allow"
+		  },
+		  {
+			"selector": "parameter",
+			"format": ["camelCase"],
+			"leadingUnderscore": "allow"
+		  },
+		  {
+			  "selector": "typeLike",
+			  "format": ["PascalCase"]
+			}
+		  ],
       "prettier/prettier": [
         "error",
         {

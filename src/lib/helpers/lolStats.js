@@ -1,24 +1,33 @@
-const { LolStats } = require('../models');
+const {LolStats} = require('../models');
 
 async function updateLolStatsDB() {
-    let stats = await LolStats.findOne({ id: "global_stats" });
-    if (!stats) stats = new LolStats({ id: "global_stats" });
+	let stats = await LolStats.findOne({id: 'global_stats'});
+	stats ||= new LolStats({id: 'global_stats'});
 
-    const now = new Date();
-    const todayStr = now.toDateString();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const weekNum = Math.ceil((((now - startOfYear) / 86400000) + startOfYear.getDay() + 1) / 7);
+	const now = new Date();
+	const todayString = now.toDateString();
+	const startOfYear = new Date(now.getFullYear(), 0, 1);
+	const weekNumber = Math.ceil(
+		((now - startOfYear) / 86_400_000 + startOfYear.getDay() + 1) / 7,
+	);
 
-    if (stats.lastDay !== todayStr) { stats.daily = 0; stats.lastDay = todayStr; }
-    if (stats.lastWeek !== weekNum) { stats.weekly = 0; stats.lastWeek = weekNum; }
+	if (stats.lastDay !== todayString) {
+		stats.daily = 0;
+		stats.lastDay = todayString;
+	}
 
-    stats.allTime += 1;
-    stats.weekly += 1;
-    stats.daily += 1;
-    stats.lastTimestamp = Date.now();
+	if (stats.lastWeek !== weekNumber) {
+		stats.weekly = 0;
+		stats.lastWeek = weekNumber;
+	}
 
-    await stats.save();
-    return stats;
+	stats.allTime += 1;
+	stats.weekly += 1;
+	stats.daily += 1;
+	stats.lastTimestamp = Date.now();
+
+	await stats.save();
+	return stats;
 }
 
-module.exports = { updateLolStatsDB };
+module.exports = {updateLolStatsDB};

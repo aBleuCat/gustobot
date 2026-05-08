@@ -1,26 +1,27 @@
-import {SlashCommandBuilder, MessageFlags, ChatInputCommandInteraction, User, type SlashCommandOptionsOnlyBuilder} from 'discord.js';
+import {
+	SlashCommandBuilder,
+	MessageFlags,
+	type ChatInputCommandInteraction,
+	type SlashCommandOptionsOnlyBuilder,
+} from 'discord.js';
+import {type SlashCommandConfig} from '../types.js';
+import {config} from '../lib/config.js';
 
-const DM_ALLOWED_USER_IDS: ReadonlySet<string> = new Set([
-	'853658523786412063',
-	'934290747623096381',
-]);
+const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists.botAdmins
+	? new Set(config.lists.botAdmins)
+	: new Set();
 
-interface DMCommand {
-	data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-	execute(interaction: ChatInputCommandInteraction): Promise<void>;
-}
-
-const dmCommand: DMCommand = {
+const dmCommand: SlashCommandConfig = {
 	data: new SlashCommandBuilder()
 		.setName('dm')
 		.setDescription('Makes the bot DM a specific user')
-		.addUserOption(option =>
+		.addUserOption((option) =>
 			option
 				.setName('user')
 				.setDescription('The user to message')
 				.setRequired(true),
 		)
-		.addStringOption(option =>
+		.addStringOption((option) =>
 			option
 				.setName('message')
 				.setDescription('The message to send')
