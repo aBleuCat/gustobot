@@ -1,23 +1,31 @@
-/*
-node dbstash.js [pull/push/compare] [model|d] [file|d] [force/merge (optional)]
-d defaults to UserHorses model and dbbackup.json file
-pull: pulls data from specified model and saves to file. If file exists, it will be overwritten.
-push: pushes data from file to specified model. WARNING: THIS WILL DELETE ALL DATA IN THE MODEL BEFORE PUSHING. 
-Use 'force' flag to override model name mismatch.
-Use 'merge' flag to merge data instead of deleting all records.
-before pushing it asks for confirmation and gives a quick comparison
-compare: compares the record count and fields of the file and database for the specified model without making any changes.
-*/
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
-const readline = require('readline');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+import readline from 'readline';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
-const Models = require('./lib/models');
-const MONGO_URI = process.env.MONGO_URI;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
 
-async function connectDB() {
+import * as Models from './lib/models.js';
+const ModelsMap = Models as unknown as ModelMap;
+
+const MONGO_URI: string | undefined = process.env.MONGO_URI;
+
+interface ModelMap {
+  [key: string]: any;
+}
+
+interface CompareResult {
+  fileContent: any;
+  modelName: string;
+  nameMatch: boolean;
+  fieldsMatch: boolean;
+  primaryKey?: string | undefined;
+}
+
+async function connectDB(): Promise<void> {
     if (!MONGO_URI) {
         console.error("Error: MONGO_URI not found in .env file.");
         process.exit(1);
@@ -27,15 +35,26 @@ async function connectDB() {
     }
 }
 
-const askQuestion = (query) => {
+function askQuestion(query: string): Promise<string> {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    return new Promise(resolve => rl.question(query, ans => { rl.close(); resolve(ans); }));
-};
+    return new Promise<string>((resolve) => {
+        rl.question(query, (ans: string) => {
+            rl.close();
+            resolve(ans);
+        });
+    });
+}
 
-function resolveArgs(modelArg, fileArg) {
-    const modelName = (modelArg === 'd') ? 'UserHorses' : modelArg;
-    const fileName = (fileArg === 'd') ? 'dbbackup.json' : fileArg;
-    const Model = Models[modelName];
+interface ResolveArgsResult {
+  Model: any;
+  modelName: string;
+  fileName: string;
+}
+
+function resolveArgs(modelArg: string, fileArg: string): ResolveArgsResult {
+    const modelName = modelArg === 'd' ? 'UserHorses' : modelArg;
+    const fileName = fileArg === 'd' ? 'dbbackup.json' : fileArg;
+    const Model = ModelsMap[modelName];
     if (!Model) {
         console.error(`Error: Model '${modelName}' not found in lib/models.js`);
         process.exit(1);
@@ -43,7 +62,7 @@ function resolveArgs(modelArg, fileArg) {
     return { Model, modelName, fileName };
 }
 
-async function pull(modelArg, fileArg) {
+async function pull(modelArg: string, fileArg: string): Promise<void> {
     const { Model, modelName, fileName } = resolveArgs(modelArg, fileArg);
     await connectDB();
     console.log(`Pulling ${modelName} to ${fileName}...`);
@@ -52,15 +71,15 @@ async function pull(modelArg, fileArg) {
     const output = {
         modelName,
         timestamp: Date.now(),
-        fields: Object.keys(Model.schema.paths).filter(p => p !== '__v' && p !== '_id'),
-        data: docs.map(({ _id, __v, ...rest }) => rest)
+        fields: Object.keys(Model.schema.paths).filter((p: string) => p !== '__v' && p !== '_id'),
+        data: docs.map(({ _id, __v, ...rest }: any) => rest)
     };
 
     fs.writeFileSync(fileName, JSON.stringify(output, null, 2));
     console.log(`Success: Saved ${docs.length} records.`);
 }
 
-async function compare(modelArg, fileArg) {
+async function compare(modelArg: string, fileArg: string): Promise<CompareResult> {
     const { Model, modelName, fileName } = resolveArgs(modelArg, fileArg);
     if (!fs.existsSync(fileName)) {
         console.error(`Error: File ${fileName} not found.`);
@@ -71,7 +90,9 @@ async function compare(modelArg, fileArg) {
     await connectDB();
     
     const dbData = await Model.find({}).lean();
-    const dbFields = Object.keys(Model.schema.paths).filter(p => p !== '__v' && p !== '_id').sort();
+    const dbFields = Object.keys(Model.schema.paths)
+        .filter((p: string) => p !== '__v' && p !== '_id')
+        .sort();
     const fileFields = (fileContent.fields || []).sort();
 
     const nameMatch = fileContent.modelName === modelName;
@@ -82,9 +103,13 @@ async function compare(modelArg, fileArg) {
     console.log(`Fields Match: ${fieldsMatch ? '✅' : '❌'}`);
     console.log(`Counts:       File(${fileContent.data.length}) vs DB(${dbData.length})`);
 
-    const primaryKey = dbFields.find(f => ['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(f));
-    const fileMap = new Map(fileContent.data.map((item, idx) => [primaryKey ? String(item[primaryKey]) : idx, item]));
-    const dbMap = new Map(dbData.map((item, idx) => [primaryKey ? String(item[primaryKey]) : idx, item]));
+    const primaryKey = dbFields.find((f: string) => ['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(f));
+    const fileMap = new Map(fileContent.data.map((item: any, idx: number) => 
+        [primaryKey ? String(item[primaryKey]) : idx, item]
+    ));
+    const dbMap = new Map(dbData.map((item: any, idx: number) => 
+        [primaryKey ? String(item[primaryKey]) : idx, item]
+    ));
 
     let diffCount = 0;
     for (const [key, dbItem] of dbMap) {
@@ -94,11 +119,13 @@ async function compare(modelArg, fileArg) {
             continue;
         }
         const fileItem = fileMap.get(key);
-        const changes = [];
+        const changes: string[] = [];
         
-        dbFields.forEach(field => {
-            if (fileItem[field] !== undefined && JSON.stringify(dbItem[field]) !== JSON.stringify(fileItem[field])) {
-                changes.push(`${field}: (DB) ${JSON.stringify(dbItem[field])} != (File) ${JSON.stringify(fileItem[field])}`);
+        dbFields.forEach((field: string) => {
+            const fileItemValue = (fileItem as any)?.[field];
+            const dbItemValue = (dbItem as any)?.[field];
+            if (fileItemValue !== undefined && JSON.stringify(dbItemValue) !== JSON.stringify(fileItemValue)) {
+                changes.push(`${field}: (DB) ${JSON.stringify(dbItemValue)} != (File) ${JSON.stringify(fileItemValue)}`);
             }
         });
 
@@ -115,7 +142,7 @@ async function compare(modelArg, fileArg) {
     return { fileContent, modelName, nameMatch, fieldsMatch, primaryKey };
 }
 
-async function push(modelArg, fileArg, optionArg) {
+async function push(modelArg: string, fileArg: string, optionArg?: string): Promise<void> {
     const { fileContent, modelName, nameMatch, fieldsMatch, primaryKey } = await compare(modelArg, fileArg);
     const isForced = optionArg === 'force';
     const isMerge = optionArg === 'merge';
@@ -139,7 +166,7 @@ async function push(modelArg, fileArg, optionArg) {
                 console.error("Merge failed: Could not find a unique key (userId/ruleId) to match records.");
                 process.exit(1);
             }
-            const ops = fileContent.data.map(item => ({
+            const ops = fileContent.data.map((item: any) => ({
                 updateOne: {
                     filter: { [primaryKey]: item[primaryKey] },
                     update: { $set: item },
@@ -165,14 +192,22 @@ if (!command || !model || !file) {
     process.exit(1);
 }
 
-const actions = { pull, push, compare };
-if (actions[command]) {
-    actions[command](model, file, option)
+type ActionFunction = (modelArg: string, fileArg: string, optionArg?: string) => Promise<any>;
+interface Actions {
+    pull: ActionFunction;
+    push: ActionFunction;
+    compare: ActionFunction;
+}
+
+const actions: Actions = { pull, push, compare };
+
+if (actions[command as keyof Actions]) {
+    actions[command as keyof Actions](model, file, option)
         .then(() => {
             mongoose.connection.close();
             process.exit(0);
         })
-        .catch(err => {
+        .catch((err: Error) => {
             console.error(err);
             process.exit(1);
         });

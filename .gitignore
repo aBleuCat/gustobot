@@ -1,4 +1,4 @@
 node_modules/
 .env
-dbbackup.json
-backups/
+src/dbbackup.json
+src/backups/
