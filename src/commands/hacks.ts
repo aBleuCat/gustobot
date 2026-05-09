@@ -119,7 +119,7 @@ export const hacksCommand = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (adminIds.includes(interaction.user.id)) {
+		if (!adminIds.includes(interaction.user.id)) {
 			return interaction.reply({
 				content: 'you cannot do that bro',
 				flags: [MessageFlags.Ephemeral],

@@ -54,7 +54,7 @@ type ResolveArgsResult = {
 
 function resolveArgs(modelArg: string, fileArg: string): ResolveArgsResult {
 	const modelName = modelArg === 'd' ? 'UserHorses' : modelArg;
-	const fileName = fileArg === 'd' ? 'dbbackup.json' : fileArg;
+	const fileName = fileArg === 'd' ? '../backups/dbbackup.json' : fileArg;
 	const Model = ModelsMap[modelName];
 	if (!Model) {
 		console.error(`Error: Model '${modelName}' not found in lib/models.js`);
