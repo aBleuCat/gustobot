@@ -1,11 +1,9 @@
 // Central mutable runtime config
 // Changes are lost on restart
-import {type HorseData, isHorseData} from '../types.js';
+import {castAsHorseData} from '../types.js';
 import rawHorseValues from '../horses.json' with {type: 'json'};
 
-const HORSE_VALUES = isHorseData(rawHorseValues)
-	? (rawHorseValues as HorseData)
-	: {};
+const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
 const BASELINE_SUM = 0.2; // I like rounded better
 const currentInverseSum = Object.entries(HORSE_VALUES)
@@ -59,10 +57,10 @@ export const config = {
 	// changeable with /hacks lists
 	lists: {
 		// Triggers for messageHandler.js
-		primaryTrigBlacklist: [],
-		primaryTrigWhitelist: [], // The bot crackgpt = 1428178018802733076
-		secondaryTrigBlacklist: [],
-		secondaryTrigWhitelist: [],
+		primaryTrigBlacklist: [] as string[],
+		primaryTrigWhitelist: [] as string[], // The bot crackgpt = 1428178018802733076
+		secondaryTrigBlacklist: [] as string[],
+		secondaryTrigWhitelist: [] as string[],
 		// Bot admins (user IDs) who can use admin-only commands
 		botAdmins: ['853658523786412063', '934290747623096381'],
 	},
@@ -72,7 +70,7 @@ export const config = {
 	GLOBAL_MSG_LIMIT_MS: 200,
 };
 
-export const descriptions = {
+export const descriptions: Record<string, string> = {
 	DEBOUNCE_MS: 'Min ms between horse rolls per user',
 	SIMILARITY_THRESHOLD: 'How similar two messages must be to be blocked (0-1)',
 	RECENT_MSG_COUNT: 'How many recent messages to check for similarity',

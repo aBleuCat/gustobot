@@ -1,14 +1,39 @@
-const {
+import {
 	SlashCommandBuilder,
 	MessageFlags,
 	PermissionFlagsBits,
 	EmbedBuilder,
-} = require('discord.js');
-const {config, descriptions} = require('../lib/config');
+	type AutocompleteInteraction,
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import {config, descriptions} from '../lib/config.js';
 
-const OWNER_ID = '934290747623096381';
+type ConfigKey = keyof typeof config;
+type NumericConfigKey = {
+	[K in ConfigKey]: (typeof config)[K] extends number ? K : never;
+}[ConfigKey];
+type ConfigListKey = Exclude<keyof typeof config.lists, 'botAdmins'>;
 
-module.exports = {
+const adminIds = config.lists.botAdmins;
+
+const isConfigKey = (key: string): key is ConfigKey =>
+	Object.hasOwn(config, key);
+
+const isNumericConfigKey = (key: string): key is NumericConfigKey =>
+	isConfigKey(key) && typeof config[key] === 'number';
+
+const isConfigListKey = (key: string): key is ConfigListKey =>
+	key in config.lists && key !== 'botAdmins';
+
+const isListAction = (value: string): value is 'add' | 'remove' | 'view' =>
+	value === 'add' || value === 'remove' || value === 'view';
+
+const renderConfigValue = (value: unknown): string =>
+	typeof value === 'object' && value !== null
+		? JSON.stringify(value)
+		: String(value);
+
+export const hacksCommand = {
 	data: new SlashCommandBuilder()
 		.setName('hacks')
 		.setDescription('Admin tools')
@@ -80,17 +105,21 @@ module.exports = {
 				),
 		),
 
-	async autocomplete(interaction) {
+	async autocomplete(interaction: AutocompleteInteraction) {
 		const focused = interaction.options.getFocused().toLowerCase();
 		const choices = Object.keys(config)
+			.filter((k): k is ConfigKey => isConfigKey(k))
 			.filter((k) => k.toLowerCase().includes(focused))
-			.map((k) => ({name: `${k} (currently: ${config[k]})`, value: k}))
+			.map((k) => ({
+				name: `${k} (currently: ${renderConfigValue(config[k])})`,
+				value: k,
+			}))
 			.slice(0, 25);
 		await interaction.respond(choices);
 	},
 
-	async execute(interaction) {
-		if (interaction.user.id !== OWNER_ID) {
+	async execute(interaction: ChatInputCommandInteraction) {
+		if (adminIds.includes(interaction.user.id)) {
 			return interaction.reply({
 				content: 'you cannot do that bro',
 				flags: [MessageFlags.Ephemeral],
@@ -105,6 +134,7 @@ module.exports = {
 				content: 'Shutting down...',
 				flags: [MessageFlags.Ephemeral],
 			});
+			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
 			process.exit(0);
 		}
 
@@ -116,12 +146,19 @@ module.exports = {
 
 			// No variable specified — list all
 			if (!varName) {
-				const items = Object.entries(config).map(
-					([k, v]) => `**${k}**: \`${v}\`\n${descriptions[k] || ''}`,
-				);
+				const items: string[] = [];
+				for (const key of Object.keys(config)) {
+					if (!isConfigKey(key)) {
+						continue;
+					}
+
+					items.push(
+						`**${key}**: \`${renderConfigValue(config[key])}\`\n${descriptions[key] ?? ''}`,
+					);
+				}
 
 				// Split into chunks to avoid 2000 char limit
-				const chunks = [];
+				const chunks: string[] = [];
 				let currentChunk = '';
 				for (const item of items) {
 					if ((currentChunk + '\n' + item).length > 1900) {
@@ -132,21 +169,25 @@ module.exports = {
 					}
 				}
 
-				if (currentChunk) chunks.push(currentChunk);
+				if (currentChunk) {
+					chunks.push(currentChunk);
+				}
 
 				// Send each chunk as a separate embed
 				for (let i = 0; i < chunks.length; i++) {
 					const embed = new EmbedBuilder()
 						.setColor(0x00_99_ff)
 						.setTitle(`Runtime Config (${i + 1}/${chunks.length})`)
-						.setDescription(chunks[i]);
+						.setDescription(chunks[i]!);
 
 					if (i === 0) {
+						// eslint-disable-next-line no-await-in-loop
 						await interaction.reply({
 							embeds: [embed],
 							flags: [MessageFlags.Ephemeral],
 						});
 					} else {
+						// eslint-disable-next-line no-await-in-loop
 						await interaction.followUp({
 							embeds: [embed],
 							flags: [MessageFlags.Ephemeral],
@@ -157,17 +198,19 @@ module.exports = {
 				return;
 			}
 
-			if (!(varName in config)) {
+			if (!isConfigKey(varName)) {
 				return interaction.reply({
 					content: `Unknown variable: \`${varName}\``,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
+			const configKey = varName;
+
 			// No action — default to get
 			if (!action || action === 'get') {
 				return interaction.reply({
-					content: `**${varName}**: \`${config[varName]}\`\n${descriptions[varName] || ''}`,
+					content: `**${configKey}**: \`${renderConfigValue(config[configKey])}\`\n${descriptions[configKey] ?? ''}`,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
@@ -179,53 +222,70 @@ module.exports = {
 				});
 			}
 
-			const oldValue = config[varName];
+			const oldValue = config[configKey];
 
 			if (action === 'set') {
-				config[varName] = value;
+				if (!isNumericConfigKey(configKey)) {
+					return interaction.reply({
+						content: `Can't set a non-number variable.`,
+						flags: [MessageFlags.Ephemeral],
+					});
+				}
+
+				config[configKey] = value;
 				return interaction.reply({
-					content: `✅ **${varName}**: \`${oldValue}\` → \`${value}\``,
+					content: `✅ **${configKey}**: \`${renderConfigValue(oldValue)}\` → \`${value}\``,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
 			if (action === 'add') {
-				if (typeof config[varName] !== 'number') {
+				if (!isNumericConfigKey(configKey)) {
 					return interaction.reply({
 						content: `Can't add to a non-number variable.`,
 						flags: [MessageFlags.Ephemeral],
 					});
 				}
 
-				config[varName] += value;
+				config[configKey] += value;
 				return interaction.reply({
-					content: `✅ **${varName}**: \`${oldValue}\` + \`${value}\` = \`${config[varName]}\``,
+					content: `✅ **${configKey}**: \`${renderConfigValue(oldValue)}\` + \`${value}\` = \`${renderConfigValue(config[configKey])}\``,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 		}
 
 		if (sub === 'lists') {
-			const listName = interaction.options.getString('listname');
-			const action = interaction.options.getString('action');
+			const listName = interaction.options.getString('listname', true);
+			const action = interaction.options.getString('action', true);
 			const targetId = interaction.options.getString('id');
 
-			// Ensure the list exists in config object (e.g., config.lists)
-			if (!config.lists[listName]) config.lists[listName] = [];
+			if (!isConfigListKey(listName) || !isListAction(action)) {
+				return interaction.reply({
+					content: 'Invalid list command options provided.',
+					flags: [MessageFlags.Ephemeral],
+				});
+			}
+
+			config.lists[listName] ??= [];
 
 			if (action === 'view') {
-				const listString = config.lists[listName].join(', ') || 'Empty';
+				const listString =
+					config.lists[listName].length > 0
+						? config.lists[listName].join(', ')
+						: 'Empty';
 				return interaction.reply({
 					content: `**${listName}**: ${listString}`,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
-			if (!targetId)
+			if (!targetId) {
 				return interaction.reply({
 					content: 'ID required for this action.',
 					flags: [MessageFlags.Ephemeral],
 				});
+			}
 
 			if (action === 'add' && !config.lists[listName].includes(targetId)) {
 				config.lists[listName].push(targetId);

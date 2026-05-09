@@ -51,3 +51,16 @@ export function isHorseData(
 
 	return true;
 }
+
+export function castAsHorseData(
+	data: unknown,
+	mode: 'all' | number = 'all',
+): HorseData {
+	if (!isHorseData(data, mode)) {
+		throw new TypeError(
+			'Data (likely horses.json) does not abide by HorseData type',
+		);
+	}
+
+	return data;
+}

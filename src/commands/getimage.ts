@@ -1,7 +1,10 @@
-const {SlashCommandBuilder} = require('discord.js');
-const {config} = require('../lib/config');
+import {
+	SlashCommandBuilder,
+	type ChatInputCommandInteraction,
+	type AutocompleteInteraction,
+} from 'discord.js';
 
-const IMAGES = {
+const IMAGES: Record<string, string> = {
 	// Example: "cat": "https://example.com/cat.gif",
 	nahyan: 'https://i.imgur.com/tmyvHLF.png',
 	alvin:
@@ -10,7 +13,7 @@ const IMAGES = {
 		'https://cdn.discordapp.com/attachments/1448897193736933498/1485433542438813806/togif.gif ',
 };
 
-module.exports = {
+export const getImageCommand = {
 	data: new SlashCommandBuilder()
 		.setName('getimage')
 		.setDescription('Get an image by name')
@@ -22,20 +25,24 @@ module.exports = {
 				.setAutocomplete(true),
 		),
 
-	async autocomplete(interaction) {
+	async autocomplete(interaction: AutocompleteInteraction) {
 		const focused = interaction.options.getFocused();
 		const choices = Object.keys(IMAGES);
 		const filtered = choices.filter((choice) =>
-			choice.toLowerCase().includes(focused.value.toLowerCase()),
+			choice.toLowerCase().includes(focused.toLowerCase()),
 		);
 		await interaction.respond(
 			filtered.map((choice) => ({name: choice, value: choice})).slice(0, 25),
 		);
 	},
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		const name = interaction.options.getString('name');
-		const imageUrl = IMAGES[name];
+		if (!name) {
+			return;
+		}
+
+		const imageUrl: string | undefined = IMAGES[name];
 
 		if (!imageUrl) {
 			await interaction.reply(

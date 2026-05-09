@@ -2,7 +2,6 @@ import {
 	SlashCommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-	type SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import {type SlashCommandConfig} from '../types.js';
 import {config} from '../lib/config.js';
@@ -11,7 +10,7 @@ const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists.botAdmins
 	? new Set(config.lists.botAdmins)
 	: new Set();
 
-const dmCommand: SlashCommandConfig = {
+export const dmCommand: SlashCommandConfig = {
 	data: new SlashCommandBuilder()
 		.setName('dm')
 		.setDescription('Makes the bot DM a specific user')
@@ -55,5 +54,3 @@ const dmCommand: SlashCommandConfig = {
 		}
 	},
 };
-
-export default dmCommand;
