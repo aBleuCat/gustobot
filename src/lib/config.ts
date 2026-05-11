@@ -1,7 +1,7 @@
 // Central mutable runtime config
 // Changes are lost on restart
 import {castAsHorseData} from '../types.js';
-import rawHorseValues from '../horses.json' with {type: 'json'};
+import rawHorseValues from '../data/horses.json' with {type: 'json'};
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
