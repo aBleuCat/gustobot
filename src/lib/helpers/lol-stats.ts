@@ -1,14 +1,17 @@
-const {LolStats} = require('../models');
+import {LolStats} from '../models.js';
 
-async function updateLolStatsDB() {
+export async function updateLolStatsDB() {
 	let stats = await LolStats.findOne({id: 'global_stats'});
-	stats ||= new LolStats({id: 'global_stats'});
+	stats ??= new LolStats({id: 'global_stats'});
 
 	const now = new Date();
 	const todayString = now.toDateString();
 	const startOfYear = new Date(now.getFullYear(), 0, 1);
 	const weekNumber = Math.ceil(
-		((now - startOfYear) / 86_400_000 + startOfYear.getDay() + 1) / 7,
+		((now.getTime() - startOfYear.getTime()) / 86_400_000 +
+			startOfYear.getDay() +
+			1) /
+			7,
 	);
 
 	if (stats.lastDay !== todayString) {
@@ -29,5 +32,3 @@ async function updateLolStatsDB() {
 	await stats.save();
 	return stats;
 }
-
-module.exports = {updateLolStatsDB};

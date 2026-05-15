@@ -19,7 +19,9 @@ module.exports = {
 
 	async execute(interaction) {
 		if (
-			!interaction.member.permissions.has(PermissionFlagsBits.Administrator)
+			!interaction.member.permissions.has(
+				PermissionFlagsBits.Administrator,
+			)
 		) {
 			return await interaction.editReply({
 				content: 'You do not have permission to use this command.',

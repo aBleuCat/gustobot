@@ -40,7 +40,9 @@ module.exports = {
 				{name: 'Your Question:', value: question},
 				{name: 'Advice:', value: randomAdvice.content},
 			)
-			.setFooter({text: `Wise words of wisdom shared by a fellow user`});
+			.setFooter({
+				text: `Wise words of wisdom shared by a fellow user`,
+			});
 
 		await interaction.reply({embeds: [embed]});
 	},

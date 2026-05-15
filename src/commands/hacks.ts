@@ -25,7 +25,9 @@ const isNumericConfigKey = (key: string): key is NumericConfigKey =>
 const isConfigListKey = (key: string): key is ConfigListKey =>
 	key in config.lists && key !== 'botAdmins';
 
-const isListAction = (value: string): value is 'add' | 'remove' | 'view' =>
+const isListAction = (
+	value: string,
+): value is 'add' | 'remove' | 'view' =>
 	value === 'add' || value === 'remove' || value === 'view';
 
 const renderConfigValue = (value: unknown): string =>
@@ -80,10 +82,22 @@ export const hacksCommand = {
 						.setDescription('Which list to modify')
 						.setRequired(true)
 						.addChoices(
-							{name: 'Primary Whitelist', value: 'primaryTrigWhitelist'},
-							{name: 'Primary Blacklist', value: 'primaryTrigBlacklist'},
-							{name: 'Secondary Whitelist', value: 'secondaryTrigWhitelist'},
-							{name: 'Secondary Blacklist', value: 'secondaryTrigBlacklist'},
+							{
+								name: 'Primary Whitelist',
+								value: 'primaryTrigWhitelist',
+							},
+							{
+								name: 'Primary Blacklist',
+								value: 'primaryTrigBlacklist',
+							},
+							{
+								name: 'Secondary Whitelist',
+								value: 'secondaryTrigWhitelist',
+							},
+							{
+								name: 'Secondary Blacklist',
+								value: 'secondaryTrigBlacklist',
+							},
 						),
 				)
 				.addStringOption((o) =>
@@ -256,7 +270,10 @@ export const hacksCommand = {
 		}
 
 		if (sub === 'lists') {
-			const listName = interaction.options.getString('listname', true);
+			const listName = interaction.options.getString(
+				'listname',
+				true,
+			);
 			const action = interaction.options.getString('action', true);
 			const targetId = interaction.options.getString('id');
 
@@ -287,7 +304,10 @@ export const hacksCommand = {
 				});
 			}
 
-			if (action === 'add' && !config.lists[listName].includes(targetId)) {
+			if (
+				action === 'add' &&
+				!config.lists[listName].includes(targetId)
+			) {
 				config.lists[listName].push(targetId);
 				return interaction.reply({
 					content: `Added \`${targetId}\` to ${listName}`,

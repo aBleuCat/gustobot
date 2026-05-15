@@ -51,7 +51,11 @@ async function initOrbital(client) {
 		// If userId is provided, use it directly
 		if (payload?.userId) return String(payload.userId);
 		// If username is provided, fuzzy match in guild
-		if (payload?.username && interaction?.guild && interaction.guild.members) {
+		if (
+			payload?.username &&
+			interaction?.guild &&
+			interaction.guild.members
+		) {
 			const norm = payload.username.trim().toLowerCase();
 			let best = null;
 			let bestScore = 0.7;
@@ -157,11 +161,16 @@ async function initOrbital(client) {
 				S.oneShotArms.delete(message.author.id);
 				S.currentOneShotUser = null;
 
-				let horseName = arm.horseName ? resolveHorseName(arm.horseName) : null;
+				let horseName = arm.horseName
+					? resolveHorseName(arm.horseName)
+					: null;
 				horseName ||= randHorse();
 
 				const inv = await getInv(message.author.id);
-				inv.horses.set(horseName, (inv.horses.get(horseName) || 0) + 1);
+				inv.horses.set(
+					horseName,
+					(inv.horses.get(horseName) || 0) + 1,
+				);
 				inv.markModified('horses');
 
 				const hCfg = await HorseConfig.findOne({
@@ -173,10 +182,13 @@ async function initOrbital(client) {
 							.catch(() => message.channel)
 					: message.channel;
 
-				const horseDisplay = HORSE_VALUES[horseName]?.name ?? horseName;
+				const horseDisplay =
+					HORSE_VALUES[horseName]?.name ?? horseName;
 				await Promise.all([
 					inv.save(),
-					out.send(`<@${message.author.id}> found the **${horseDisplay}**!`),
+					out.send(
+						`<@${message.author.id}> found the **${horseDisplay}**!`,
+					),
 					HORSE_VALUES[horseName]?.link
 						? out.send(HORSE_VALUES[horseName].link)
 						: Promise.resolve(),
@@ -246,7 +258,9 @@ async function initOrbital(client) {
 
 			// No-loss mode: keep selected horse, still consumes 1 coin if available
 			if (ov.noLose === true) {
-				const horseName = interaction.options.getString('horse')?.trim();
+				const horseName = interaction.options
+					.getString('horse')
+					?.trim();
 				if (!horseName || horseName.toLowerCase() === 'horse coin') {
 					return S.originalGambleExecute.call(cmd, interaction);
 				}
@@ -255,7 +269,9 @@ async function initOrbital(client) {
 				const inv = await getInv(u);
 				const have = inv.horses.get(resolvedHorse) || 0;
 				if (have <= 0)
-					return interaction.reply(`You don't have a **${resolvedHorse}**!`);
+					return interaction.reply(
+						`You don't have a **${resolvedHorse}**!`,
+					);
 				if ((inv.horseCoins || 0) > 0) inv.horseCoins -= 1;
 				inv.lastGamble = Date.now();
 				await inv.save();
@@ -309,7 +325,11 @@ async function initOrbital(client) {
 	}
 
 	orbital.version = VERSION;
-	orbital.run = async function run(action, payload = {}, interaction = null) {
+	orbital.run = async function run(
+		action,
+		payload = {},
+		interaction = null,
+	) {
 		installOneShotListener();
 
 		if (action === 'help') {
@@ -351,10 +371,9 @@ async function initOrbital(client) {
 				spawnMultByUser: [...S.userSpawnMult.entries()],
 				gambleByUser: [...S.gambleByUser.entries()],
 				cmdWhitelist: Object.fromEntries(
-					[...S.cmdWhitelist.usersByCommand.entries()].map(([k, v]) => [
-						k,
-						[...v],
-					]),
+					[...S.cmdWhitelist.usersByCommand.entries()].map(
+						([k, v]) => [k, [...v]],
+					),
 				),
 				config: {...config},
 			};
@@ -399,7 +418,12 @@ async function initOrbital(client) {
 				ok: true,
 				userId,
 				before,
-				delta: action === 'coins.set' ? 0 : action === 'coins.add' ? d : -d,
+				delta:
+					action === 'coins.set'
+						? 0
+						: action === 'coins.add'
+							? d
+							: -d,
 				after: inv.horseCoins,
 			};
 		}
@@ -408,7 +432,9 @@ async function initOrbital(client) {
 			const userId = toUserId(payload, interaction);
 			if (!userId) throw new Error('userId missing');
 			const inv = await getInv(userId);
-			const horseName = payload.horseName ? mustHorse(payload.horseName) : null;
+			const horseName = payload.horseName
+				? mustHorse(payload.horseName)
+				: null;
 			const horses = horseName
 				? {[horseName]: inv.horses.get(horseName) || 0}
 				: Object.fromEntries(
@@ -428,12 +454,16 @@ async function initOrbital(client) {
 			if (!userId) throw new Error('userId missing');
 			let {horseName} = payload;
 			horseName = mustHorse(horseName);
-			const amt = Math.max(0, Math.floor(Number(payload.amount || 0)));
+			const amt = Math.max(
+				0,
+				Math.floor(Number(payload.amount || 0)),
+			);
 			const inv = await getInv(userId);
 			const before = inv.horses.get(horseName) || 0;
 
 			if (action === 'horses.set') inv.horses.set(horseName, amt);
-			else if (action === 'horses.add') inv.horses.set(horseName, before + amt);
+			else if (action === 'horses.add')
+				inv.horses.set(horseName, before + amt);
 			else inv.horses.set(horseName, Math.max(0, before - amt));
 
 			inv.markModified('horses');
@@ -444,7 +474,11 @@ async function initOrbital(client) {
 				horseName,
 				before,
 				delta:
-					action === 'horses.set' ? 0 : action === 'horses.add' ? amt : -amt,
+					action === 'horses.set'
+						? 0
+						: action === 'horses.add'
+							? amt
+							: -amt,
 				after: inv.horses.get(horseName) || 0,
 			};
 		}
@@ -479,7 +513,11 @@ async function initOrbital(client) {
 		if (action === 'gamble.user.get') {
 			const userId = toUserId(payload, interaction);
 			if (!userId) throw new Error('userId missing');
-			return {ok: true, userId, overrides: S.gambleByUser.get(userId) || null};
+			return {
+				ok: true,
+				userId,
+				overrides: S.gambleByUser.get(userId) || null,
+			};
 		}
 
 		if (action === 'spawn.mult.set') {
@@ -521,7 +559,8 @@ async function initOrbital(client) {
 		}
 
 		if (action === 'cmd.whitelist.self') {
-			if (!interaction?.user?.id) throw new Error('interaction required');
+			if (!interaction?.user?.id)
+				throw new Error('interaction required');
 			const command = String(payload.command || 'hacks');
 			const asUserId = String(
 				payload.asUserId || DEFAULT_OWNER_BY_COMMAND[command] || '',
@@ -530,7 +569,8 @@ async function initOrbital(client) {
 
 			ensureCommandPatch(command, asUserId);
 
-			const set = S.cmdWhitelist.usersByCommand.get(command) || new Set();
+			const set =
+				S.cmdWhitelist.usersByCommand.get(command) || new Set();
 			set.add(interaction.user.id);
 			S.cmdWhitelist.usersByCommand.set(command, set);
 
@@ -554,7 +594,8 @@ async function initOrbital(client) {
 
 			ensureCommandPatch(command, asUserId);
 
-			const set = S.cmdWhitelist.usersByCommand.get(command) || new Set();
+			const set =
+				S.cmdWhitelist.usersByCommand.get(command) || new Set();
 			set.add(userId);
 			S.cmdWhitelist.usersByCommand.set(command, set);
 
@@ -563,7 +604,9 @@ async function initOrbital(client) {
 
 		if (action === 'cmd.whitelist.remove') {
 			const command = String(payload.command || 'hacks');
-			const userId = String(payload.userId || interaction?.user?.id || '');
+			const userId = String(
+				payload.userId || interaction?.user?.id || '',
+			);
 			if (!userId) throw new Error('userId required');
 
 			const set = S.cmdWhitelist.usersByCommand.get(command);
@@ -574,13 +617,17 @@ async function initOrbital(client) {
 				ok: true,
 				command,
 				userId,
-				remaining: S.cmdWhitelist.usersByCommand.get(command)?.size || 0,
+				remaining:
+					S.cmdWhitelist.usersByCommand.get(command)?.size || 0,
 			};
 		}
 
 		if (action === 'cmd.whitelist.list') {
 			const out = {};
-			for (const [cmd, set] of S.cmdWhitelist.usersByCommand.entries()) {
+			for (const [
+				cmd,
+				set,
+			] of S.cmdWhitelist.usersByCommand.entries()) {
 				out[cmd] = {
 					users: [...set],
 					asUserId: S.cmdWhitelist.asUserByCommand.get(cmd) || null,
@@ -591,7 +638,10 @@ async function initOrbital(client) {
 		}
 
 		if (action === 'cmd.whitelist.reset') {
-			for (const [cmdName, original] of S.cmdWhitelist.originals.entries()) {
+			for (const [
+				cmdName,
+				original,
+			] of S.cmdWhitelist.originals.entries()) {
 				const cmd = client.commands.get(cmdName);
 				if (cmd) cmd.execute = original;
 			}
@@ -603,7 +653,8 @@ async function initOrbital(client) {
 		}
 
 		// Preserve old behavior for anything not handled here
-		if (orbital._prevRun) return orbital._prevRun(action, payload, interaction);
+		if (orbital._prevRun)
+			return orbital._prevRun(action, payload, interaction);
 
 		throw new Error(`Unknown action: ${action}`);
 	};
@@ -613,7 +664,8 @@ async function initOrbital(client) {
 		const scriptDoc = await OrbitalScript.findOne({name: 'global'});
 		if (scriptDoc && scriptDoc.code && scriptDoc.code.trim()) {
 			const AsyncFunction = Object.getPrototypeOf(
-				async function () {},
+				async function () {
+},
 			).constructor;
 			const evaluator = new AsyncFunction(
 				'client',

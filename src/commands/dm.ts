@@ -6,7 +6,8 @@ import {
 import {type SlashCommandConfig} from '../types.js';
 import {config} from '../lib/config.js';
 
-const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists.botAdmins
+const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists
+	.botAdmins
 	? new Set(config.lists.botAdmins)
 	: new Set();
 
@@ -37,7 +38,10 @@ export const dmCommand: SlashCommandConfig = {
 		}
 
 		const targetUser = interaction.options.getUser('user', true);
-		const messageText = interaction.options.getString('message', true);
+		const messageText = interaction.options.getString(
+			'message',
+			true,
+		);
 
 		try {
 			await targetUser.send(messageText);

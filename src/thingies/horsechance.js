@@ -20,7 +20,8 @@ const horseKeys = Object.keys(horsesData);
 
 // Chance = 1 / (value * SPAWN_COEFFICIENT * ANTIINFLATOR)
 function calculateChance(value) {
-	const denominator = value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
+	const denominator =
+		value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
 	return 1 / denominator;
 }
 
@@ -51,7 +52,9 @@ function getStats() {
 	console.log(
 		`\nTotal chance of any horse spawning per message: ${(totalRate * 100).toFixed(4)}%`,
 	);
-	console.log(`(Roughly 1 horse every ${Math.round(1 / totalRate)} messages)`);
+	console.log(
+		`(Roughly 1 horse every ${Math.round(1 / totalRate)} messages)`,
+	);
 }
 
 function spinWheel() {

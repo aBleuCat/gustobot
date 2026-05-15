@@ -65,7 +65,9 @@ module.exports = {
 			flags: [MessageFlags.Ephemeral],
 		});
 
-		const collector = response.createMessageComponentCollector({time: 60_000});
+		const collector = response.createMessageComponentCollector({
+			time: 60_000,
+		});
 
 		collector.on('collect', async (i) => {
 			const [, direction, currentPage] = i.customId.split('_');

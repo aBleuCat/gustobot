@@ -19,10 +19,12 @@ function registerMessageHandler(client) {
 		message.user ||= message.author;
 		// Add to blacklists and whitelists with /hacks lists
 		const canUsePrimary =
-			(!isBot && !config.lists?.primaryTrigBlacklist?.includes(authorId)) ||
+			(!isBot &&
+				!config.lists?.primaryTrigBlacklist?.includes(authorId)) ||
 			config.lists?.primaryTrigWhitelist?.includes(authorId);
 		const canUseSecondary =
-			(!isBot && !config.lists?.secondaryTrigBlacklist?.includes(authorId)) ||
+			(!isBot &&
+				!config.lists?.secondaryTrigBlacklist?.includes(authorId)) ||
 			config.lists?.secondaryTrigWhitelist?.includes(authorId);
 		if (canUsePrimary) {
 			try {

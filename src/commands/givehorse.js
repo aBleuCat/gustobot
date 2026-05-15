@@ -24,7 +24,9 @@ module.exports = {
 	async autocomplete(interaction) {
 		const UserHorses = mongoose.model('UserHorses');
 		const focused = interaction.options.getFocused().toLowerCase();
-		const inventory = await UserHorses.findOne({userId: interaction.user.id});
+		const inventory = await UserHorses.findOne({
+			userId: interaction.user.id,
+		});
 
 		const choices = [];
 		if (inventory?.horses) {
@@ -65,7 +67,9 @@ module.exports = {
 			});
 		}
 
-		const giverInv = await UserHorses.findOne({userId: interaction.user.id});
+		const giverInv = await UserHorses.findOne({
+			userId: interaction.user.id,
+		});
 		if (!giverInv || (giverInv.horses.get(horseSlug) || 0) <= 0) {
 			return interaction.reply({
 				content: `You don't have a **${HORSE_VALUES[horseSlug]?.name ?? horseSlug}**!`,
@@ -73,10 +77,18 @@ module.exports = {
 			});
 		}
 
-		let receiverInv = await UserHorses.findOne({userId: targetUser.id});
-		receiverInv ||= new UserHorses({userId: targetUser.id, horses: new Map()});
+		let receiverInv = await UserHorses.findOne({
+			userId: targetUser.id,
+		});
+		receiverInv ||= new UserHorses({
+			userId: targetUser.id,
+			horses: new Map(),
+		});
 
-		giverInv.horses.set(horseSlug, giverInv.horses.get(horseSlug) - 1);
+		giverInv.horses.set(
+			horseSlug,
+			giverInv.horses.get(horseSlug) - 1,
+		);
 		receiverInv.horses.set(
 			horseSlug,
 			(receiverInv.horses.get(horseSlug) || 0) + 1,

@@ -7,7 +7,9 @@ const {devLog} = require('../helpers/devLog');
 const {queueMessage} = require('../helpers/messageQueue');
 
 async function handleHorseSpawn(message) {
-	const hConfig = await HorseConfig.findOne({guildId: message.guild.id});
+	const hConfig = await HorseConfig.findOne({
+		guildId: message.guild.id,
+	});
 	if (!hConfig || !hConfig.enabled) {
 		console.log(`[HORSE] Spawning disabled in ${message.guild.name}`);
 		await devLog(
@@ -36,7 +38,8 @@ async function handleHorseSpawn(message) {
 	// Similarity check
 	const tooSimilar = cache.recentMessages.some(
 		(previous) =>
-			stringSimilarity(previous, messageText) >= config.SIMILARITY_THRESHOLD,
+			stringSimilarity(previous, messageText) >=
+			config.SIMILARITY_THRESHOLD,
 	);
 	if (tooSimilar) {
 		return;
@@ -46,10 +49,10 @@ async function handleHorseSpawn(message) {
 		{userId: message.author.id, guildId: message.guild.id},
 		{
 			lastMessageTime: now,
-			recentMessages: [messageText, ...(cache.recentMessages || [])].slice(
-				0,
-				config.RECENT_MSG_COUNT,
-			),
+			recentMessages: [
+				messageText,
+				...(cache.recentMessages || []),
+			].slice(0, config.RECENT_MSG_COUNT),
 		},
 		{upsert: true},
 	);
@@ -58,8 +61,13 @@ async function handleHorseSpawn(message) {
 		.fetch(hConfig.channelId)
 		.catch(() => message.channel);
 
-	let inventory = await UserHorses.findOne({userId: message.author.id});
-	inventory ||= new UserHorses({userId: message.author.id, horses: new Map()});
+	let inventory = await UserHorses.findOne({
+		userId: message.author.id,
+	});
+	inventory ||= new UserHorses({
+		userId: message.author.id,
+		horses: new Map(),
+	});
 
 	let anySpawned = false;
 
@@ -70,21 +78,31 @@ async function handleHorseSpawn(message) {
 		const displayName = data.name;
 		const chance = Math.max(
 			1,
-			Math.floor(data.value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR),
+			Math.floor(
+				data.value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR,
+			),
 		);
 
 		if (Math.floor(Math.random() * chance) === 0) {
-			inventory.horses.set(slug, (inventory.horses.get(slug) || 0) + 1);
+			inventory.horses.set(
+				slug,
+				(inventory.horses.get(slug) || 0) + 1,
+			);
 			anySpawned = true;
 
 			let prefix = 'found the';
 			let decoration = '';
-			if (data.value > config.FLAIR_THRESHOLD_VALUE || slug === 'dung_beetle') {
+			if (
+				data.value > config.FLAIR_THRESHOLD_VALUE ||
+				slug === 'dung_beetle'
+			) {
 				prefix = slug === 'dung_beetle' ? 'gets ✨' : 'found the ✨';
 				decoration = '✨';
 			}
 
-			console.log(`[HORSE] ${message.author.tag} spawned ${displayName}!`);
+			console.log(
+				`[HORSE] ${message.author.tag} spawned ${displayName}!`,
+			);
 			await devLog(
 				`[HORSE] ${message.author.tag} spawned ${displayName} in guild ${message.guild.name} (${message.guild.id})!`,
 			);
@@ -93,7 +111,8 @@ async function handleHorseSpawn(message) {
 				channel: targetChan,
 				content: `<@${message.author.id}> ${prefix} **${displayName}**${decoration}!`,
 			});
-			if (data.link) queueMessage({channel: targetChan, content: data.link});
+			if (data.link)
+				queueMessage({channel: targetChan, content: data.link});
 
 			await conditionHorse(inventory, targetChan);
 		}

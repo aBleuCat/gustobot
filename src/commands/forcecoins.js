@@ -36,7 +36,10 @@ module.exports = {
 		const amount = interaction.options.getInteger('amount');
 
 		let inventory = await UserHorses.findOne({userId: target.id});
-		inventory ||= new UserHorses({userId: target.id, horses: new Map()});
+		inventory ||= new UserHorses({
+			userId: target.id,
+			horses: new Map(),
+		});
 
 		inventory.horseCoins = (inventory.horseCoins || 0) + amount;
 		await inventory.save();

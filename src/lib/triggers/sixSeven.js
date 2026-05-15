@@ -11,8 +11,13 @@ const RESPONSES = [
 ];
 
 async function handleSixSeven(message) {
-	if (!/\b67\b|six seven|six-seven/.test(message.content.toLowerCase())) return;
-	const isMuted = await MutedChannel.findOne({channelId: message.channel.id});
+	if (
+		!/\b67\b|six seven|six-seven/.test(message.content.toLowerCase())
+	)
+		return;
+	const isMuted = await MutedChannel.findOne({
+		channelId: message.channel.id,
+	});
 	if (isMuted) return;
 	queueMessage({
 		channel: message.channel,

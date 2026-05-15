@@ -23,7 +23,9 @@ module.exports = {
 	async execute(interaction) {
 		// Check perms
 		if (
-			!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)
+			!interaction.member.permissions.has(
+				PermissionFlagsBits.ManageChannels,
+			)
 		) {
 			return interaction.reply({
 				content: 'you have no permission to do this',

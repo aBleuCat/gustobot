@@ -55,16 +55,24 @@ module.exports = {
 		try {
 			const UserHorses = mongoose.model('UserHorses');
 			const focused = interaction.options.getFocused().toLowerCase();
-			const inventory = await UserHorses.findOne({userId: interaction.user.id});
+			const inventory = await UserHorses.findOne({
+				userId: interaction.user.id,
+			});
 
 			const choices = [
 				{name: '📈 top — sell most valuable horses', value: 'top'},
-				{name: '📉 bottom — sell least valuable horses', value: 'bottom'},
+				{
+					name: '📉 bottom — sell least valuable horses',
+					value: 'bottom',
+				},
 			];
 			if (inventory?.horses) {
 				for (const [slug, count] of inventory.horses.entries()) {
 					if (count > 0 && HORSE_VALUES[slug]) {
-						choices.push({name: `${horseName(slug)} (x${count})`, value: slug});
+						choices.push({
+							name: `${horseName(slug)} (x${count})`,
+							value: slug,
+						});
 					}
 				}
 			}
@@ -78,8 +86,7 @@ module.exports = {
 			console.error('horsesell autocomplete error:', error);
 			try {
 				await interaction.respond([]);
-			} catch {
-}
+			} catch {}
 		}
 	},
 
@@ -92,7 +99,9 @@ module.exports = {
 		const isBottom = horseSlug === 'bottom';
 		const isTopBottom = isTop || isBottom;
 
-		const inventory = await UserHorses.findOne({userId: interaction.user.id});
+		const inventory = await UserHorses.findOne({
+			userId: interaction.user.id,
+		});
 		if (!inventory) {
 			return interaction.editReply({
 				content: `You don't have any horses!`,
@@ -102,7 +111,10 @@ module.exports = {
 
 		// Top/bottom bulk sell
 		if (isTopBottom) {
-			const sorted = getSortedHorseList(inventory, isTop ? 'desc' : 'asc');
+			const sorted = getSortedHorseList(
+				inventory,
+				isTop ? 'desc' : 'asc',
+			);
 			if (sorted.length === 0) {
 				return interaction.editReply({
 					content: `You don't have any horses to sell!`,
@@ -115,15 +127,22 @@ module.exports = {
 			let remaining = amount === 0 ? Infinity : amount;
 			for (const {slug, count} of sorted) {
 				if (remaining <= 0) break;
-				const take = amount === 0 ? count : Math.min(count, remaining);
+				const take =
+					amount === 0 ? count : Math.min(count, remaining);
 				sellMap.set(slug, take);
 				remaining -= take;
 			}
 
-			const totalTaken = [...sellMap.values()].reduce((a, b) => a + b, 0);
+			const totalTaken = [...sellMap.values()].reduce(
+				(a, b) => a + b,
+				0,
+			);
 			let totalCoins = 0;
 			for (const [slug, cnt] of sellMap.entries()) {
-				inventory.horses.set(slug, (inventory.horses.get(slug) || 0) - cnt);
+				inventory.horses.set(
+					slug,
+					(inventory.horses.get(slug) || 0) - cnt,
+				);
 				totalCoins += coinValueForSlug(slug) * cnt;
 			}
 
@@ -135,7 +154,8 @@ module.exports = {
 			const lines = [...sellMap.entries()]
 				.sort(
 					(a, b) =>
-						(HORSE_VALUES[b[0]]?.value ?? 0) - (HORSE_VALUES[a[0]]?.value ?? 0),
+						(HORSE_VALUES[b[0]]?.value ?? 0) -
+						(HORSE_VALUES[a[0]]?.value ?? 0),
 				)
 				.map(
 					([slug, cnt]) =>

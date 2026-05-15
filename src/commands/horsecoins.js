@@ -13,8 +13,11 @@ module.exports = {
 		),
 	async execute(interaction) {
 		const UserHorses = mongoose.model('UserHorses');
-		const targetUser = interaction.options.getUser('user') || interaction.user;
-		const inventory = await UserHorses.findOne({userId: targetUser.id});
+		const targetUser =
+			interaction.options.getUser('user') || interaction.user;
+		const inventory = await UserHorses.findOne({
+			userId: targetUser.id,
+		});
 		const coins = inventory?.horseCoins || 0;
 
 		return interaction.reply({

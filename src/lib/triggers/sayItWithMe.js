@@ -11,8 +11,11 @@ async function handleSayItWithMe(message) {
 	if (!phrase) return;
 
 	// Check if user is admin or bot admin
-	const isBotAdmin = config.lists?.botAdmins?.includes(message.author.id);
-	const isGuildAdmin = message.member?.permissions.has('Administrator');
+	const isBotAdmin = config.lists?.botAdmins?.includes(
+		message.author.id,
+	);
+	const isGuildAdmin =
+		message.member?.permissions.has('Administrator');
 
 	if (!isBotAdmin && !isGuildAdmin) {
 		queueMessage({

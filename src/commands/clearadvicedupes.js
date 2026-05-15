@@ -1,10 +1,15 @@
-const {SlashCommandBuilder, PermissionFlagsBits} = require('discord.js');
+const {
+	SlashCommandBuilder,
+	PermissionFlagsBits,
+} = require('discord.js');
 const mongoose = require('mongoose');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('clearadvicedupes')
-		.setDescription('Cleans the database of duplicate advice entries'),
+		.setDescription(
+			'Cleans the database of duplicate advice entries',
+		),
 	async execute(interaction) {
 		// Owner Check
 		if (interaction.user.id !== '934290747623096381') {

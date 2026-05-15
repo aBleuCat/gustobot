@@ -8,7 +8,9 @@ function startStatusChecker() {
 
 	setInterval(async () => {
 		const now = new Date();
-		const nextCheck = new Date(now.getTime() + status_checker_interval);
+		const nextCheck = new Date(
+			now.getTime() + status_checker_interval,
+		);
 
 		// 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
 		const dbStates = [
@@ -17,7 +19,8 @@ function startStatusChecker() {
 			'🟡 Connecting',
 			'🟠 Disconnecting',
 		];
-		const dbStatus = dbStates[mongoose.connection.readyState] || '❓ Unknown';
+		const dbStatus =
+			dbStates[mongoose.connection.readyState] || '❓ Unknown';
 
 		const statusMessage = [
 			`**Status Check**`,

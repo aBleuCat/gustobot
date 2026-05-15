@@ -25,7 +25,9 @@ module.exports = {
 				});
 
 			await target.roles.add(roleId);
-			return interaction.reply(`impregnated ${target.user.username}.`);
+			return interaction.reply(
+				`impregnated ${target.user.username}.`,
+			);
 		} catch {
 			return interaction.reply({
 				content: 'Failed to impregnate',

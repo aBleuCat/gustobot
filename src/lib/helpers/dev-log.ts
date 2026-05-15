@@ -1,8 +1,4 @@
-import type {
-	Client,
-	GuildTextBasedChannel,
-	GuildBasedChannel,
-} from 'discord.js';
+import type {Client, GuildTextBasedChannel} from 'discord.js';
 import {config} from '../config.js';
 import {castAsTextBased} from '../../type-utils.js';
 

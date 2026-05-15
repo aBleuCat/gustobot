@@ -2,7 +2,12 @@ require('libsodium-wrappers'); // Fix voice encryption
 const http = require('node:http');
 require('dotenv').config();
 const fs = require('node:fs');
-const {Client, GatewayIntentBits, Collection, Events} = require('discord.js');
+const {
+	Client,
+	GatewayIntentBits,
+	Collection,
+	Events,
+} = require('discord.js');
 const mongoose = require('mongoose');
 const {REST, Routes} = require('discord.js');
 
@@ -11,10 +16,14 @@ const {
 	registerInteractionHandler,
 	runNukeCode,
 } = require('./lib/handlers/interactionHandler');
-const {registerMessageHandler} = require('./lib/handlers/messageHandler');
+const {
+	registerMessageHandler,
+} = require('./lib/handlers/messageHandler');
 const {startRoleReverter} = require('./lib/tasks/roleReverter');
 const {startResourceMonitor} = require('./lib/tasks/resourceMonitor');
-const {startMessageCacheCleanup} = require('./lib/tasks/messageCacheCleanup');
+const {
+	startMessageCacheCleanup,
+} = require('./lib/tasks/messageCacheCleanup');
 const {logToModChannel} = require('./lib/helpers/modLog');
 const {dmAdmin} = require('./lib/helpers/dmlog');
 const {initDevLog, devLog} = require('./lib/helpers/devLog');
@@ -104,7 +113,10 @@ client.once(Events.ClientReady, async () => {
 	// Send startup message to modlog channel for each guild
 	for (const guild of client.guilds.cache.values()) {
 		try {
-			await logToModChannel(guild, 'Bot has started up and is online.');
+			await logToModChannel(
+				guild,
+				'Bot has started up and is online.',
+			);
 		} catch (error) {
 			console.error(
 				`Failed to send modlog startup message for guild ${guild.id}:`,
@@ -121,9 +133,12 @@ client.once(Events.ClientReady, async () => {
 	try {
 		console.log('Refreshing commands...');
 		devLog('Refreshing commands...');
-		await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
-			body: globalCommandsData,
-		});
+		await rest.put(
+			Routes.applicationCommands(process.env.CLIENT_ID),
+			{
+				body: globalCommandsData,
+			},
+		);
 		await rest.put(
 			Routes.applicationGuildCommands(
 				process.env.CLIENT_ID,
@@ -154,7 +169,8 @@ client.once(Events.ClientReady, async () => {
 					user: client.user,
 				}),
 			)
-			.catch(() => {});
+			.catch(() => {
+});
 	}
 });
 
@@ -174,7 +190,10 @@ client.on('interactionCreate', async (interaction) => {
 http
 	.createServer(async (request, res) => {
 		// Render webhooks
-		if (request.method === 'POST' && request.url === '/render-webhook') {
+		if (
+			request.method === 'POST' &&
+			request.url === '/render-webhook'
+		) {
 			let body = '';
 			request.on('data', (chunk) => {
 				body += chunk.toString();

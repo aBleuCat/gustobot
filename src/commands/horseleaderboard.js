@@ -52,12 +52,20 @@ module.exports = {
 		});
 
 		const worthSort = [...data].sort((a, b) => b.worth - a.worth);
-		const compSort = [...data].sort((a, b) => b.completion - a.completion);
-		const coinSort = [...data].sort((a, b) => b.horseCoins - a.horseCoins);
+		const compSort = [...data].sort(
+			(a, b) => b.completion - a.completion,
+		);
+		const coinSort = [...data].sort(
+			(a, b) => b.horseCoins - a.horseCoins,
+		);
 
-		const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+		const totalPages = Math.max(
+			1,
+			Math.ceil(data.length / PAGE_SIZE),
+		);
 		// Get page from option, default to 1
-		let currentPage = (interaction.options.getInteger('page') || 1) - 1;
+		let currentPage =
+			(interaction.options.getInteger('page') || 1) - 1;
 		if (currentPage < 0) currentPage = 0;
 		if (currentPage >= totalPages) currentPage = totalPages - 1;
 
@@ -75,7 +83,9 @@ module.exports = {
 					function fetchWithTimeout(promise, ms) {
 						return Promise.race([
 							promise,
-							new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+							new Promise((resolve) =>
+								setTimeout(() => resolve(null), ms),
+							),
 						]);
 					}
 
@@ -84,7 +94,8 @@ module.exports = {
 							interaction.client.users.fetch(userId),
 							2000,
 						);
-						const name = user?.displayName || user?.username || 'Unknown User';
+						const name =
+							user?.displayName || user?.username || 'Unknown User';
 						userCache.set(userId, name);
 						return name;
 					} catch {
@@ -169,7 +180,9 @@ module.exports = {
 		});
 
 		const reply = await interaction.fetchReply();
-		const collector = reply.createMessageComponentCollector({time: 120_000});
+		const collector = reply.createMessageComponentCollector({
+			time: 120_000,
+		});
 
 		collector.on('collect', async (i) => {
 			if (i.user.id !== interaction.user.id) {
@@ -178,14 +191,16 @@ module.exports = {
 						content: 'Only the command user can use these buttons.',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 				return;
 			}
 
 			const [, direction, page] = i.customId.split('_');
 			let parsedPage = Number(page);
 			if (isNaN(parsedPage)) parsedPage = 0;
-			currentPage = direction === 'next' ? parsedPage + 1 : parsedPage - 1;
+			currentPage =
+				direction === 'next' ? parsedPage + 1 : parsedPage - 1;
 			if (currentPage < 0) currentPage = 0;
 			if (currentPage >= totalPages) currentPage = totalPages - 1;
 			try {
@@ -199,7 +214,8 @@ module.exports = {
 						content: 'Failed to update leaderboard page.',
 						ephemeral: true,
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 			}
 		});
 
@@ -209,7 +225,8 @@ module.exports = {
 					embeds: [await buildEmbed(currentPage)],
 					components: [],
 				})
-				.catch(() => {});
+				.catch(() => {
+});
 		});
 	},
 };

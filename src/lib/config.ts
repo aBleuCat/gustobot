@@ -72,15 +72,21 @@ export const config = {
 
 export const descriptions: Record<string, string> = {
 	DEBOUNCE_MS: 'Min ms between horse rolls per user',
-	SIMILARITY_THRESHOLD: 'How similar two messages must be to be blocked (0-1)',
-	RECENT_MSG_COUNT: 'How many recent messages to check for similarity',
-	COIN_CHANCE: '1 in X chance of dropping horse coins per horse spawned',
-	SPAWN_COEFFICIENT: 'Horse spawn chance = 1 / (value * this * ANTIINFLATOR)',
-	FLAIR_THRESHOLD_VALUE: 'Horse value above which ✨ flair is added on spawn',
+	SIMILARITY_THRESHOLD:
+		'How similar two messages must be to be blocked (0-1)',
+	RECENT_MSG_COUNT:
+		'How many recent messages to check for similarity',
+	COIN_CHANCE:
+		'1 in X chance of dropping horse coins per horse spawned',
+	SPAWN_COEFFICIENT:
+		'Horse spawn chance = 1 / (value * this * ANTIINFLATOR)',
+	FLAIR_THRESHOLD_VALUE:
+		'Horse value above which ✨ flair is added on spawn',
 	COIN_DROP_SIZE: 'Fallback coin drop size (for legacy behavior)',
 	COIN_DROP_MIN: 'Minimum coins dropped when horse coins spawn',
 	COIN_DROP_MAX: 'Maximum coins dropped when horse coins spawn',
-	UNEXPECTED_CAT_PROBABILITY: '1 in X chance of random cat gif per message',
+	UNEXPECTED_CAT_PROBABILITY:
+		'1 in X chance of random cat gif per message',
 	FRENZY_THRESHOLD_MS:
 		'Ms since last gamble within which gambling frenzy can trigger',
 	FRENZY_CHANCE: 'Probability that gambling frenzy triggers (0-1)',
@@ -88,7 +94,8 @@ export const descriptions: Record<string, string> = {
 		'Probability of police confiscating horse when no coins (0-1)',
 	LOSS_THRESHOLD:
 		'Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between -100 and 100 is rolled',
-	PROGRESSIVE_COIN_GAMBLE_TAX: 'Cost per horse = floor(coins / 50 * this)',
+	PROGRESSIVE_COIN_GAMBLE_TAX:
+		'Cost per horse = floor(coins / 50 * this)',
 	MAX_ROLL: 'Maximum possible roll for gambling (inclusive)',
 	MIN_ROLL: 'Minimum possible roll for gambling (inclusive)',
 	ANTIINFLATOR:
@@ -103,7 +110,8 @@ export const descriptions: Record<string, string> = {
 	MICRO_LOG_CHANNEL_ID:
 		'Channel ID of micro log channel for extra-detailed logs',
 	COMMON_BUY_PRICE: 'Price to buy a common horse in /horsebuy',
-	STATUS_LOG_CHANNEL: 'Channel ID of status log channel for bot status updates',
+	STATUS_LOG_CHANNEL:
+		'Channel ID of status log channel for bot status updates',
 	COMMON_SELL_PRICE:
 		'Price to sell a common horse in /horsesell. Sell price of any horse is value / 25 * this',
 	RULE_CACHE_TTL_MS:
@@ -111,5 +119,6 @@ export const descriptions: Record<string, string> = {
 	lists: 'Lists that can be changed with /hacks lists',
 	CHANNEL_MSG_LIMIT_MS:
 		'Minimum ms between messages sent by the bot in the same channel',
-	GLOBAL_MSG_LIMIT_MS: 'Minimum ms between any messages sent by the bot',
+	GLOBAL_MSG_LIMIT_MS:
+		'Minimum ms between any messages sent by the bot',
 };

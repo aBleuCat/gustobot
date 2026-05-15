@@ -6,11 +6,15 @@ const OWNER_ID = '934290747623096381';
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('pingtrigs')
-		.setDescription('Manage bot ping responses and triggers (owner only)')
+		.setDescription(
+			'Manage bot ping responses and triggers (owner only)',
+		)
 		.addSubcommand((sub) =>
 			sub
 				.setName('add')
-				.setDescription('Add a response to the random pool or with a trigger')
+				.setDescription(
+					'Add a response to the random pool or with a trigger',
+				)
 				.addStringOption((o) =>
 					o
 						.setName('response')
@@ -20,7 +24,9 @@ module.exports = {
 				.addStringOption((o) =>
 					o
 						.setName('triggertype')
-						.setDescription('Type of trigger (leave blank for random pool)')
+						.setDescription(
+							'Type of trigger (leave blank for random pool)',
+						)
 						.setRequired(false)
 						.addChoices(
 							{name: 'contains', value: 'contains'},
@@ -49,7 +55,9 @@ module.exports = {
 				),
 		)
 		.addSubcommand((sub) =>
-			sub.setName('list').setDescription('List all responses and triggers'),
+			sub
+				.setName('list')
+				.setDescription('List all responses and triggers'),
 		),
 
 	async execute(interaction) {
@@ -64,8 +72,10 @@ module.exports = {
 
 		if (sub === 'add') {
 			const response = interaction.options.getString('response');
-			const triggerType = interaction.options.getString('triggertype');
-			const triggerText = interaction.options.getString('triggertext');
+			const triggerType =
+				interaction.options.getString('triggertype');
+			const triggerText =
+				interaction.options.getString('triggertext');
 
 			if (triggerType && !triggerText) {
 				return interaction.editReply(
@@ -75,7 +85,9 @@ module.exports = {
 
 			const entry = await PingResponse.create({
 				message: response,
-				trigger: triggerType ? {type: triggerType, text: triggerText} : {},
+				trigger: triggerType
+					? {type: triggerType, text: triggerText}
+					: {},
 			});
 
 			return interaction.editReply(
@@ -91,12 +103,15 @@ module.exports = {
 				() => null,
 			);
 			if (deleted) return interaction.editReply(`Removed \`${id}\`.`);
-			return interaction.editReply(`No entry found with id \`${id}\`.`);
+			return interaction.editReply(
+				`No entry found with id \`${id}\`.`,
+			);
 		}
 
 		if (sub === 'list') {
 			const all = await PingResponse.find({});
-			if (all.length === 0) return interaction.editReply('Nothing added yet.');
+			if (all.length === 0)
+				return interaction.editReply('Nothing added yet.');
 
 			const pool = all.filter((e) => !e.trigger?.type);
 			const triggers = all.filter((e) => e.trigger?.type);
@@ -140,7 +155,10 @@ module.exports = {
 			// Send subsequent chunks as follow-up messages
 			if (chunks.length > 1) {
 				for (let i = 1; i < chunks.length; i++) {
-					await interaction.followUp({content: chunks[i], ephemeral: true});
+					await interaction.followUp({
+						content: chunks[i],
+						ephemeral: true,
+					});
 				}
 			}
 		}

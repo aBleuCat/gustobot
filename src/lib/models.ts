@@ -128,7 +128,10 @@ const modChannelSchema = new mongoose.Schema<IModChannel>({
 });
 modChannelSchema.index({guildId: 1});
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const ModChannel = mongoose.model('ModChannel', modChannelSchema);
+export const ModChannel = mongoose.model(
+	'ModChannel',
+	modChannelSchema,
+);
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const MutedChannel = mongoose.model(
@@ -175,7 +178,10 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 });
 userHorsesSchema.index({userId: 1});
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const UserHorses = mongoose.model('UserHorses', userHorsesSchema);
+export const UserHorses = mongoose.model(
+	'UserHorses',
+	userHorsesSchema,
+);
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const MessageCache = mongoose.model(

@@ -32,7 +32,9 @@ export const getImageCommand = {
 			choice.toLowerCase().includes(focused.toLowerCase()),
 		);
 		await interaction.respond(
-			filtered.map((choice) => ({name: choice, value: choice})).slice(0, 25),
+			filtered
+				.map((choice) => ({name: choice, value: choice}))
+				.slice(0, 25),
 		);
 	},
 

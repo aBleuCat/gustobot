@@ -38,6 +38,7 @@
   "xo": {
     "prettier": true,
     "space": false,
+	"semicolon": true,
     "rules": {
 	  "@typescript-eslint/naming-convention": [
 		  "error",

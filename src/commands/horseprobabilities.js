@@ -27,7 +27,9 @@ module.exports = {
 	async execute(interaction) {
 		// 1. Load Data
 		const horsesPath = path.join(__dirname, '../horses.json');
-		const horsesData = JSON.parse(fs.readFileSync(horsesPath, 'utf8'));
+		const horsesData = JSON.parse(
+			fs.readFileSync(horsesPath, 'utf8'),
+		);
 		const horseKeys = Object.keys(horsesData);
 
 		// 2. Helper Logic
@@ -64,7 +66,9 @@ module.exports = {
 				})
 				.sort((a, b) => b.val - a.val)
 				.map((s) => {
-					const nameTag = s.isSpawnable ? s.name : `[NOSPAWN] ${s.name}`;
+					const nameTag = s.isSpawnable
+						? s.name
+						: `[NOSPAWN] ${s.name}`;
 					return `${nameTag.padEnd(35)} | ${s.prob}% | 1 in ${s.msgFreq}`;
 				});
 
@@ -118,7 +122,11 @@ module.exports = {
 				)
 				.setDescription(`You rolled: **${selectedHorse.name}**`)
 				.addFields(
-					{name: 'Value', value: `${selectedHorse.value}`, inline: true},
+					{
+						name: 'Value',
+						value: `${selectedHorse.value}`,
+						inline: true,
+					},
 					{
 						name: 'Rarity',
 						value: `1 in ${Math.round(1 / chance).toLocaleString()} msgs`,
@@ -126,7 +134,10 @@ module.exports = {
 					},
 				);
 
-			if (selectedHorse.link && selectedHorse.link.startsWith('http')) {
+			if (
+				selectedHorse.link &&
+				selectedHorse.link.startsWith('http')
+			) {
 				embed.setImage(selectedHorse.link);
 			}
 

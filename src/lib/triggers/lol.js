@@ -26,7 +26,9 @@ async function handleLol(message) {
 
 	if (!match) return;
 
-	const isMuted = await MutedChannel.findOne({channelId: message.channel.id});
+	const isMuted = await MutedChannel.findOne({
+		channelId: message.channel.id,
+	});
 	if (isMuted) return;
 
 	// Send the response defined in the TRIGGERS object
@@ -36,7 +38,10 @@ async function handleLol(message) {
 	// Check milestones (ordered descending to hit the highest modulo first)
 	for (const count of [60, 40, 20]) {
 		if (stats.daily % count === 0) {
-			queueMessage({channel: message.channel, content: MILESTONES[count]});
+			queueMessage({
+				channel: message.channel,
+				content: MILESTONES[count],
+			});
 			break; // Prevents multiple milestones triggering at once
 		}
 	}

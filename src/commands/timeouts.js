@@ -35,6 +35,9 @@ module.exports = {
 			.join('\n');
 
 		embed.setDescription(list);
-		await interaction.reply({embeds: [embed], flags: [MessageFlags.Ephemeral]});
+		await interaction.reply({
+			embeds: [embed],
+			flags: [MessageFlags.Ephemeral],
+		});
 	},
 };

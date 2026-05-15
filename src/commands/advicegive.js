@@ -4,11 +4,16 @@ const mongoose = require('mongoose');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('advicegive')
-		.setDescription('Add a piece of advice to the goon circle of advice')
+		.setDescription(
+			'Add a piece of advice to the goon circle of advice',
+		)
 		.setContexts([0, 1, 2])
 		.setIntegrationTypes([0, 1])
 		.addStringOption((option) =>
-			option.setName('text').setDescription('The advice').setRequired(true),
+			option
+				.setName('text')
+				.setDescription('The advice')
+				.setRequired(true),
 		),
 
 	async execute(interaction) {
@@ -17,10 +22,13 @@ module.exports = {
 		const text = interaction.options.getString('text').trim();
 
 		// 1. Check if the user is banned
-		const isBanned = await AdviceBan.findOne({userId: interaction.user.id});
+		const isBanned = await AdviceBan.findOne({
+			userId: interaction.user.id,
+		});
 		if (isBanned) {
 			return interaction.reply({
-				content: 'You are banned from contributing wisdom to the circle.',
+				content:
+					'You are banned from contributing wisdom to the circle.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

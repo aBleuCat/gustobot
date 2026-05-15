@@ -6,7 +6,9 @@ const {
 	PermissionFlagsBits,
 	MessageFlags,
 } = require('discord.js');
-const {catchDataStore} = require('../lib/handlers/interactionHandler');
+const {
+	catchDataStore,
+} = require('../lib/handlers/interactionHandler');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -49,7 +51,9 @@ module.exports = {
 		.addStringOption((o) =>
 			o
 				.setName('stats')
-				.setDescription('Custom stats (e.g. #ABCDEF, +1%/+2%). Optional.')
+				.setDescription(
+					'Custom stats (e.g. #ABCDEF, +1%/+2%). Optional.',
+				)
 				.setRequired(false),
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
@@ -61,7 +65,8 @@ module.exports = {
 			const ans = interaction.options.getString('formanswer');
 			const bold = interaction.options.getString('boldtext');
 			const type = interaction.options.getString('texttype');
-			const stats = interaction.options.getString('stats') || 'DEFAULT';
+			const stats =
+				interaction.options.getString('stats') || 'DEFAULT';
 
 			// Use a unique key per spawn so multiple spawns don't collide
 			const spawnId = `${target.id}-${Date.now()}`;
@@ -108,8 +113,7 @@ module.exports = {
 						content: `Error: ${error.message}`,
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {
-});
+					.catch(() => {});
 			}
 		}
 	},

@@ -37,7 +37,9 @@ module.exports = {
 			});
 		}
 
-		const sender = await UserHorses.findOne({userId: interaction.user.id});
+		const sender = await UserHorses.findOne({
+			userId: interaction.user.id,
+		});
 		if (sender && (sender.horseCoins || 0) < 0) {
 			return interaction.reply({
 				content: `You are in coin debt (**${sender.horseCoins}**). You can't give coins until you break even.`,
@@ -53,7 +55,10 @@ module.exports = {
 		}
 
 		let receiver = await UserHorses.findOne({userId: target.id});
-		receiver ||= new UserHorses({userId: target.id, horses: new Map()});
+		receiver ||= new UserHorses({
+			userId: target.id,
+			horses: new Map(),
+		});
 
 		sender.horseCoins -= amount;
 		receiver.horseCoins = (receiver.horseCoins || 0) + amount;

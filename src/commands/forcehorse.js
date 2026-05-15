@@ -12,7 +12,9 @@ const {conditionHorse} = require('../lib/helpers/horseFuncs');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('forcehorse')
-		.setDescription('Owner Only: Give a user a horse or a rare creature')
+		.setDescription(
+			'Owner Only: Give a user a horse or a rare creature',
+		)
 		.addUserOption((o) =>
 			o
 				.setName('target')
@@ -29,7 +31,9 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
 	async autocomplete(interaction) {
-		const focusedValue = interaction.options.getFocused().toLowerCase();
+		const focusedValue = interaction.options
+			.getFocused()
+			.toLowerCase();
 
 		// Filter horses based on the input
 		const choices = Object.entries(HORSE_VALUES)
@@ -44,8 +48,7 @@ module.exports = {
 			}));
 
 		// Discord limits autocomplete to 25 results
-		await interaction.respond(choices.slice(0, 25)).catch(() => {
-});
+		await interaction.respond(choices.slice(0, 25)).catch(() => {});
 	},
 
 	async execute(interaction) {
@@ -69,7 +72,10 @@ module.exports = {
 		}
 
 		let inventory = await UserHorses.findOne({userId: target.id});
-		inventory ||= new UserHorses({userId: target.id, horses: new Map()});
+		inventory ||= new UserHorses({
+			userId: target.id,
+			horses: new Map(),
+		});
 
 		const currentCount = inventory.horses.get(type) || 0;
 		inventory.horses.set(type, currentCount + 1);

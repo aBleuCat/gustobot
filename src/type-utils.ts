@@ -1,4 +1,7 @@
-import type {GuildBasedChannel, GuildTextBasedChannel} from 'discord.js';
+import type {
+	GuildBasedChannel,
+	GuildTextBasedChannel,
+} from 'discord.js';
 import type {Horse, HorseData} from './types.js';
 
 function isHorse(item: unknown): item is Horse {
@@ -18,7 +21,11 @@ export function isHorseData(
 	data: unknown,
 	mode: 'all' | number = 'all',
 ): data is Record<string, Horse> {
-	if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+	if (
+		typeof data !== 'object' ||
+		data === null ||
+		Array.isArray(data)
+	) {
 		return false;
 	}
 

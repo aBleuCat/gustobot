@@ -31,7 +31,9 @@ module.exports = {
 		const count = interaction.options.getInteger('count') || 1;
 		const totalCost = config.COMMON_BUY_PRICE * count;
 
-		let inventory = await UserHorses.findOne({userId: interaction.user.id});
+		let inventory = await UserHorses.findOne({
+			userId: interaction.user.id,
+		});
 		const currentCoins = inventory?.horseCoins || 0;
 
 		if (currentCoins < totalCost) {

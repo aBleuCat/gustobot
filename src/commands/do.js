@@ -12,7 +12,9 @@ module.exports = {
 				.setRequired(true),
 		),
 	async execute(interaction) {
-		const actionInput = interaction.options.getString('action').toLowerCase();
+		const actionInput = interaction.options
+			.getString('action')
+			.toLowerCase();
 		const ActionResponse = mongoose.model('ActionResponse');
 
 		// Check database for triggers
@@ -43,6 +45,8 @@ module.exports = {
 
 		const randomReason =
 			dumbReasons[Math.floor(Math.random() * dumbReasons.length)];
-		return interaction.reply(`> **Request:** ${actionInput}\n${randomReason}`);
+		return interaction.reply(
+			`> **Request:** ${actionInput}\n${randomReason}`,
+		);
 	},
 };

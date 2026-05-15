@@ -19,7 +19,9 @@ module.exports = {
 		const advices = await Advice.find({});
 
 		if (advices.length === 0)
-			return interaction.reply('The circle of advice is currently empty.');
+			return interaction.reply(
+				'The circle of advice is currently empty.',
+			);
 
 		const generateEmbed = (page) => {
 			const start = page * 10;
@@ -62,7 +64,9 @@ module.exports = {
 		});
 
 		// Collector to handle button clicks
-		const collector = response.createMessageComponentCollector({time: 60_000});
+		const collector = response.createMessageComponentCollector({
+			time: 60_000,
+		});
 
 		collector.on('collect', async (i) => {
 			const [type, direction, currentPage] = i.customId.split('_');

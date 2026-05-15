@@ -25,13 +25,17 @@ module.exports = {
 				),
 		),
 	async execute(interaction) {
-		const ephemeral = interaction.options.getBoolean('ephemeral') ?? true;
+		const ephemeral =
+			interaction.options.getBoolean('ephemeral') ?? true;
 		await interaction.deferReply({ephemeral});
-		const targetUser = interaction.options.getUser('user') || interaction.user;
+		const targetUser =
+			interaction.options.getUser('user') || interaction.user;
 		const isSelf = targetUser.id === interaction.user.id;
 
 		const allUsers = await mongoose.model('UserHorses').find();
-		const inventory = allUsers.find((u) => u.userId === targetUser.id);
+		const inventory = allUsers.find(
+			(u) => u.userId === targetUser.id,
+		);
 		const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
 			(k) => HORSE_VALUES[k].comp !== false,
 		);
@@ -60,7 +64,8 @@ module.exports = {
 			})
 			.toSorted((a, b) => b.worth - a.worth);
 
-		const rank = leaderboard.findIndex((u) => u.userId === targetUser.id) + 1;
+		const rank =
+			leaderboard.findIndex((u) => u.userId === targetUser.id) + 1;
 		const userWorth =
 			leaderboard.find((u) => u.userId === targetUser.id)?.worth || 0;
 
@@ -104,7 +109,9 @@ module.exports = {
 		const completionPercentage = Math.round(
 			(ownedUniqueCount / allPossibleSlugs.length) * 100,
 		);
-		const missing = allPossibleSlugs.filter((slug) => !ownedSlugs.has(slug));
+		const missing = allPossibleSlugs.filter(
+			(slug) => !ownedSlugs.has(slug),
+		);
 
 		const missingHeader = isSelf
 			? '### Missing Thingamabobs'

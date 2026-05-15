@@ -66,10 +66,19 @@ export async function queueMessage({
 		reject = rejection;
 	});
 
-	const item: QueueItem = {channel, content, reply, priority, resolve, reject};
+	const item: QueueItem = {
+		channel,
+		content,
+		reply,
+		priority,
+		resolve,
+		reject,
+	};
 
 	// Insert before the first item with a strictly lower priority
-	const insertIndex = state.queue.findIndex((m) => m.priority < priority);
+	const insertIndex = state.queue.findIndex(
+		(m) => m.priority < priority,
+	);
 	if (insertIndex === -1) {
 		state.queue.push(item);
 	} else {

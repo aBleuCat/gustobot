@@ -22,7 +22,8 @@ function gini(values) {
 	if (mean === 0) return 0;
 	let numerator = 0;
 	for (let i = 0; i < n; i++)
-		for (let j = 0; j < n; j++) numerator += Math.abs(sorted[i] - sorted[j]);
+		for (let j = 0; j < n; j++)
+			numerator += Math.abs(sorted[i] - sorted[j]);
 	return numerator / (2 * n * n * mean);
 }
 
@@ -35,7 +36,9 @@ function buildBreakdownPage(sortedHorses, page) {
 	const lines = [
 		`🐴 **Horse Breakdown** (page ${page + 1}/${totalPages})`,
 		'',
-		...slice.map(([slug, count]) => `* **${horseName(slug)}**: ${count}`),
+		...slice.map(
+			([slug, count]) => `* **${horseName(slug)}**: ${count}`,
+		),
 	];
 	return lines.join('\n');
 }
@@ -69,12 +72,15 @@ module.exports = {
 
 		if (!sortedHorses) {
 			return interaction.reply({
-				content: 'This stats session has expired. Run /horsestats again.',
+				content:
+					'This stats session has expired. Run /horsestats again.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		const totalPages = Math.ceil(sortedHorses.length / HORSES_PER_PAGE);
+		const totalPages = Math.ceil(
+			sortedHorses.length / HORSES_PER_PAGE,
+		);
 		const content = buildBreakdownPage(sortedHorses, page);
 		const row = buildPageButtons(page, totalPages, statsId);
 		await interaction.update({content, components: [row]});
@@ -134,9 +140,13 @@ module.exports = {
 				wealth,
 				horses,
 				wealthPct:
-					totalWealth > 0 ? ((wealth / totalWealth) * 100).toFixed(1) : '0.0',
+					totalWealth > 0
+						? ((wealth / totalWealth) * 100).toFixed(1)
+						: '0.0',
 				horsesPct:
-					totalHorses > 0 ? ((horses / totalHorses) * 100).toFixed(1) : '0.0',
+					totalHorses > 0
+						? ((horses / totalHorses) * 100).toFixed(1)
+						: '0.0',
 			};
 		}
 
@@ -145,11 +155,15 @@ module.exports = {
 		const top10Count = Math.max(1, Math.ceil(n * 0.1));
 		const top10Stats = sliceStats(playersSorted.slice(0, top10Count));
 		const bottom50Count = Math.max(1, Math.floor(n * 0.5));
-		const bottom50Stats = sliceStats(playersSorted.slice(n - bottom50Count));
+		const bottom50Stats = sliceStats(
+			playersSorted.slice(n - bottom50Count),
+		);
 
 		const giniScore = gini(playerWealth);
 		const avgWealth =
-			playersWithHorses > 0 ? Math.round(totalWealth / playersWithHorses) : 0;
+			playersWithHorses > 0
+				? Math.round(totalWealth / playersWithHorses)
+				: 0;
 		const richest = Math.max(...playerWealth);
 
 		const sortedByCount = Object.entries(horseCounts).sort(
@@ -169,7 +183,8 @@ module.exports = {
 			.filter(([, count]) => count > 0)
 			.sort((a, b) =>
 				a[1] === b[1]
-					? (HORSE_VALUES[b[0]]?.value || 0) - (HORSE_VALUES[a[0]]?.value || 0)
+					? (HORSE_VALUES[b[0]]?.value || 0) -
+						(HORSE_VALUES[a[0]]?.value || 0)
 					: a[1] - b[1],
 			)[0];
 
@@ -211,7 +226,9 @@ module.exports = {
 		breakdownStore.set(statsId, sortedByCount);
 		setTimeout(() => breakdownStore.delete(statsId), 5 * 60 * 1000);
 
-		const totalPages = Math.ceil(sortedByCount.length / HORSES_PER_PAGE);
+		const totalPages = Math.ceil(
+			sortedByCount.length / HORSES_PER_PAGE,
+		);
 		await interaction.followUp({
 			content: buildBreakdownPage(sortedByCount, 0),
 			components: [buildPageButtons(0, totalPages, statsId)],

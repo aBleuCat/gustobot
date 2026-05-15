@@ -14,9 +14,13 @@ async function handleBotPing(message, client) {
 
 		const triggerText = entry.trigger.text.toLowerCase();
 
-		if (entry.trigger.type === 'contains' && content.includes(triggerText))
+		if (
+			entry.trigger.type === 'contains' &&
+			content.includes(triggerText)
+		)
 			return true;
-		if (entry.trigger.type === 'exact' && content === triggerText) return true;
+		if (entry.trigger.type === 'exact' && content === triggerText)
+			return true;
 		if (
 			entry.trigger.type === 'author' &&
 			message.author.id === entry.trigger.text
@@ -40,7 +44,9 @@ async function handleBotPing(message, client) {
 	// Pick one at random
 	if (finalSelectionPool.length > 0) {
 		const pick =
-			finalSelectionPool[Math.floor(Math.random() * finalSelectionPool.length)];
+			finalSelectionPool[
+				Math.floor(Math.random() * finalSelectionPool.length)
+			];
 		queueMessage({
 			channel: message.channel,
 			content: pick.message,

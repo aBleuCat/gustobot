@@ -9,7 +9,8 @@ function startMessageCacheCleanup() {
 
 	messageCacheCleanupInterval = setInterval(async () => {
 		try {
-			const cleanupThreshold = Date.now() - config.MESSAGE_CACHE_CLEANUP_MS;
+			const cleanupThreshold =
+				Date.now() - config.MESSAGE_CACHE_CLEANUP_MS;
 
 			const result = await MessageCache.deleteMany({
 				lastMessageTime: {$lt: cleanupThreshold},

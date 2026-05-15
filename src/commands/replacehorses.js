@@ -36,14 +36,18 @@ module.exports = {
 
 	async execute(interaction) {
 		if (interaction.user.id !== OWNER_ID) {
-			return interaction.reply({content: 'no can do', ephemeral: true});
+			return interaction.reply({
+				content: 'no can do',
+				ephemeral: true,
+			});
 		}
 
 		await interaction.deferReply({ephemeral: true});
 
 		const UserHorses = mongoose.model('UserHorses');
 		const horseSlug = interaction.options.getString('horse');
-		const replacementSlug = interaction.options.getString('replacement');
+		const replacementSlug =
+			interaction.options.getString('replacement');
 
 		const allUsers = await UserHorses.find({});
 		let affectedUsers = 0;

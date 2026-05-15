@@ -53,11 +53,15 @@ async function sendChunks(interaction, message, chunkSize = 1900) {
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('mongotool')
-		.setDescription('Manage MongoDB documents across any model (Owner Only)')
+		.setDescription(
+			'Manage MongoDB documents across any model (Owner Only)',
+		)
 		.addStringOption((option) =>
 			option
 				.setName('model')
-				.setDescription('The model to operate on (auto-loaded from models.js)')
+				.setDescription(
+					'The model to operate on (auto-loaded from models.js)',
+				)
 				.setRequired(true)
 				.setAutocomplete(true),
 		)
@@ -77,13 +81,17 @@ module.exports = {
 		.addStringOption((option) =>
 			option
 				.setName('filter')
-				.setDescription('JSON filter query (e.g., {"authorId": "123"})')
+				.setDescription(
+					'JSON filter query (e.g., {"authorId": "123"})',
+				)
 				.setRequired(false),
 		)
 		.addStringOption((option) =>
 			option
 				.setName('contains')
-				.setDescription('Search field contains value (e.g., "content:hello")')
+				.setDescription(
+					'Search field contains value (e.g., "content:hello")',
+				)
 				.setRequired(false),
 		)
 		.addStringOption((option) =>
@@ -142,14 +150,18 @@ module.exports = {
 			);
 		}
 
-		const modelName = interaction.options.getString('model').toLowerCase();
+		const modelName = interaction.options
+			.getString('model')
+			.toLowerCase();
 		const action = interaction.options.getString('action');
 		const filterString = interaction.options.getString('filter');
 		const containsString = interaction.options.getString('contains');
 		const setString = interaction.options.getString('set');
 		const limit = interaction.options.getInteger('limit');
-		const projectionString = interaction.options.getString('projection');
-		const verbose = interaction.options.getBoolean('verbose') || false;
+		const projectionString =
+			interaction.options.getString('projection');
+		const verbose =
+			interaction.options.getBoolean('verbose') || false;
 
 		// Validate model exists
 		if (!AVAILABLE_MODELS[modelName]) {
@@ -200,7 +212,10 @@ module.exports = {
 			try {
 				setData = JSON.parse(setString);
 			} catch (error) {
-				return sendChunks(interaction, `❌ Invalid set JSON: ${error.message}`);
+				return sendChunks(
+					interaction,
+					`❌ Invalid set JSON: ${error.message}`,
+				);
 			}
 		}
 
@@ -246,7 +261,9 @@ module.exports = {
 					const preview = result
 						.slice(0, displayLimit)
 						.map((doc) =>
-							verbose ? JSON.stringify(doc, null, 2) : JSON.stringify(doc),
+							verbose
+								? JSON.stringify(doc, null, 2)
+								: JSON.stringify(doc),
 						)
 						.join('\n');
 

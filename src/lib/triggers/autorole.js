@@ -12,15 +12,24 @@ async function getRules(userId, channelId) {
 	const cached = ruleCache.get(key);
 	if (cached && cached.expiresAt > Date.now()) return cached.rules;
 
-	const rules = await Rule.find({watchUser: userId, channel: channelId}).lean();
-	ruleCache.set(key, {rules, expiresAt: Date.now() + RULE_CACHE_TTL_MS});
+	const rules = await Rule.find({
+		watchUser: userId,
+		channel: channelId,
+	}).lean();
+	ruleCache.set(key, {
+		rules,
+		expiresAt: Date.now() + RULE_CACHE_TTL_MS,
+	});
 	return rules;
 }
 
 async function handleAutorole(message) {
 	if (!message.guild) return; // Ignore DMs
 
-	const matchingRules = await getRules(message.author.id, message.channel.id);
+	const matchingRules = await getRules(
+		message.author.id,
+		message.channel.id,
+	);
 	if (matchingRules.length === 0) return;
 
 	for (const rule of matchingRules) {
@@ -30,12 +39,15 @@ async function handleAutorole(message) {
 		let isMentioned =
 			message.mentions.users.has(targetId) ||
 			message.content.includes(targetId) ||
-			(message.reference && message.mentions.repliedUser?.id === targetId);
+			(message.reference &&
+				message.mentions.repliedUser?.id === targetId);
 
 		// DEEP SCAN: Only runs if the standard check didn't find anything
 		// This catches IDs inside Embeds, Components, etc.
 		if (!isMentioned) {
-			const rawDataString = JSON.stringify(message.toJSON()).toLowerCase();
+			const rawDataString = JSON.stringify(
+				message.toJSON(),
+			).toLowerCase();
 			if (rawDataString.includes(targetId.toLowerCase())) {
 				isMentioned = true;
 			}
@@ -57,8 +69,7 @@ async function handleAutorole(message) {
 
 				if (member && !member.roles.cache.has(rule.addRole)) {
 					await member.roles.add(rule.addRole);
-					await member.roles.remove(rule.restoreRole).catch(() => {
-});
+					await member.roles.remove(rule.restoreRole).catch(() => {});
 
 					await new Timeout({
 						guildId: message.guild.id,

@@ -1,4 +1,7 @@
-const {SlashCommandBuilder, PermissionFlagsBits} = require('discord.js');
+const {
+	SlashCommandBuilder,
+	PermissionFlagsBits,
+} = require('discord.js');
 const mongoose = require('mongoose');
 
 const HorseConfig = mongoose.model('HorseConfig');
@@ -16,7 +19,9 @@ module.exports = {
 		.addChannelOption((o) =>
 			o
 				.setName('channel')
-				.setDescription('The channel where horse spawns are announced')
+				.setDescription(
+					'The channel where horse spawns are announced',
+				)
 				.setRequired(true),
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -27,10 +32,13 @@ module.exports = {
 		const isOwner = interaction.user.id === ownerId;
 		const isAdmin =
 			interaction.memberPermissions &&
-			interaction.memberPermissions.has(PermissionFlagsBits.Administrator);
+			interaction.memberPermissions.has(
+				PermissionFlagsBits.Administrator,
+			);
 		if (!isOwner && !isAdmin) {
 			return interaction.reply({
-				content: "You don't have permission to configure horse spawning.",
+				content:
+					"You don't have permission to configure horse spawning.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

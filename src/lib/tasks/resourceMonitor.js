@@ -46,7 +46,8 @@ function startResourceMonitor(client) {
 		// Check if thresholds are met and cooldown is expired
 		const now = Date.now();
 		if (
-			(heapUsedMB > HEAP_THRESHOLD_MB || cpuPercent > CPU_WARN_PERCENT) &&
+			(heapUsedMB > HEAP_THRESHOLD_MB ||
+				cpuPercent > CPU_WARN_PERCENT) &&
 			now - lastWarningTime > WARNING_COOLDOWN_MS
 		) {
 			lastWarningTime = now;
@@ -62,8 +63,7 @@ function startResourceMonitor(client) {
 				await logToModChannel(
 					guild,
 					`⚠️ **HIGH RESOURCE USAGE DETECTED**\n**Heap Memory:** ${heapUsedMB.toFixed(2)} MB\n**CPU Usage:** ${cpuPercent.toFixed(2)}%\nThe bot may become unresponsive or restart.`,
-				).catch(() => {
-});
+				).catch(() => {});
 			}
 		}
 	}, 15_000); // Check every 15 seconds

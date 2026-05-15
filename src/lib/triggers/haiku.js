@@ -1,5 +1,10 @@
 const syllableWords = {
-	5: ['hippopotamus', 'refridgerator', 'sunnyside rail yard', 'me gusta tacos'],
+	5: [
+		'hippopotamus',
+		'refridgerator',
+		'sunnyside rail yard',
+		'me gusta tacos',
+	],
 	4: ['orbitalstone', 'garfungledee'],
 	3: ['caleb lu', 'caleb paugh', 'stationdex', 'im hungry'],
 	2: ['john kim'],
@@ -66,7 +71,10 @@ function analyzeAndFixHaiku(text) {
 			let currentSyllables = 0;
 			const targetSyllables = targets[lineNumber];
 
-			while (wordIndex < words.length && currentSyllables < targetSyllables) {
+			while (
+				wordIndex < words.length &&
+				currentSyllables < targetSyllables
+			) {
 				const word = words[wordIndex];
 				const wordSyllables = countSyllables(word);
 
@@ -178,13 +186,18 @@ async function handleHaiku(message) {
 
 	try {
 		// Fetch recent messages
-		const messages = await message.channel.messages.fetch({limit: 10});
+		const messages = await message.channel.messages.fetch({
+			limit: 10,
+		});
 		const sortedMessages = [...messages.values()].reverse();
 
 		// Find the most recent message by this user (excluding the ..haiku command)
 		let targetMessage = null;
 		for (const m of sortedMessages) {
-			if (m.author.id === message.author.id && !m.content.includes('..haiku')) {
+			if (
+				m.author.id === message.author.id &&
+				!m.content.includes('..haiku')
+			) {
 				targetMessage = m;
 				break;
 			}

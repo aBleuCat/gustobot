@@ -52,19 +52,28 @@ type ResolveArgsResult = {
 	fileName: string;
 };
 
-function resolveArgs(modelArg: string, fileArg: string): ResolveArgsResult {
+function resolveArgs(
+	modelArg: string,
+	fileArg: string,
+): ResolveArgsResult {
 	const modelName = modelArg === 'd' ? 'UserHorses' : modelArg;
-	const fileName = fileArg === 'd' ? '../backups/dbbackup.json' : fileArg;
+	const fileName =
+		fileArg === 'd' ? '../backups/dbbackup.json' : fileArg;
 	const Model = ModelsMap[modelName];
 	if (!Model) {
-		console.error(`Error: Model '${modelName}' not found in lib/models.js`);
+		console.error(
+			`Error: Model '${modelName}' not found in lib/models.js`,
+		);
 		process.exit(1);
 	}
 
 	return {Model, modelName, fileName};
 }
 
-async function pull(modelArg: string, fileArg: string): Promise<void> {
+async function pull(
+	modelArg: string,
+	fileArg: string,
+): Promise<void> {
 	const {Model, modelName, fileName} = resolveArgs(modelArg, fileArg);
 	await connectDB();
 	console.log(`Pulling ${modelName} to ${fileName}...`);
@@ -103,7 +112,8 @@ async function compare(
 	const fileFields = (fileContent.fields || []).sort();
 
 	const nameMatch = fileContent.modelName === modelName;
-	const fieldsMatch = JSON.stringify(dbFields) === JSON.stringify(fileFields);
+	const fieldsMatch =
+		JSON.stringify(dbFields) === JSON.stringify(fileFields);
 
 	console.log(`--- Comparison: ${modelName} ---`);
 	console.log(
@@ -217,7 +227,9 @@ async function push(
 		} else {
 			await Model.deleteMany({});
 			await Model.insertMany(fileContent.data);
-			console.log(`\n✅ Database for ${modelName} successfully overwritten.`);
+			console.log(
+				`\n✅ Database for ${modelName} successfully overwritten.`,
+			);
 		}
 	} else {
 		console.log('\nPush cancelled.');
