@@ -1,9 +1,17 @@
-const {config} = require('../config.js');
+import type {
+	Client,
+	GuildTextBasedChannel,
+	GuildBasedChannel,
+} from 'discord.js';
+import {config} from '../config.js';
+import {castAsTextBased} from '../../type-utils.js';
 
-let logChannel = null;
-let bgTasksChannel = null;
-let microChannel = null;
-let statusChannel = null;
+type LogChannel = GuildTextBasedChannel | undefined;
+
+let logChannel: LogChannel;
+let bgTasksChannel: LogChannel;
+let microChannel: LogChannel;
+let statusChannel: LogChannel;
 const filterExceptions = [
 	'error',
 	'failed',
@@ -13,33 +21,42 @@ const filterExceptions = [
 	'warning',
 ].map((v) => v.toLowerCase());
 
-async function initDevLog(client) {
+export async function initDevLog(client: Client) {
 	try {
 		const guild = await client.guilds.fetch(config.DEV_GUILD_ID);
 
 		// Fetching all channels defined in config
-		logChannel = await guild.channels
-			.fetch(config.DEV_LOG_CHANNEL_ID)
-			.catch(() => null);
-		bgTasksChannel = await guild.channels
-			.fetch(config.BG_TASKS_CHANNEL_ID)
-			.catch(() => null);
-		microChannel = await guild.channels
-			.fetch(config.MICRO_LOG_CHANNEL_ID)
-			.catch(() => null);
-		statusChannel = await guild.channels
-			.fetch(config.STATUS_LOG_CHANNEL)
-			.catch(() => null);
+		logChannel = castAsTextBased(
+			await guild.channels
+				.fetch(config.DEV_LOG_CHANNEL_ID)
+				.catch(() => undefined),
+		);
+		bgTasksChannel = castAsTextBased(
+			await guild.channels
+				.fetch(config.BG_TASKS_CHANNEL_ID)
+				.catch(() => undefined),
+		);
+		microChannel = castAsTextBased(
+			await guild.channels
+				.fetch(config.MICRO_LOG_CHANNEL_ID)
+				.catch(() => undefined),
+		);
+		statusChannel = castAsTextBased(
+			await guild.channels
+				.fetch(config.STATUS_LOG_CHANNEL)
+				.catch(() => undefined),
+		);
 
 		console.log(
 			`[devLog] System Hooked: Main(#${logChannel?.name}), Status(#${statusChannel?.name})`,
 		);
 	} catch (error) {
-		console.error('[devLog Init Error]:', error.message);
+		if (error instanceof Error)
+			console.error('[devLog Init Error]:', error.message);
 	}
 }
 
-async function devLog(message, type = 'standard') {
+export async function devLog(message: string, type = 'standard') {
 	let targetChannel = null;
 	let secondaryChannel = null;
 
@@ -98,8 +115,7 @@ async function devLog(message, type = 'standard') {
 			await secondaryChannel.send(formattedMessage);
 		}
 	} catch (error) {
-		console.error('[devLog Send Error]:', error.message);
+		if (error instanceof Error)
+			console.error('[devLog Send Error]:', error.message);
 	}
 }
-
-module.exports = {initDevLog, devLog};

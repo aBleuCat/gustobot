@@ -1,7 +1,7 @@
 // Message queue for multi-layer rate-limited sending
 import type {TextChannel, Message} from 'discord.js';
 import {config} from '../config.js';
-import {devLog} from './devLog.js';
+import {devLog} from './dev-log.js';
 
 type ReplyInfo = {
 	mention: boolean;
@@ -78,7 +78,7 @@ export async function queueMessage({
 
 	const queueLength = state.queue.length;
 	if (queueLength > 60) {
-		devLog(
+		void devLog(
 			`Warning: ${queueLength} messages in queue for channel ${channel.id}`,
 		);
 	} else if (queueLength > 20) {

@@ -1,6 +1,6 @@
 // Central mutable runtime config
 // Changes are lost on restart
-import {castAsHorseData} from '../types.js';
+import {castAsHorseData} from '../type-utils.js';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
@@ -67,7 +67,7 @@ export const config = {
 
 	// For messageQueue.js
 	CHANNEL_MSG_LIMIT_MS: 1100,
-	GLOBAL_MSG_LIMIT_MS: 200,
+	GLOBAL_MSG_LIMIT_MS: 50,
 };
 
 export const descriptions: Record<string, string> = {
