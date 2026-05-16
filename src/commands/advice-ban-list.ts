@@ -1,0 +1,37 @@
+import {
+	SlashCommandBuilder,
+	type ChatInputCommandInteraction,
+	MessageFlags,
+	EmbedBuilder,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IAdviceBan} from '../lib/models.js';
+
+export const adviceBanListCommand = {
+	data: new SlashCommandBuilder()
+		.setName('advicebanlist')
+		.setDescription(
+			'Shows all users currently banned from giving advice.',
+		),
+	async execute(interaction: ChatInputCommandInteraction) {
+		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
+		const adviceBans = await mongoose
+			.model<IAdviceBan>('AdviceBan')
+			.find({});
+		if (!adviceBans || adviceBans.length === 0) {
+			await interaction.editReply({
+				content: 'There are no banned users as of now',
+			});
+		}
+
+		const formattedList = adviceBans
+			.map((user, index) => `${index + 1}. @<${user.userId}>`)
+			.join('\n');
+		const listEmbed = new EmbedBuilder()
+			.setTitle('These poeples are very bad boys')
+			.setDescription(formattedList)
+			.setColor('#ff0000')
+			.setTimestamp();
+		await interaction.editReply({embeds: [listEmbed]});
+	},
+};

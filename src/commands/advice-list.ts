@@ -1,4 +1,4 @@
-const {
+import {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	ActionRowBuilder,
@@ -6,32 +6,34 @@ const {
 	ButtonStyle,
 	EmbedBuilder,
 	MessageFlags,
-} = require('discord.js');
-const mongoose = require('mongoose');
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IAdvice} from '../lib/models.js';
 
-module.exports = {
+export const adviceListCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advicelist')
 		.setDescription('Shows stored advice in pages (Admin Only)')
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-	async execute(interaction) {
-		const Advice = mongoose.model('Advice');
-		const advices = await Advice.find({});
+	async execute(interaction: ChatInputCommandInteraction) {
+		const advice = mongoose.model<IAdvice>('Advice');
+		const advices = await advice.find({});
 
 		if (advices.length === 0)
 			return interaction.reply(
 				'The circle of advice is currently empty.',
 			);
 
-		const generateEmbed = (page) => {
+		const generateEmbed = (page: number) => {
 			const start = page * 10;
 			const current = advices.slice(start, start + 10);
 
 			const embed = new EmbedBuilder()
 				.setTitle(
-					`📜 Stored Advice (Page ${page + 1}/${Math.ceil(advices.length / 10)})`,
+					`📜 Scrolls of Muy Advice (Page ${page + 1}/${Math.ceil(advices.length / 10)})`,
 				)
-				.setColor(0x00_ae_86)
+				.setColor('#00ae86')
 				.setDescription(
 					current
 						.map((a, i) => `**${start + i + 1}.** ${a.content}`)
@@ -41,7 +43,7 @@ module.exports = {
 			return embed;
 		};
 
-		const generateButtons = (page) => {
+		const generateButtons = (page: number) => {
 			const row = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId(`adv_prev_${page}`)
@@ -54,7 +56,7 @@ module.exports = {
 					.setStyle(ButtonStyle.Primary)
 					.setDisabled((page + 1) * 10 >= advices.length),
 			);
-			return row;
+			return row.toJSON();
 		};
 
 		const response = await interaction.reply({
@@ -68,18 +70,23 @@ module.exports = {
 			time: 60_000,
 		});
 
-		collector.on('collect', async (i) => {
-			const [type, direction, currentPage] = i.customId.split('_');
-			if (type !== 'adv') return;
+		collector.on('collect', (i) => {
+			(async () => {
+				const [type, direction, currentPage] = i.customId.split('_');
+				if (type !== 'adv') return;
+				if (currentPage === undefined) return;
 
-			const newPage =
-				direction === 'next'
-					? Number.parseInt(currentPage) + 1
-					: Number.parseInt(currentPage) - 1;
+				const newPage =
+					direction === 'next'
+						? Number.parseInt(currentPage, 10) + 1
+						: Number.parseInt(currentPage, 10) - 1;
 
-			await i.update({
-				embeds: [generateEmbed(newPage)],
-				components: [generateButtons(newPage)],
+				await i.update({
+					embeds: [generateEmbed(newPage)],
+					components: [generateButtons(newPage)],
+				});
+			})().catch((error: unknown) => {
+				console.error('Collector execution failed:', error);
 			});
 		});
 	},

@@ -3,6 +3,7 @@ import {
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
+	Message,
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IAdvice} from '../lib/models.js';
@@ -31,7 +32,7 @@ export const adviceCommand = {
 			return interaction.reply({
 				content:
 					'The database is empty! Use `/advicegive` to add some wisdom first.',
-				ephemeral: true,
+				flags: [MessageFlags.Ephemeral],
 			});
 		}
 

@@ -82,14 +82,15 @@ function registerInteractionHandler(client) {
 				devLog(
 					`Error executing /${interaction.commandName}: ${error.message}`,
 				);
-				if (!interaction.replied) {
-					await interaction
-						.reply({
-							content: `Error: ${error.message}`,
-							flags: [MessageFlags.Ephemeral],
-						})
-						.catch(() => {});
-				}
+				const errorPayload = {
+					content: `Error: ${error.message}`,
+					flags: [MessageFlags.Ephemeral],
+				};
+				await interaction[
+					interaction.replied || interaction.deferred
+						? 'editReply'
+						: 'reply'
+				](errorPayload).catch();
 			}
 
 			return;
