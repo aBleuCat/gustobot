@@ -17,8 +17,9 @@ export const adviceListCommand = {
 		.setDescription('Shows stored advice in pages (Admin Only)')
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 	async execute(interaction: ChatInputCommandInteraction) {
-		const advice = mongoose.model<IAdvice>('Advice');
-		const advices = await advice.find({});
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Advice = mongoose.model<IAdvice>('Advice');
+		const advices = await Advice.find({});
 
 		if (advices.length === 0)
 			return interaction.reply(

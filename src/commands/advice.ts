@@ -22,11 +22,12 @@ export const adviceCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const advice = mongoose.model<IAdvice>('Advice');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Advice = mongoose.model<IAdvice>('Advice');
 		const question = interaction.options.getString('question');
 
 		// Fetch all advice from DB
-		const allAdvice = await advice.find({});
+		const allAdvice = await Advice.find({});
 
 		if (allAdvice.length === 0) {
 			return interaction.reply({

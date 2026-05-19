@@ -12,8 +12,9 @@ export const autoRoleViewCommand = {
 		.setDescription('View all autorole rules'),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const rule = mongoose.model<IRule>('Rule');
-		const rules = await rule.find();
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Rule = mongoose.model<IRule>('Rule');
+		const rules = await Rule.find();
 
 		if (rules.length === 0)
 			return interaction.reply('No rules found in cloud.');

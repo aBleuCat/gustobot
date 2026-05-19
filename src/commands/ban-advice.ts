@@ -28,24 +28,24 @@ export const banAdviceCommand = {
 			});
 		}
 
-		const adviceBan = mongoose.model<IAdviceBan>('AdviceBan');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const AdviceBan = mongoose.model<IAdviceBan>('AdviceBan');
 		const target = interaction.options.getUser('user');
 
 		if (!target)
 			return interaction.reply(
 				'Something went wrong when recieving your target input',
 			);
-		const exists = await adviceBan.findOne({userId: target.id});
+		const exists = await AdviceBan.findOne({userId: target.id});
 
 		if (exists) {
-			await adviceBan.deleteOne({userId: target.id});
+			await AdviceBan.deleteOne({userId: target.id});
 			return interaction.reply(
 				`Unbanned **${target.username}** from giving advice.`,
 			);
 		}
 
-		// eslint-disable-next-line new-cap
-		await new adviceBan({userId: target.id}).save();
+		await new AdviceBan({userId: target.id}).save();
 		return interaction.reply(
 			`Banned **${target.username}** from giving advice.`,
 		);

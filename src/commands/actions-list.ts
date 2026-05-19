@@ -9,12 +9,7 @@ import {
 	type ButtonInteraction,
 } from 'discord.js';
 import mongoose from 'mongoose';
-
-// Define the shape of your ActionResponse documents
-type ActionResponseDocument = {
-	trigger: string;
-	response: string;
-};
+import type {IActionResponse} from '../lib/models.js';
 
 export const actionsList = {
 	data: new SlashCommandBuilder()
@@ -28,23 +23,22 @@ export const actionsList = {
 			});
 		}
 
-		// Tell Mongoose exactly what type array to expect
-		const actionResponse =
-			mongoose.model<ActionResponseDocument>('ActionResponse');
-		const actions = await actionResponse.find({}).lean();
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const ActionResponse =
+			mongoose.model<IActionResponse>('ActionResponse');
+		const actions = await ActionResponse.find({}).lean();
 
 		if (actions.length === 0) {
 			return interaction.reply("I haven't learned any actions yet.");
 		}
 
-		// Type 'page' explicitly as a number
 		const generateEmbed = (page: number): EmbedBuilder => {
 			const start = page * 10;
 			const current = actions.slice(start, start + 10);
 
 			return new EmbedBuilder()
 				.setTitle(
-					`🛠 Learned Actions (Page ${page + 1}/${Math.ceil(actions.length / 10)})`,
+					`Learned Actions (Page ${page + 1}/${Math.ceil(actions.length / 10)})`,
 				)
 				.setColor(0xff_a5_00)
 				.setDescription(
@@ -54,7 +48,6 @@ export const actionsList = {
 				);
 		};
 
-		// Type the row builder so it knows it holds ButtonBuilders
 		const generateButtons = (
 			page: number,
 		): ActionRowBuilder<ButtonBuilder> =>
@@ -81,10 +74,8 @@ export const actionsList = {
 			time: 60_000,
 		});
 
-		// Type 'i' as a ButtonInteraction so customId, split, and update resolve cleanly
-		// Pass a regular function to 'collect', satisfying the void requirement
 		collector.on('collect', (i: ButtonInteraction) => {
-			// Run your async operations inside a self-contained block
+			// Run async functions in IIFE since this outer func wants sync only
 			void (async () => {
 				const [, direction, currentPage] = i.customId.split('_');
 

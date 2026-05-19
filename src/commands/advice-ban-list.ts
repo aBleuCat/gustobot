@@ -15,18 +15,19 @@ export const adviceBanListCommand = {
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
-		const adviceBans = await mongoose
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const AdviceBans = await mongoose
 			.model<IAdviceBan>('AdviceBan')
 			.find({});
-		if (!adviceBans || adviceBans.length === 0) {
+		if (!AdviceBans || AdviceBans.length === 0) {
 			await interaction.editReply({
 				content: 'There are no banned users as of now',
 			});
 		}
 
-		const formattedList = adviceBans
-			.map((user, index) => `${index + 1}. @<${user.userId}>`)
-			.join('\n');
+		const formattedList = AdviceBans.map(
+			(user, index) => `${index + 1}. @<${user.userId}>`,
+		).join('\n');
 		const listEmbed = new EmbedBuilder()
 			.setTitle('These poeples are very bad boys')
 			.setDescription(formattedList)

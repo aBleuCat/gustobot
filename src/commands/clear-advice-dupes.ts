@@ -28,12 +28,13 @@ export const clearAdviceDupesCommand = {
 		}
 
 		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
-		const adviceModel = mongoose.model<IAdvice>('Advice');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const AdviceModel = mongoose.model<IAdvice>('Advice');
 
 		try {
 			// Explicitly type the aggregation result using <type[]>
 			const duplicates =
-				await adviceModel.aggregate<DuplicateAggregationResult>([
+				await AdviceModel.aggregate<DuplicateAggregationResult>([
 					{
 						$group: {
 							_id: {content: '$content'},
@@ -52,7 +53,7 @@ export const clearAdviceDupesCommand = {
 
 			let totalDeleted = 0;
 			if (allIdsToDelete.length > 0) {
-				const result = await adviceModel.deleteMany({
+				const result = await AdviceModel.deleteMany({
 					_id: {$in: allIdsToDelete},
 				});
 				totalDeleted = result.deletedCount;

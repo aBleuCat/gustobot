@@ -55,7 +55,8 @@ export const autoRoleSetupCommand = {
 			});
 		}
 
-		const rule = mongoose.model<IRule>('Rule');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Rule = mongoose.model<IRule>('Rule');
 
 		// We must use the exact names defined in the SlashCommandBuilder above
 		const watchUser = interaction.options.getUser('messager');
@@ -84,7 +85,7 @@ export const autoRoleSetupCommand = {
 			100_000 + Math.random() * 900_000,
 		).toString();
 
-		await rule.findOneAndUpdate(
+		await Rule.findOneAndUpdate(
 			{
 				watchUser: watchUser.id,
 				targetUser: targetUser.id,

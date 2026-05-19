@@ -29,11 +29,9 @@ export const autoRoleRemoveCommand = {
 
 		const id = interaction.options.getString('id');
 
-		// Access the Rule model we defined in index.js
-		const rule = mongoose.model<IRule>('Rule');
-
-		// Try to delete the rule from MongoDB
-		const result = await rule.deleteOne({ruleId: id});
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Rule = mongoose.model<IRule>('Rule');
+		const result = await Rule.deleteOne({ruleId: id});
 
 		if (result.deletedCount === 0) {
 			return interaction.reply({

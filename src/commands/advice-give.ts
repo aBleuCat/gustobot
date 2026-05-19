@@ -22,12 +22,14 @@ export const adviceGiveCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const advice = mongoose.model<IAdvice>('Advice');
-		const adviceBan = mongoose.model<IAdviceBan>('AdviceBan');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Advice = mongoose.model<IAdvice>('Advice');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const AdviceBan = mongoose.model<IAdviceBan>('AdviceBan');
 		const text = interaction.options.getString('text')?.trim();
 
 		// Check if the user is banned
-		const isBanned = await adviceBan.findOne({
+		const isBanned = await AdviceBan.findOne({
 			userId: interaction.user.id,
 		});
 		if (isBanned) {
@@ -64,11 +66,9 @@ export const adviceGiveCommand = {
 		}
 
 		// Duplicate check (Case-insensitive)
-		const existingAdvice = await advice
-			.findOne({
-				content: text,
-			})
-			.collation({locale: 'en', strength: 2});
+		const existingAdvice = await Advice.findOne({
+			content: text,
+		}).collation({locale: 'en', strength: 2});
 
 		if (existingAdvice) {
 			return interaction.reply({
@@ -78,9 +78,7 @@ export const adviceGiveCommand = {
 			});
 		}
 
-		// Save
-		// eslint-disable-next-line new-cap
-		const newAdvice = new advice({
+		const newAdvice = new Advice({
 			content: text,
 			authorId: interaction.user.id,
 		});
