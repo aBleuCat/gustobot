@@ -1,14 +1,19 @@
-const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
-const mongoose = require('mongoose');
+import {
+	SlashCommandBuilder,
+	EmbedBuilder,
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IRule} from '../lib/models.js';
 
-module.exports = {
+export const autoRoleViewCommand = {
 	data: new SlashCommandBuilder()
 		.setName('autoroleview')
 		.setDescription('View all autorole rules'),
 
-	async execute(interaction) {
-		const Rule = mongoose.model('Rule');
-		const rules = await Rule.find();
+	async execute(interaction: ChatInputCommandInteraction) {
+		const rule = mongoose.model<IRule>('Rule');
+		const rules = await rule.find();
 
 		if (rules.length === 0)
 			return interaction.reply('No rules found in cloud.');

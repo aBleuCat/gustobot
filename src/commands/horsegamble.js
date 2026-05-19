@@ -6,6 +6,7 @@ const HORSE_VALUES = require('../horses.json');
 const {config} = require('../lib/config');
 const {conditionHorse} = require('../lib/helpers/horseFuncs');
 const {devLog} = require('../lib/helpers/devLog');
+// NOTE TO SELF: DEFER REPLY EARLY
 
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';

@@ -1,11 +1,13 @@
-const {
+import {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	MessageFlags,
-} = require('discord.js');
-const mongoose = require('mongoose');
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IRule} from '../lib/models.js';
 
-module.exports = {
+export const autoRoleRemoveCommand = {
 	data: new SlashCommandBuilder()
 		.setName('autoroleremove')
 		.setDescription('Remove an autorole trigger by its ID')
@@ -17,7 +19,7 @@ module.exports = {
 		)
 		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		if (interaction.user.id !== '934290747623096381') {
 			return interaction.reply({
 				content: 'Owner only.',
@@ -28,10 +30,10 @@ module.exports = {
 		const id = interaction.options.getString('id');
 
 		// Access the Rule model we defined in index.js
-		const Rule = mongoose.model('Rule');
+		const rule = mongoose.model<IRule>('Rule');
 
 		// Try to delete the rule from MongoDB
-		const result = await Rule.deleteOne({ruleId: id});
+		const result = await rule.deleteOne({ruleId: id});
 
 		if (result.deletedCount === 0) {
 			return interaction.reply({
