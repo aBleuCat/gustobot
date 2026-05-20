@@ -1,36 +1,43 @@
-const {
+import {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
 	MessageFlags,
-} = require('discord.js');
-const mongoose = require('mongoose');
-const HORSE_VALUES = require('../horses.json');
+	type ChatInputCommandInteraction,
+	type AutocompleteInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import rawHorseValues from '../data/horses.json' with {type: 'json'};
+import {conditionHorse} from '../lib/helpers/horse-funcs.js';
+import type {IUserHorses} from '../lib/models.js';
+import {castAsHorseData, castAsTextBased} from '../type-utils.js';
 
-const UserHorses = mongoose.model('UserHorses');
-const {conditionHorse} = require('../lib/helpers/horseFuncs');
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const UserHorses = mongoose.model<IUserHorses>('UserHorses');
+const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
-module.exports = {
+export const forceHorseCommand = {
 	data: new SlashCommandBuilder()
 		.setName('forcehorse')
 		.setDescription(
 			'Owner Only: Give a user a horse or a rare creature',
 		)
-		.addUserOption((o) =>
-			o
+		.addUserOption((option) =>
+			option
 				.setName('target')
 				.setDescription('The user to receive the item')
 				.setRequired(true),
 		)
-		.addStringOption((o) =>
-			o
+		.addStringOption((option) =>
+			option
 				.setName('type')
 				.setDescription('The type')
 				.setRequired(true)
 				.setAutocomplete(true),
-		) // Enable autocomplete
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+		)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setContexts(0),
 
-	async autocomplete(interaction) {
+	async autocomplete(interaction: AutocompleteInteraction) {
 		const focusedValue = interaction.options
 			.getFocused()
 			.toLowerCase();
@@ -48,10 +55,10 @@ module.exports = {
 			}));
 
 		// Discord limits autocomplete to 25 results
-		await interaction.respond(choices.slice(0, 25)).catch(() => {});
+		await interaction.respond(choices.slice(0, 25)).catch();
 	},
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		if (interaction.user.id !== '934290747623096381') {
 			return interaction.reply({
 				content: 'You are not authorized to use this command.',
@@ -61,8 +68,12 @@ module.exports = {
 
 		const target = interaction.options.getUser('target');
 		const type = interaction.options.getString('type');
-
-		// Verify the horse type exists in our data
+		if (!target || !type)
+			return interaction.reply(
+				'Something went wrong when trying to get your input',
+			);
+		const channel = castAsTextBased(interaction.channel);
+		// Verify the horse type exists in data
 		const horseData = HORSE_VALUES[type];
 		if (!horseData) {
 			return interaction.reply({
@@ -72,12 +83,12 @@ module.exports = {
 		}
 
 		let inventory = await UserHorses.findOne({userId: target.id});
-		inventory ||= new UserHorses({
+		inventory ??= new UserHorses({
 			userId: target.id,
 			horses: new Map(),
 		});
 
-		const currentCount = inventory.horses.get(type) || 0;
+		const currentCount = inventory.horses.get(type) ?? 0;
 		inventory.horses.set(type, currentCount + 1);
 
 		await inventory.save();
@@ -89,9 +100,9 @@ module.exports = {
 		});
 
 		if (horseData.link) {
-			await interaction.channel.send(horseData.link);
+			await channel.send(horseData.link);
 		}
 
-		await conditionHorse(inventory, interaction.channel);
+		await conditionHorse(inventory, channel);
 	},
 };

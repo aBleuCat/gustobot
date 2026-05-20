@@ -2,6 +2,11 @@ import {
 	type SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	type SlashCommandOptionsOnlyBuilder,
+	type GuildBasedChannel,
+	type DMChannel,
+	type PartialDMChannel,
+	type PartialGroupDMChannel,
+	type Guild,
 } from 'discord.js';
 
 export type SlashCommandConfig = {
@@ -17,3 +22,15 @@ export type Horse = {
 	getByGamble?: boolean;
 };
 export type HorseData = Record<string, Horse>;
+export type AnyChannel =
+	| GuildBasedChannel
+	| DMChannel
+	| PartialDMChannel
+	| PartialGroupDMChannel;
+
+declare module 'discord.js' {
+	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+	interface Client {
+		logToModChannel: (guild: Guild, message: string) => Promise<void>;
+	}
+}

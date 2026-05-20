@@ -1,8 +1,11 @@
-import type {
-	GuildBasedChannel,
-	GuildTextBasedChannel,
+import {
+	type GuildBasedChannel,
+	type GuildTextBasedChannel,
+	type TextChannel,
+	type NewsChannel,
+	ChannelType,
 } from 'discord.js';
-import type {Horse, HorseData} from './types.js';
+import type {Horse, HorseData, AnyChannel} from './types.js';
 
 function isHorse(item: unknown): item is Horse {
 	return (
@@ -55,12 +58,42 @@ export function castAsHorseData(
 	return data;
 }
 
+function isGuildTextBased(
+	channel: AnyChannel,
+): channel is GuildTextBasedChannel {
+	return channel.isTextBased() && !channel.isDMBased();
+}
+
 export function castAsTextBased(
-	// eslint-disable-next-line @typescript-eslint/no-restricted-types
-	channel: GuildBasedChannel | undefined | null,
+	channel:
+		| AnyChannel
+		| undefined
+		// eslint-disable-next-line @typescript-eslint/no-restricted-types
+		| null,
 ): GuildTextBasedChannel {
-	if (channel?.isTextBased()) return channel;
+	if (channel && isGuildTextBased(channel)) return channel;
 	throw new Error(
 		`Expected a text-based channel but received: ${channel?.type ?? 'null'}`,
+	);
+}
+
+function isWebhookableChannel(
+	channel: AnyChannel,
+): channel is TextChannel | NewsChannel {
+	return (
+		channel &&
+		'type' in channel &&
+		(channel.type === ChannelType.GuildText ||
+			channel.type === ChannelType.GuildAnnouncement)
+	);
+}
+
+export function castAsWebhookable(
+	// eslint-disable-next-line @typescript-eslint/no-restricted-types
+	channel: AnyChannel | null,
+): TextChannel | NewsChannel {
+	if (channel && isWebhookableChannel(channel)) return channel;
+	throw new Error(
+		`Expected a text or announcements channel but received: ${channel?.type ?? 'null'}`,
 	);
 }

@@ -1,27 +1,37 @@
-const {SlashCommandBuilder, MessageFlags} = require('discord.js');
-const mongoose = require('mongoose');
+import {
+	SlashCommandBuilder,
+	MessageFlags,
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IUserHorses} from '../lib/models.js';
 
-module.exports = {
+export const giveCoinsCommand = {
 	data: new SlashCommandBuilder()
 		.setName('givecoins')
 		.setDescription('Give your horse coins to another user!')
-		.addUserOption((o) =>
-			o
+		.addUserOption((option) =>
+			option
 				.setName('target')
 				.setDescription('Who to give coins to')
 				.setRequired(true),
 		)
-		.addIntegerOption((o) =>
-			o
+		.addIntegerOption((option) =>
+			option
 				.setName('amount')
 				.setDescription('How many coins to give')
 				.setRequired(true)
 				.setMinValue(1),
 		),
-	async execute(interaction) {
-		const UserHorses = mongoose.model('UserHorses');
+	async execute(interaction: ChatInputCommandInteraction) {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const target = interaction.options.getUser('target');
 		const amount = interaction.options.getInteger('amount');
+		if (!target || !amount)
+			return interaction.reply(
+				'Something went kaboom when trying to get your inputs',
+			);
 
 		if (target.id === interaction.user.id) {
 			return interaction.reply({
@@ -55,7 +65,7 @@ module.exports = {
 		}
 
 		let receiver = await UserHorses.findOne({userId: target.id});
-		receiver ||= new UserHorses({
+		receiver ??= new UserHorses({
 			userId: target.id,
 			horses: new Map(),
 		});

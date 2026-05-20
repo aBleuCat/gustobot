@@ -1,21 +1,30 @@
-const {SlashCommandBuilder} = require('discord.js');
-const mongoose = require('mongoose');
+import {
+	SlashCommandBuilder,
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IActionResponse} from '../lib/models.js';
 
-module.exports = {
+export const doCommand = {
 	data: new SlashCommandBuilder()
 		.setName('do')
 		.setDescription('Tell the bot to do something')
-		.addStringOption((opt) =>
-			opt
+		.addStringOption((option) =>
+			option
 				.setName('action')
 				.setDescription('What should I do?')
 				.setRequired(true),
 		),
-	async execute(interaction) {
-		const actionInput = interaction.options
-			.getString('action')
-			.toLowerCase();
-		const ActionResponse = mongoose.model('ActionResponse');
+	async execute(interaction: ChatInputCommandInteraction) {
+		const {options} = interaction;
+		const actionInput = options.getString('action')?.toLowerCase();
+		if (!actionInput)
+			return interaction.reply(
+				"Something exploded and I didn't get your input",
+			);
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const ActionResponse =
+			mongoose.model<IActionResponse>('ActionResponse');
 
 		// Check database for triggers
 		const allActions = await ActionResponse.find({});
@@ -41,6 +50,7 @@ module.exports = {
 			'Nah you got that',
 			'Too busy not doing my learning log',
 			"I would, but it's too far away",
+			'Are you schizo or smth?',
 		];
 
 		const randomReason =

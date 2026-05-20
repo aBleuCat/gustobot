@@ -1,18 +1,27 @@
-// Commands/dmlogtoggle.js
-// Only visible to user 853658523786412063
+// Only visible to user 853658523786412063 hmmm
 
-const path = require('node:path');
-const fs = require('node:fs');
-const {SlashCommandBuilder} = require('discord.js');
+import path from 'node:path';
+import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {
+	SlashCommandBuilder,
+	type ChatInputCommandInteraction,
+	type User,
+} from 'discord.js';
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const __filename = fileURLToPath(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const __dirname = path.dirname(__filename);
 
 const ADMIN_ID = '853658523786412063';
 const TOGGLE_FILE = path.join(__dirname, '../.dmlogtoggle');
 
-module.exports = {
+export const dmLogToggleCommand = {
 	data: new SlashCommandBuilder()
 		.setName('dmlogtoggle')
 		.setDescription('Toggle DM debug logs (admin only)'),
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		if (interaction.user.id !== ADMIN_ID) {
 			return interaction.reply({
 				content: 'You do not have permission to use this command.',
@@ -30,7 +39,7 @@ module.exports = {
 			ephemeral: true,
 		});
 	},
-	isVisibleTo(user) {
+	isVisibleTo(user: User) {
 		return user.id === ADMIN_ID;
 	},
 };

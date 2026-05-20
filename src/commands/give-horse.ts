@@ -1,9 +1,18 @@
-const {SlashCommandBuilder, MessageFlags} = require('discord.js');
-const mongoose = require('mongoose');
-const HORSE_VALUES = require('../horses.json');
-const {conditionHorse} = require('../lib/helpers/horseFuncs');
+import {
+	SlashCommandBuilder,
+	MessageFlags,
+	type ChatInputCommandInteraction,
+	type AutocompleteInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import rawHorseValues from '../data/horses.json' with {type: 'json'};
+import {conditionHorse} from '../lib/helpers/horse-funcs.js';
+import type {IUserHorses} from '../lib/models.js';
+import {castAsHorseData, castAsTextBased} from '../type-utils.js';
 
-module.exports = {
+const HORSE_VALUES = castAsHorseData(rawHorseValues);
+
+export const giveHorseCommand = {
 	data: new SlashCommandBuilder()
 		.setName('givehorse')
 		.setDescription('Give one of your horses to another user.')
@@ -19,10 +28,12 @@ module.exports = {
 				.setDescription('The horse you want to give')
 				.setRequired(true)
 				.setAutocomplete(true),
-		),
+		)
+		.setContexts(0),
 
-	async autocomplete(interaction) {
-		const UserHorses = mongoose.model('UserHorses');
+	async autocomplete(interaction: AutocompleteInteraction) {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const focused = interaction.options.getFocused().toLowerCase();
 		const inventory = await UserHorses.findOne({
 			userId: interaction.user.id,
@@ -47,11 +58,21 @@ module.exports = {
 		await interaction.respond(filtered);
 	},
 
-	async execute(interaction) {
-		const UserHorses = mongoose.model('UserHorses');
+	async execute(interaction: ChatInputCommandInteraction) {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const targetUser = interaction.options.getUser('target');
 		const horseSlug = interaction.options.getString('horse');
 		const botId = interaction.client.user.id;
+		if (!targetUser || !horseSlug)
+			return interaction.reply(
+				'try again, something went wrong when trying to recieve your inputs',
+			);
+		if (!interaction.guild)
+			return interaction.reply(
+				'lo siento something went wrong when finding your server',
+			);
+		const channel = castAsTextBased(interaction.channel);
 
 		if (targetUser.id === interaction.user.id) {
 			return interaction.reply({
@@ -70,7 +91,7 @@ module.exports = {
 		const giverInv = await UserHorses.findOne({
 			userId: interaction.user.id,
 		});
-		if (!giverInv || (giverInv.horses.get(horseSlug) || 0) <= 0) {
+		if (!giverInv || (giverInv.horses.get(horseSlug) ?? 0) <= 0) {
 			return interaction.reply({
 				content: `You don't have a **${HORSE_VALUES[horseSlug]?.name ?? horseSlug}**!`,
 				flags: [MessageFlags.Ephemeral],
@@ -80,18 +101,18 @@ module.exports = {
 		let receiverInv = await UserHorses.findOne({
 			userId: targetUser.id,
 		});
-		receiverInv ||= new UserHorses({
+		receiverInv ??= new UserHorses({
 			userId: targetUser.id,
 			horses: new Map(),
 		});
 
 		giverInv.horses.set(
 			horseSlug,
-			giverInv.horses.get(horseSlug) - 1,
+			(giverInv.horses.get(horseSlug) ?? 0) - 1,
 		);
 		receiverInv.horses.set(
 			horseSlug,
-			(receiverInv.horses.get(horseSlug) || 0) + 1,
+			(receiverInv.horses.get(horseSlug) ?? 0) + 1,
 		);
 		await giverInv.save();
 		await receiverInv.save();
@@ -103,13 +124,11 @@ module.exports = {
 				: `You gave your **${horseDisplay}** to <@${targetUser.id}>!`;
 		await interaction.reply({content: message});
 
-		if (interaction.client.logToModChannel) {
-			interaction.client.logToModChannel(
-				interaction.guild,
-				`${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`,
-			);
-		}
+		void interaction.client.logToModChannel(
+			interaction.guild,
+			`${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`,
+		);
 
-		await conditionHorse(receiverInv, interaction.channel);
+		await conditionHorse(receiverInv, channel);
 	},
 };
