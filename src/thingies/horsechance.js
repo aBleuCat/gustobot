@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const horsesPath = path.join(__dirname, '../horses.json');
+const horsesPath = path.join(__dirname, '../data/horses.json');
 const configPath = path.join(__dirname, '../lib/config.js');
 
 let horsesData;

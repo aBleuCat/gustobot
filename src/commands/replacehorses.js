@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require('discord.js');
 const mongoose = require('mongoose');
-const HORSE_VALUES = require('../horses.json');
+const HORSE_VALUES = require('../data/horses.json');
 
 const OWNER_ID = '934290747623096381';
 

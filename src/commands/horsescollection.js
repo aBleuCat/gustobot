@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require('discord.js');
 const mongoose = require('mongoose');
-const HORSE_VALUES = require('../horses.json');
+const HORSE_VALUES = require('../data/horses.json');
 const {conditionHorse} = require('../lib/helpers/horseFuncs.js');
 
 function horseName(slug) {

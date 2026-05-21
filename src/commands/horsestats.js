@@ -6,7 +6,7 @@ const {
 	MessageFlags,
 } = require('discord.js');
 const mongoose = require('mongoose');
-const HORSE_VALUES = require('../horses.json');
+const HORSE_VALUES = require('../data/horses.json');
 
 const HORSES_PER_PAGE = 15;
 

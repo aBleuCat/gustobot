@@ -1,7 +1,7 @@
 const {config} = require('../config');
 const horseSpawner = require('../triggers/horseSpawner');
 const {UserHorses, HorseConfig, OrbitalScript} = require('../models');
-const HORSE_VALUES = require('../../horses.json');
+const HORSE_VALUES = require('../../data/horses.json');
 const {stringSimilarity} = require('./similarity');
 const {dmAdmin} = require('./dmlog');
 

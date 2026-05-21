@@ -15,6 +15,7 @@ const {
 } = require('../../commands/orbitalcannon');
 const {OrbitalScript} = require('../models');
 const {devLog} = require('../helpers/devLog');
+// NTS: use error handler from error-handler.ts for the command error handling
 
 const catchDataStore = new Map();
 const CATCH_DATA_TTL_MS = 2 * 60 * 1000;
@@ -57,7 +58,7 @@ function registerInteractionHandler(client) {
 
 			if (interaction.commandName !== 'orbitalcannon') {
 				console.log(
-					`[COMMAND]: ${interaction.user.tag} used /${interaction.commandName}`,
+					`[COMMAND]: ${interaction.user.tag} used /${interaction.commandName} in guild ${interaction.guildId}`,
 				);
 				devLog(
 					`[COMMAND]: ${interaction.user.tag} used /${interaction.commandName} in guild ${interaction.guildId}`,
@@ -90,7 +91,7 @@ function registerInteractionHandler(client) {
 					interaction.replied || interaction.deferred
 						? 'editReply'
 						: 'reply'
-				](errorPayload).catch();
+				](errorPayload).catch(() => undefined);
 			}
 
 			return;

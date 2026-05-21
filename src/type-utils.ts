@@ -47,7 +47,7 @@ export function isHorseData(
 
 export function castAsHorseData(
 	data: unknown,
-	mode: 'all' | number = 'all',
+	mode: 'all' | number = 5,
 ): HorseData {
 	if (!isHorseData(data, mode)) {
 		throw new TypeError(

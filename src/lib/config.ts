@@ -3,7 +3,7 @@
 import {castAsHorseData} from '../type-utils.js';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
 
-const HORSE_VALUES = castAsHorseData(rawHorseValues);
+const HORSE_VALUES = castAsHorseData(rawHorseValues, 'all');
 
 const BASELINE_SUM = 0.2; // I like rounded better
 const currentInverseSum = Object.entries(HORSE_VALUES)

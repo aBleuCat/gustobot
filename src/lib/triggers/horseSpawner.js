@@ -2,7 +2,7 @@ const {HorseConfig, UserHorses, MessageCache} = require('../models');
 const {stringSimilarity} = require('../helpers/similarity');
 const {config} = require('../config');
 const {conditionHorse} = require('../helpers/horseFuncs');
-const HORSE_VALUES = require('../../horses.json');
+const HORSE_VALUES = require('../../data/horses.json');
 const {devLog} = require('../helpers/devLog');
 const {queueMessage} = require('../helpers/messageQueue');
 

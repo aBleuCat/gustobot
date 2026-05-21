@@ -55,7 +55,7 @@ export const forceHorseCommand = {
 			}));
 
 		// Discord limits autocomplete to 25 results
-		await interaction.respond(choices.slice(0, 25)).catch();
+		await interaction.respond(choices.slice(0, 25)).catch(() => undefined);
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {

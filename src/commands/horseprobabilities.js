@@ -26,7 +26,7 @@ module.exports = {
 
 	async execute(interaction) {
 		// 1. Load Data
-		const horsesPath = path.join(__dirname, '../horses.json');
+		const horsesPath = path.join(__dirname, '../data/horses.json');
 		const horsesData = JSON.parse(
 			fs.readFileSync(horsesPath, 'utf8'),
 		);
