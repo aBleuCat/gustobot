@@ -13,7 +13,7 @@ const IMAGES: Record<string, string> = {
 		'https://cdn.discordapp.com/attachments/1448897193736933498/1485433542438813806/togif.gif ',
 };
 
-export const getImageCommand = {
+const getImageCommand = {
 	data: new SlashCommandBuilder()
 		.setName('getimage')
 		.setDescription('Get an image by name')
@@ -56,3 +56,5 @@ export const getImageCommand = {
 		await interaction.reply(imageUrl);
 	},
 };
+
+export default getImageCommand;

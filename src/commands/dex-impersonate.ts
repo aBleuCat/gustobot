@@ -9,9 +9,8 @@ import {
 } from 'discord.js';
 import {catchDataStore} from '../lib/handlers/interactionHandler.js';
 import {castAsWebhookable} from '../type-utils.js';
-import {logToModChannel} from '../lib/helpers/mod-log.js';
 
-export const dexImpersonateCommand = {
+const dexImpersonateCommand = {
 	data: new SlashCommandBuilder()
 		.setName('deximpersonate')
 		.setDescription('Impersonate a user to spawn a countryball')
@@ -113,3 +112,5 @@ export const dexImpersonateCommand = {
 		});
 	},
 };
+
+export default dexImpersonateCommand;

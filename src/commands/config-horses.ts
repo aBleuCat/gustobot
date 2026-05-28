@@ -9,7 +9,7 @@ import type {IHorseConfig} from '../lib/models.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const HorseConfig = mongoose.model<IHorseConfig>('HorseConfig');
 
-export const configureHorsesCommand = {
+const configureHorsesCommand = {
 	data: new SlashCommandBuilder()
 		.setName('confighorses')
 		.setDescription('Configure horse spawning settings')
@@ -63,3 +63,5 @@ export const configureHorsesCommand = {
 		});
 	},
 };
+
+export default configureHorsesCommand;

@@ -15,7 +15,7 @@ import {castAsHorseData, castAsTextBased} from '../type-utils.js';
 const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
-export const forceHorseCommand = {
+const forceHorseCommand = {
 	data: new SlashCommandBuilder()
 		.setName('forcehorse')
 		.setDescription(
@@ -55,7 +55,9 @@ export const forceHorseCommand = {
 			}));
 
 		// Discord limits autocomplete to 25 results
-		await interaction.respond(choices.slice(0, 25)).catch(() => undefined);
+		await interaction
+			.respond(choices.slice(0, 25))
+			.catch(() => undefined);
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
@@ -106,3 +108,5 @@ export const forceHorseCommand = {
 		await conditionHorse(inventory, channel);
 	},
 };
+
+export default forceHorseCommand;

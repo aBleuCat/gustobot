@@ -6,7 +6,7 @@ import {
 import mongoose from 'mongoose';
 import type {IAdvice, IAdviceBan} from '../lib/models.js';
 
-export const adviceGiveCommand = {
+const adviceGiveCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advicegive')
 		.setDescription(
@@ -89,3 +89,5 @@ export const adviceGiveCommand = {
 		});
 	},
 };
+
+export default adviceGiveCommand;

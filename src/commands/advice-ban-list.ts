@@ -7,7 +7,7 @@ import {
 import mongoose from 'mongoose';
 import type {IAdviceBan} from '../lib/models.js';
 
-export const adviceBanListCommand = {
+const adviceBanListCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advicebanlist')
 		.setDescription(
@@ -36,3 +36,5 @@ export const adviceBanListCommand = {
 		await interaction.editReply({embeds: [listEmbed]});
 	},
 };
+
+export default adviceBanListCommand;

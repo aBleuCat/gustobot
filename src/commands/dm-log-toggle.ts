@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 const ADMIN_ID = '853658523786412063';
 const TOGGLE_FILE = path.join(__dirname, '../.dmlogtoggle');
 
-export const dmLogToggleCommand = {
+const dmLogToggleCommand = {
 	data: new SlashCommandBuilder()
 		.setName('dmlogtoggle')
 		.setDescription('Toggle DM debug logs (admin only)'),
@@ -43,3 +43,5 @@ export const dmLogToggleCommand = {
 		return user.id === ADMIN_ID;
 	},
 };
+
+export default dmLogToggleCommand;

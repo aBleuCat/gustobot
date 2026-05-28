@@ -7,7 +7,7 @@ import {
 import mongoose from 'mongoose';
 import type {IUserHorses} from '../lib/models.js';
 
-export const forceCoinsCommand = {
+const forceCoinsCommand = {
 	data: new SlashCommandBuilder()
 		.setName('forcecoins')
 		.setDescription('Owner Only: Give horse coins to a user')
@@ -56,3 +56,5 @@ export const forceCoinsCommand = {
 		);
 	},
 };
+
+export default forceCoinsCommand;

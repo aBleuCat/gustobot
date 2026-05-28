@@ -8,7 +8,7 @@ import {
 import mongoose from 'mongoose';
 import type {IAdvice} from '../lib/models.js';
 
-export const adviceCommand = {
+const adviceCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advice')
 		.setDescription('Get advice for your question')
@@ -61,3 +61,5 @@ export const adviceCommand = {
 		await interaction.reply({embeds: [embed]});
 	},
 };
+
+export default adviceCommand;

@@ -7,18 +7,18 @@ import {SubcommandLoader} from './lib/subcommand-loader.js';
 
 const mainCommand = new SlashCommandBuilder()
 	.setName('coins')
-	.setDescription('All horse-related commands')
+	.setDescription('All horse-coin-related commands')
 	.setContexts(0);
 
 const loader = new SubcommandLoader(
 	mainCommand,
 	import.meta.url,
-	'coinCommands',
+	'coin-commands',
 );
 
 await loader.load();
 
-export const command = {
+const command = {
 	data: mainCommand,
 	async execute(interaction: ChatInputCommandInteraction) {
 		// The class handles
@@ -28,3 +28,5 @@ export const command = {
 		await loader.autocomplete(interaction);
 	},
 };
+
+export default command;

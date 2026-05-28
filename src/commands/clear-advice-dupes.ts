@@ -12,7 +12,7 @@ type DuplicateAggregationResult = {
 	count: number;
 };
 
-export const clearAdviceDupesCommand = {
+const clearAdviceDupesCommand = {
 	data: new SlashCommandBuilder()
 		.setName('clearadvicedupes')
 		.setDescription(
@@ -70,3 +70,5 @@ export const clearAdviceDupesCommand = {
 		}
 	},
 };
+
+export default clearAdviceDupesCommand;

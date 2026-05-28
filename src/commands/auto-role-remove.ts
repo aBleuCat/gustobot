@@ -7,7 +7,7 @@ import {
 import mongoose from 'mongoose';
 import type {IRule} from '../lib/models.js';
 
-export const autoRoleRemoveCommand = {
+const autoRoleRemoveCommand = {
 	data: new SlashCommandBuilder()
 		.setName('autoroleremove')
 		.setDescription('Remove an autorole trigger by its ID')
@@ -46,3 +46,5 @@ export const autoRoleRemoveCommand = {
 		});
 	},
 };
+
+export default autoRoleRemoveCommand;

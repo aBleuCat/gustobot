@@ -35,7 +35,7 @@ const renderConfigValue = (value: unknown): string =>
 		? JSON.stringify(value)
 		: String(value);
 
-export const hacksCommand = {
+const hacksCommand = {
 	data: new SlashCommandBuilder()
 		.setName('hacks')
 		.setDescription('Admin tools')
@@ -327,3 +327,5 @@ export const hacksCommand = {
 		}
 	},
 };
+
+export default hacksCommand;

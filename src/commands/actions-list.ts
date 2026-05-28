@@ -11,7 +11,7 @@ import {
 import mongoose from 'mongoose';
 import type {IActionResponse} from '../lib/models.js';
 
-export const actionsList = {
+const actionsList = {
 	data: new SlashCommandBuilder()
 		.setName('actionslist')
 		.setDescription('Shows all learned actions'),
@@ -96,3 +96,5 @@ export const actionsList = {
 		});
 	},
 };
+
+export default actionsList;

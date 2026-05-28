@@ -6,7 +6,7 @@ import {
 import mongoose from 'mongoose';
 import type {IRule} from '../lib/models.js';
 
-export const autoRoleSetupCommand = {
+const autoRoleSetupCommand = {
 	data: new SlashCommandBuilder()
 		.setName('autorolechange')
 		.setDescription('Owner Only: Configure autorole swap rules')
@@ -105,3 +105,5 @@ export const autoRoleSetupCommand = {
 		);
 	},
 };
+
+export default autoRoleSetupCommand;

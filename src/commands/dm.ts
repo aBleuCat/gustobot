@@ -11,7 +11,7 @@ const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists
 	? new Set(config.lists.botAdmins)
 	: new Set();
 
-export const dmCommand: SlashCommandConfig = {
+const dmCommand: SlashCommandConfig = {
 	data: new SlashCommandBuilder()
 		.setName('dm')
 		.setDescription('Makes the bot DM a specific user')
@@ -58,3 +58,5 @@ export const dmCommand: SlashCommandConfig = {
 		}
 	},
 };
+
+export default dmCommand;

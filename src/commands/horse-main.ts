@@ -13,12 +13,12 @@ const mainCommand = new SlashCommandBuilder()
 const loader = new SubcommandLoader(
 	mainCommand,
 	import.meta.url,
-	'horseCommands',
+	'horse-commands',
 );
 
 await loader.load();
 
-export const command = {
+const command = {
 	data: mainCommand,
 	async execute(interaction: ChatInputCommandInteraction) {
 		// The class handles
@@ -28,3 +28,5 @@ export const command = {
 		await loader.autocomplete(interaction);
 	},
 };
+
+export default command;

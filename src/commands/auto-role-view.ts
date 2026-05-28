@@ -6,7 +6,7 @@ import {
 import mongoose from 'mongoose';
 import type {IRule} from '../lib/models.js';
 
-export const autoRoleViewCommand = {
+const autoRoleViewCommand = {
 	data: new SlashCommandBuilder()
 		.setName('autoroleview')
 		.setDescription('View all autorole rules'),
@@ -33,3 +33,5 @@ export const autoRoleViewCommand = {
 		await interaction.reply({embeds: [embed]});
 	},
 };
+
+export default autoRoleViewCommand;

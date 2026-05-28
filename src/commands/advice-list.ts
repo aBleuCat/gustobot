@@ -11,7 +11,7 @@ import {
 import mongoose from 'mongoose';
 import type {IAdvice} from '../lib/models.js';
 
-export const adviceListCommand = {
+const adviceListCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advicelist')
 		.setDescription('Shows stored advice in pages (Admin Only)')
@@ -92,3 +92,5 @@ export const adviceListCommand = {
 		});
 	},
 };
+
+export default adviceListCommand;

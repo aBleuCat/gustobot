@@ -5,7 +5,7 @@ import {
 import mongoose from 'mongoose';
 import type {IActionResponse} from '../lib/models.js';
 
-export const doCommand = {
+const doCommand = {
 	data: new SlashCommandBuilder()
 		.setName('do')
 		.setDescription('Tell the bot to do something')
@@ -60,3 +60,5 @@ export const doCommand = {
 		);
 	},
 };
+
+export default doCommand;
