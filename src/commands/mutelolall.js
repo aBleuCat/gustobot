@@ -11,14 +11,14 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('mutelolall')
 		.setDescription('mutes triggers in all channels')
-		.addBooleanOption((o) =>
-			o
+		.addBooleanOption((option) =>
+			option
 				.setName('status')
 				.setDescription('true to mute, false to unmute')
 				.setRequired(true),
 		)
-		.addChannelOption((o) =>
-			o.setName('exception').setDescription('channel to ignore'),
+		.addChannelOption((option) =>
+			option.setName('exception').setDescription('channel to ignore'),
 		),
 	async execute(interaction) {
 		// Check perms

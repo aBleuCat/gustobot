@@ -40,7 +40,7 @@ const actionsList = {
 				.setTitle(
 					`Learned Actions (Page ${page + 1}/${Math.ceil(actions.length / 10)})`,
 				)
-				.setColor(0xff_a5_00)
+				.setColor('#ffa500')
 				.setDescription(
 					current
 						.map((act) => `• **${act.trigger}** → ${act.response}`)

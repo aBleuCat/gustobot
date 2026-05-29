@@ -1,10 +1,12 @@
 import type {GuildTextBasedChannel} from 'discord.js';
 import type {IUserHorses} from '../models.js';
-import rawHorseData from '../../data/horses.json' with {type: 'json'};
+import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 
-const HORSE_VALUES = castAsHorseData(rawHorseData);
-export function horseName(slug: string): string {
+const HORSE_VALUES = castAsHorseData(rawHorseValues);
+
+export function horseName(slug: string | undefined): string {
+	if (slug === undefined) return '';
 	return HORSE_VALUES[slug]?.name ?? slug;
 }
 

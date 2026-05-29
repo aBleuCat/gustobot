@@ -19,15 +19,15 @@ module.exports = {
 		.setDescription(
 			"Replace everyone's horse of one type with another (owner only)",
 		)
-		.addStringOption((o) =>
-			o
+		.addStringOption((option) =>
+			option
 				.setName('horse')
 				.setDescription('The horse to replace')
 				.setRequired(true)
 				.addChoices(...horseChoices.slice(0, 25)),
 		)
-		.addStringOption((o) =>
-			o
+		.addStringOption((option) =>
+			option
 				.setName('replacement')
 				.setDescription('The horse to replace it with')
 				.setRequired(true)

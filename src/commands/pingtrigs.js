@@ -15,14 +15,14 @@ module.exports = {
 				.setDescription(
 					'Add a response to the random pool or with a trigger',
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('response')
 						.setDescription('What the bot replies')
 						.setRequired(true),
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('triggertype')
 						.setDescription(
 							'Type of trigger (leave blank for random pool)',
@@ -34,8 +34,8 @@ module.exports = {
 							{name: 'exact', value: 'exact'},
 						),
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('triggertext')
 						.setDescription(
 							'Trigger text or user ID (required if trigger type is set)',
@@ -47,8 +47,8 @@ module.exports = {
 			sub
 				.setName('remove')
 				.setDescription('Remove an entry by its MongoDB _id')
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('id')
 						.setDescription('MongoDB _id of the entry')
 						.setRequired(true),

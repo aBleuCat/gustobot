@@ -6,11 +6,12 @@ import {
 	ButtonStyle,
 	MessageFlags,
 	type ChatInputCommandInteraction,
+	type ButtonInteraction,
 	type User,
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IUserHorses} from '../../lib/models.js';
-import rawHorseData from '../../data/horses.json' with {type: 'json'};
+import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
 import {fetchWithTimeout} from '../../lib/helpers/timeout-helpers.js';
@@ -22,7 +23,7 @@ type SortList = Array<{
 	completion: number;
 }>;
 
-const HORSE_VALUES = castAsHorseData(rawHorseData);
+const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const PAGE_SIZE = 10;
 export const data = new SlashCommandSubcommandBuilder()
 	.setName('horseleaderboard')
@@ -167,8 +168,8 @@ export async function execute(
 			);
 	}
 
-	function getButtons(page: number) {
-		return new ActionRowBuilder().addComponents(
+	function getButtons(page: number): ActionRowBuilder<ButtonBuilder> {
+		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
 				.setCustomId(`hlb_prev_${page}`)
 				.setLabel('⬅️')
@@ -192,45 +193,50 @@ export async function execute(
 		time: 120_000,
 	});
 
-	collector.on('collect', async (i) => {
-		if (i.user.id !== interaction.user.id) {
-			await i
-				.reply({
-					content: 'Only the command user can use these buttons.',
-					flags: [MessageFlags.Ephemeral],
-				})
-				.catch(() => undefined);
-			return;
-		}
+	collector.on('collect', (i: ButtonInteraction) => {
+		void (async () => {
+			if (i.user.id !== interaction.user.id) {
+				await i
+					.reply({
+						content: 'Only the command user can use these buttons.',
+						flags: [MessageFlags.Ephemeral],
+					})
+					.catch(() => undefined);
+				return;
+			}
 
-		const [, direction, page] = i.customId.split('_');
-		let parsedPage = Number(page);
-		if (Number.isNaN(parsedPage)) parsedPage = 0;
-		currentPage =
-			direction === 'next' ? parsedPage + 1 : parsedPage - 1;
-		if (currentPage < 0) currentPage = 0;
-		if (currentPage >= totalPages) currentPage = totalPages - 1;
-		try {
-			await i.update({
-				embeds: [await buildEmbed(currentPage)],
-				components: [getButtons(currentPage)],
-			});
-		} catch {
-			await i
-				.reply({
-					content: 'Failed to update leaderboard page.',
-					ephemeral: true,
-				})
-				.catch(() => undefined);
-		}
+			const [, direction, page] = i.customId.split('_');
+			let parsedPage = Number(page);
+			if (Number.isNaN(parsedPage)) parsedPage = 0;
+			currentPage =
+				direction === 'next' ? parsedPage + 1 : parsedPage - 1;
+			if (currentPage < 0) currentPage = 0;
+			if (currentPage >= totalPages) currentPage = totalPages - 1;
+			try {
+				await i.update({
+					embeds: [await buildEmbed(currentPage)],
+					components: [getButtons(currentPage)],
+				});
+			} catch {
+				await i
+					.reply({
+						content: 'Failed to update leaderboard page.',
+						flags: [MessageFlags.Ephemeral],
+					})
+					.catch(() => undefined);
+			}
+		})().catch(() => undefined);
 	});
 
-	collector.on('end', async () => {
-		await interaction
-			.editReply({
-				embeds: [await buildEmbed(currentPage)],
-				components: [],
-			})
-			.catch(() => undefined);
+	collector.on('end', () => {
+		void (async () => {
+			const embed = await buildEmbed(currentPage);
+			await interaction
+				.editReply({
+					embeds: [embed],
+					components: [],
+				})
+				.catch(() => undefined);
+		})();
 	});
 }

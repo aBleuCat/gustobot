@@ -7,6 +7,7 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	type User,
+	MessageFlags,
 } from 'discord.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -25,7 +26,7 @@ const dmLogToggleCommand = {
 		if (interaction.user.id !== ADMIN_ID) {
 			return interaction.reply({
 				content: 'You do not have permission to use this command.',
-				ephemeral: true,
+				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
@@ -36,7 +37,7 @@ const dmLogToggleCommand = {
 		fs.writeFileSync(TOGGLE_FILE, enabled ? 'on' : 'off');
 		await interaction.reply({
 			content: `DM debug logs are now **${enabled ? 'ENABLED' : 'DISABLED'}**.`,
-			ephemeral: true,
+			flags: [MessageFlags.Ephemeral],
 		});
 	},
 	isVisibleTo(user: User) {

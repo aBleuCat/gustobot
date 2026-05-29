@@ -44,15 +44,15 @@ const hacksCommand = {
 			sub
 				.setName('vars')
 				.setDescription('View or modify runtime config variables')
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('variable')
 						.setDescription('The variable to interact with')
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('action')
 						.setDescription('What to do with the variable')
 						.setRequired(false)
@@ -62,8 +62,8 @@ const hacksCommand = {
 							{name: 'add — add to current value', value: 'add'},
 						),
 				)
-				.addNumberOption((o) =>
-					o
+				.addNumberOption((option) =>
+					option
 						.setName('value')
 						.setDescription('Value to set or add')
 						.setRequired(false),
@@ -76,8 +76,8 @@ const hacksCommand = {
 			sub
 				.setName('lists')
 				.setDescription('Manage whitelists and blacklists')
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('listname')
 						.setDescription('Which list to modify')
 						.setRequired(true)
@@ -100,8 +100,8 @@ const hacksCommand = {
 							},
 						),
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('action')
 						.setDescription('Add or remove an ID')
 						.setRequired(true)
@@ -111,8 +111,8 @@ const hacksCommand = {
 							{name: 'view', value: 'view'},
 						),
 				)
-				.addStringOption((o) =>
-					o
+				.addStringOption((option) =>
+					option
 						.setName('id')
 						.setDescription('The User/Bot ID to add or remove')
 						.setRequired(false),
@@ -190,7 +190,7 @@ const hacksCommand = {
 				// Send each chunk as a separate embed
 				for (let i = 0; i < chunks.length; i++) {
 					const embed = new EmbedBuilder()
-						.setColor(0x00_99_ff)
+						.setColor('#00_99_ff')
 						.setTitle(`Runtime Config (${i + 1}/${chunks.length})`)
 						.setDescription(chunks[i]!);
 
