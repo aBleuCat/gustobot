@@ -61,14 +61,17 @@ export const config = {
 		primaryTrigWhitelist: [] as string[], // The bot crackgpt = 1428178018802733076
 		secondaryTrigBlacklist: [] as string[],
 		secondaryTrigWhitelist: [] as string[],
-		// Bot admins (user IDs) who can use admin-only commands
-		botAdmins: ['853658523786412063', '934290747623096381'],
 	},
 
 	// For messageQueue.js
 	CHANNEL_MSG_LIMIT_MS: 1100,
 	GLOBAL_MSG_LIMIT_MS: 50,
 };
+
+export const immutConfig = {
+	// Bot admins (User Ids) that can use admin-only commands
+	admins: new Set(['853658523786412063', '934290747623096381']),
+} as const;
 
 export const descriptions: Record<string, string> = {
 	DEBOUNCE_MS: 'Min ms between horse rolls per user',

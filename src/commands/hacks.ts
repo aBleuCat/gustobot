@@ -6,7 +6,7 @@ import {
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import {config, descriptions} from '../lib/config.js';
+import {config, immutConfig, descriptions} from '../lib/config.js';
 
 type ConfigKey = keyof typeof config;
 type NumericConfigKey = {
@@ -14,7 +14,7 @@ type NumericConfigKey = {
 }[ConfigKey];
 type ConfigListKey = Exclude<keyof typeof config.lists, 'botAdmins'>;
 
-const adminIds = config.lists.botAdmins;
+const adminIds = immutConfig.admins;
 
 const isConfigKey = (key: string): key is ConfigKey =>
 	Object.hasOwn(config, key);
@@ -133,7 +133,7 @@ const hacksCommand = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (!adminIds.includes(interaction.user.id)) {
+		if (!adminIds.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'you cannot do that bro',
 				flags: [MessageFlags.Ephemeral],

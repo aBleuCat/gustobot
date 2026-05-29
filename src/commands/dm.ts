@@ -4,12 +4,9 @@ import {
 	type ChatInputCommandInteraction,
 } from 'discord.js';
 import {type SlashCommandConfig} from '../types.js';
-import {config} from '../lib/config.js';
+import {immutConfig} from '../lib/config.js';
 
-const DM_ALLOWED_USER_IDS: ReadonlySet<string> = config.lists
-	.botAdmins
-	? new Set(config.lists.botAdmins)
-	: new Set();
+const DM_ALLOWED_USER_IDS: ReadonlySet<string> = immutConfig.admins;
 
 const dmCommand: SlashCommandConfig = {
 	data: new SlashCommandBuilder()

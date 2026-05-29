@@ -5,9 +5,9 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IActionResponse} from '../lib/models.js';
-import {config} from '../lib/config.js';
+import {immutConfig} from '../lib/config.js';
 
-const admins = config.lists.botAdmins;
+const {admins} = immutConfig;
 
 const actionConfigCommand = {
 	data: new SlashCommandBuilder()
@@ -26,7 +26,7 @@ const actionConfigCommand = {
 				.setRequired(true),
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (!admins.includes(interaction.user.id)) {
+		if (!admins.has(interaction.user.id)) {
 			return interaction.reply({
 				content: "You can't do that brochacho",
 				flags: [MessageFlags.Ephemeral],
