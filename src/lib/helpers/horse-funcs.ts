@@ -18,7 +18,8 @@ async function checkForEqualitySpawn(
 	const hasLight =
 		(user.horses.get('brightness_prosperity') ?? 0) > 0;
 	const hasDark = (user.horses.get('darkness_despair') ?? 0) > 0;
-	const hasEqual = (user.horses.get('equality_parallelism') ?? 0) > 0;
+	const hasEqual =
+		(user.horses.get('equality_parallelism') ?? 0) > 0;
 	if (!(hasLight && hasDark && !hasEqual)) return false;
 	const [lightName, darkName, equalName] = [
 		'brightness_prosperity',
@@ -42,6 +43,9 @@ export async function conditionHorse(
 	user: IUserHorses,
 	channel: GuildTextBasedChannel,
 ) {
-	const equalityModified = await checkForEqualitySpawn(user, channel);
+	const equalityModified = await checkForEqualitySpawn(
+		user,
+		channel,
+	);
 	if (equalityModified) await user.save();
 }

@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IHorseConfig} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const HorseConfig = mongoose.model<IHorseConfig>('HorseConfig');
 
@@ -27,12 +28,13 @@ const configureHorsesCommand = {
 				)
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		)
 		.setContexts([0, 1, 2])
 		.setIntegrationTypes([0, 1]),
 	async execute(interaction: ChatInputCommandInteraction) {
-		const ownerId = '934290747623096381';
-		const isOwner = interaction.user.id === ownerId;
+		const isOwner = immutConfig.ADMINS.has(interaction.user.id);
 		const isAdmin = interaction.memberPermissions?.has(
 			PermissionFlagsBits.Administrator,
 		);

@@ -18,7 +18,9 @@ module.exports = {
 				.setRequired(true),
 		)
 		.addChannelOption((option) =>
-			option.setName('exception').setDescription('channel to ignore'),
+			option
+				.setName('exception')
+				.setDescription('channel to ignore'),
 		),
 	async execute(interaction) {
 		// Check perms

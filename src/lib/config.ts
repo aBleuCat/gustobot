@@ -70,7 +70,7 @@ export const config = {
 
 export const immutConfig = {
 	// Bot admins (User Ids) that can use admin-only commands
-	admins: new Set(['853658523786412063', '934290747623096381']),
+	ADMINS: new Set(['934290747623096381']),
 } as const;
 
 export const descriptions: Record<string, string> = {

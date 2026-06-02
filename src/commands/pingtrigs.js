@@ -64,14 +64,18 @@ module.exports = {
 		const PingResponse = mongoose.model('PingResponse');
 
 		if (interaction.user.id !== OWNER_ID) {
-			return interaction.reply({content: 'nope', ephemeral: true});
+			return interaction.reply({
+				content: 'nope',
+				ephemeral: true,
+			});
 		}
 
 		await interaction.deferReply({ephemeral: true});
 		const sub = interaction.options.getSubcommand();
 
 		if (sub === 'add') {
-			const response = interaction.options.getString('response');
+			const response =
+				interaction.options.getString('response');
 			const triggerType =
 				interaction.options.getString('triggertype');
 			const triggerText =
@@ -99,10 +103,11 @@ module.exports = {
 
 		if (sub === 'remove') {
 			const id = interaction.options.getString('id');
-			const deleted = await PingResponse.findByIdAndDelete(id).catch(
-				() => null,
-			);
-			if (deleted) return interaction.editReply(`Removed \`${id}\`.`);
+			const deleted = await PingResponse.findByIdAndDelete(
+				id,
+			).catch(() => null);
+			if (deleted)
+				return interaction.editReply(`Removed \`${id}\`.`);
 			return interaction.editReply(
 				`No entry found with id \`${id}\`.`,
 			);

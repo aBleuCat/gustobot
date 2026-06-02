@@ -38,31 +38,23 @@
   "xo": {
     "prettier": true,
     "space": false,
-	"semicolon": true,
+    "semicolon": true,
     "rules": {
-	  "@typescript-eslint/naming-convention": [
-		  "error",
-		  {
-	    	"selector": "variable",
-	    	"format": ["camelCase", "UPPER_CASE"],
-		    "leadingUnderscore": "allow"
-		  },
-		  {
-			"selector": "parameter",
-			"format": ["camelCase"],
-			"leadingUnderscore": "allow"
-		  },
-		  {
-			  "selector": "typeLike",
-			  "format": ["PascalCase"]
-			}
-		  ],
-      "prettier/prettier": [
+      "@typescript-eslint/naming-convention": [
         "error",
         {
-          "useTabs": true,
-          "tabWidth": 4,
-          "endOfLine": "auto"
+          "selector": "variable",
+          "format": ["camelCase", "UPPER_CASE"],
+          "leadingUnderscore": "allow"
+        },
+        {
+          "selector": "parameter",
+          "format": ["camelCase"],
+          "leadingUnderscore": "allow"
+        },
+        {
+          "selector": "typeLike",
+          "format": ["PascalCase"]
         }
       ]
     }

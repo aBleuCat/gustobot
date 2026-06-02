@@ -96,7 +96,9 @@ export async function devLog(message: string, type = 'standard') {
 		// Temporary to prevent rate limiting from too many requests to discord
 		if (
 			type !== 'status' &&
-			!filterExceptions.some((word) => lowMessage.includes(word))
+			!filterExceptions.some((word) =>
+				lowMessage.includes(word),
+			)
 		) {
 			if (type !== 'bg') {
 				console.log(formattedMessage);

@@ -10,7 +10,9 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('timeouts')
 		.setDescription('View all active role-swaps')
-		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.ManageMessages,
+		),
 
 	async execute(interaction) {
 		const Timeout = mongoose.model('Timeout');

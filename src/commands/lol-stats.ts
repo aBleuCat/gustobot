@@ -31,9 +31,21 @@ const lolStatsCommand = {
 			.setColor('#ffea00') // Cheese
 			.setTitle('lol Counter')
 			.addFields(
-				{name: 'Today', value: `${stats.daily}`, inline: true},
-				{name: 'This Week', value: `${stats.weekly}`, inline: true},
-				{name: 'All Time', value: `${stats.allTime}`, inline: true},
+				{
+					name: 'Today',
+					value: `${stats.daily}`,
+					inline: true,
+				},
+				{
+					name: 'This Week',
+					value: `${stats.weekly}`,
+					inline: true,
+				},
+				{
+					name: 'All Time',
+					value: `${stats.allTime}`,
+					inline: true,
+				},
 				{
 					name: 'Last Lol',
 					value: `${discordTime} (${relativeTime})`,

@@ -74,7 +74,10 @@ async function pull(
 	modelArg: string,
 	fileArg: string,
 ): Promise<void> {
-	const {Model, modelName, fileName} = resolveArgs(modelArg, fileArg);
+	const {Model, modelName, fileName} = resolveArgs(
+		modelArg,
+		fileArg,
+	);
 	await connectDB();
 	console.log(`Pulling ${modelName} to ${fileName}...`);
 	const docs = await Model.find({}).lean();
@@ -96,7 +99,10 @@ async function compare(
 	modelArg: string,
 	fileArg: string,
 ): Promise<CompareResult> {
-	const {Model, modelName, fileName} = resolveArgs(modelArg, fileArg);
+	const {Model, modelName, fileName} = resolveArgs(
+		modelArg,
+		fileArg,
+	);
 	if (!fs.existsSync(fileName)) {
 		console.error(`Error: File ${fileName} not found.`);
 		process.exit(1);
@@ -125,7 +131,9 @@ async function compare(
 	);
 
 	const primaryKey = dbFields.find((f: string) =>
-		['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(f),
+		['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(
+			f,
+		),
 	);
 	const fileMap = new Map(
 		fileContent.data.map((item: any, idx: number) => [
@@ -156,7 +164,8 @@ async function compare(
 			const dbItemValue = (dbItem as any)?.[field];
 			if (
 				fileItemValue !== undefined &&
-				JSON.stringify(dbItemValue) !== JSON.stringify(fileItemValue)
+				JSON.stringify(dbItemValue) !==
+					JSON.stringify(fileItemValue)
 			) {
 				changes.push(
 					`${field}: (DB) ${JSON.stringify(dbItemValue)} != (File) ${JSON.stringify(fileItemValue)}`,
@@ -171,10 +180,17 @@ async function compare(
 		}
 	}
 
-	if (diffCount === 0) console.log('✨ No value differences found.');
+	if (diffCount === 0)
+		console.log('✨ No value differences found.');
 	console.log(`-----------------------------`);
 
-	return {fileContent, modelName, nameMatch, fieldsMatch, primaryKey};
+	return {
+		fileContent,
+		modelName,
+		nameMatch,
+		fieldsMatch,
+		primaryKey,
+	};
 }
 
 async function push(
@@ -182,8 +198,13 @@ async function push(
 	fileArg: string,
 	optionArg?: string,
 ): Promise<void> {
-	const {fileContent, modelName, nameMatch, fieldsMatch, primaryKey} =
-		await compare(modelArg, fileArg);
+	const {
+		fileContent,
+		modelName,
+		nameMatch,
+		fieldsMatch,
+		primaryKey,
+	} = await compare(modelArg, fileArg);
 	const isForced = optionArg === 'force';
 	const isMerge = optionArg === 'merge';
 
@@ -223,7 +244,9 @@ async function push(
 				},
 			}));
 			await Model.bulkWrite(ops);
-			console.log(`\n✅ Successfully merged ${ops.length} records.`);
+			console.log(
+				`\n✅ Successfully merged ${ops.length} records.`,
+			);
 		} else {
 			await Model.deleteMany({});
 			await Model.insertMany(fileContent.data);

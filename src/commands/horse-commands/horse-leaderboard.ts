@@ -63,7 +63,9 @@ export async function execute(
 			userId: u.userId,
 			worth,
 			horseCoins: u.horseCoins || 0,
-			completion: Math.round((unique / totalPossibleItems) * 100),
+			completion: Math.round(
+				(unique / totalPossibleItems) * 100,
+			),
 		};
 	});
 
@@ -77,9 +79,13 @@ export async function execute(
 		(a, b) => b.horseCoins - a.horseCoins,
 	);
 
-	const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+	const totalPages = Math.max(
+		1,
+		Math.ceil(data.length / PAGE_SIZE),
+	);
 	// Get page from option, default to 1
-	let currentPage = (interaction.options.getInteger('page') ?? 1) - 1;
+	let currentPage =
+		(interaction.options.getInteger('page') ?? 1) - 1;
 	if (currentPage < 0) currentPage = 0;
 	if (currentPage >= totalPages) currentPage = totalPages - 1;
 
@@ -92,7 +98,8 @@ export async function execute(
 		// Fetch all users in parallel, but with a timeout and cache
 		const results = await Promise.all(
 			ids.map(async (userId) => {
-				if (userCache.has(userId)) return userCache.get(userId);
+				if (userCache.has(userId))
+					return userCache.get(userId);
 
 				try {
 					const user = await fetchWithTimeout<User>(
@@ -100,7 +107,9 @@ export async function execute(
 						2000,
 					);
 					const name =
-						user?.displayName ?? user?.username ?? 'Unknown User';
+						user?.displayName ??
+						user?.username ??
+						'Unknown User';
 					userCache.set(userId, name);
 					return name;
 				} catch {
@@ -168,7 +177,9 @@ export async function execute(
 			);
 	}
 
-	function getButtons(page: number): ActionRowBuilder<ButtonBuilder> {
+	function getButtons(
+		page: number,
+	): ActionRowBuilder<ButtonBuilder> {
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
 				.setCustomId(`hlb_prev_${page}`)
@@ -198,7 +209,8 @@ export async function execute(
 			if (i.user.id !== interaction.user.id) {
 				await i
 					.reply({
-						content: 'Only the command user can use these buttons.',
+						content:
+							'Only the command user can use these buttons.',
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
@@ -209,9 +221,12 @@ export async function execute(
 			let parsedPage = Number(page);
 			if (Number.isNaN(parsedPage)) parsedPage = 0;
 			currentPage =
-				direction === 'next' ? parsedPage + 1 : parsedPage - 1;
+				direction === 'next'
+					? parsedPage + 1
+					: parsedPage - 1;
 			if (currentPage < 0) currentPage = 0;
-			if (currentPage >= totalPages) currentPage = totalPages - 1;
+			if (currentPage >= totalPages)
+				currentPage = totalPages - 1;
 			try {
 				await i.update({
 					embeds: [await buildEmbed(currentPage)],

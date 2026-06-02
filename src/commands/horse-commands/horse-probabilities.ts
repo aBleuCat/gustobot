@@ -43,7 +43,9 @@ export async function execute(
 		.toSorted((a, b) => b.val - a.val);
 
 	const statsLines = horseStats.map((s) => {
-		const nameTag = s.isSpawnable ? s.name : `[NOSPAWN] ${s.name}`;
+		const nameTag = s.isSpawnable
+			? s.name
+			: `[NOSPAWN] ${s.name}`;
 		return `${nameTag.padEnd(35)} | ${s.prob}% | 1 in ${s.msgFreq}`;
 	});
 

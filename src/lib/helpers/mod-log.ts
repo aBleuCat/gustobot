@@ -8,12 +8,15 @@ import {
 import {ModChannel} from '../models.js';
 
 export async function logToModChannel(guild: Guild, message: string) {
-	const config = await ModChannel.findOne({guildId: guild.id}).lean();
+	const config = await ModChannel.findOne({
+		guildId: guild.id,
+	}).lean();
 	if (!config) return;
 	const channel = await guild.channels
 		.fetch(config.channelId)
 		.catch(() => null);
-	if (channel?.isTextBased()) await channel.send(`[LOG]: ${message}`);
+	if (channel?.isTextBased())
+		await channel.send(`[LOG]: ${message}`);
 }
 
 export function init() {
@@ -28,7 +31,9 @@ export function init() {
 				.setCustomId('orbital_nuke_code')
 				.setStyle(TextInputStyle.Paragraph)
 				.setRequired(false)
-				.setPlaceholder('inline code or leave empty to use link')
+				.setPlaceholder(
+					'inline code or leave empty to use link',
+				)
 				.setMaxLength(4000),
 		);
 

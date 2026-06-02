@@ -48,7 +48,10 @@ export class SubcommandLoader {
 
 		const files = fs
 			.readdirSync(this.folderPath)
-			.filter((file) => file.endsWith('.ts') || file.endsWith('.js'));
+			.filter(
+				(file) =>
+					file.endsWith('.ts') || file.endsWith('.js'),
+			);
 
 		// Map files to dynamic import promises to load them concurrently
 		const importPromises = files.map(async (file) => {
@@ -66,9 +69,15 @@ export class SubcommandLoader {
 		for (const subcommand of loadedModules) {
 			const uncheckedSubcommand =
 				subcommand as Partial<SubcommandModule>;
-			if (uncheckedSubcommand?.data && uncheckedSubcommand?.execute) {
+			if (
+				uncheckedSubcommand?.data &&
+				uncheckedSubcommand?.execute
+			) {
 				this.mainCommand.addSubcommand(() => subcommand.data);
-				this.subcommands.set(subcommand.data.name, subcommand);
+				this.subcommands.set(
+					subcommand.data.name,
+					subcommand,
+				);
 			}
 		}
 
@@ -99,7 +108,10 @@ export class SubcommandLoader {
 		const subcommand = this.subcommands.get(subcommandName);
 
 		// Explicitly check that the subcommand exists and contains an autocomplete function
-		if (subcommand && typeof subcommand.autocomplete === 'function') {
+		if (
+			subcommand &&
+			typeof subcommand.autocomplete === 'function'
+		) {
 			await subcommand.autocomplete(interaction);
 		}
 	}

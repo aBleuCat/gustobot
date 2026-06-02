@@ -120,7 +120,8 @@ async function processChannelQueue(channelId: string): Promise<void> {
 
 			// Clean up idle channel state to prevent memory leaks
 			if (channelQueues.size > 100) {
-				const staleThreshold = Date.now() - CHANNEL_LIMIT_MS * 2;
+				const staleThreshold =
+					Date.now() - CHANNEL_LIMIT_MS * 2;
 				for (const [id, s] of channelQueues) {
 					if (
 						!s.isProcessing &&

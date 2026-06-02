@@ -69,7 +69,10 @@ async function handleAutorole(message) {
 
 				if (member && !member.roles.cache.has(rule.addRole)) {
 					await member.roles.add(rule.addRole);
-					await member.roles.remove(rule.restoreRole).catch(() => {});
+					await member.roles
+						.remove(rule.restoreRole)
+						.catch(() => {
+});
 
 					await new Timeout({
 						guildId: message.guild.id,

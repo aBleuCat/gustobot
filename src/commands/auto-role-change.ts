@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IRule} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const autoRoleSetupCommand = {
 	data: new SlashCommandBuilder()
@@ -19,7 +20,9 @@ const autoRoleSetupCommand = {
 		.addUserOption((option) =>
 			option
 				.setName('target_user')
-				.setDescription('The user who will receive the role swap')
+				.setDescription(
+					'The user who will receive the role swap',
+				)
 				.setRequired(true),
 		)
 		.addRoleOption((option) =>
@@ -43,12 +46,14 @@ const autoRoleSetupCommand = {
 		.addChannelOption((option) =>
 			option
 				.setName('channel')
-				.setDescription('The channel where this rule triggers')
+				.setDescription(
+					'The channel where this rule triggers',
+				)
 				.setRequired(true),
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'Owner only.',
 				flags: [MessageFlags.Ephemeral],
@@ -62,9 +67,11 @@ const autoRoleSetupCommand = {
 		const watchUser = interaction.options.getUser('messager');
 		const targetUser = interaction.options.getUser('target_user');
 		const addRole = interaction.options.getRole('add_role');
-		const restoreRole = interaction.options.getRole('restore_role');
+		const restoreRole =
+			interaction.options.getRole('restore_role');
 		const duration = interaction.options.getInteger('duration');
-		const targetChannel = interaction.options.getChannel('channel');
+		const targetChannel =
+			interaction.options.getChannel('channel');
 		if (!duration) {
 			return interaction.reply(
 				'Something went wrong when getting your inputs, please try again',

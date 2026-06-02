@@ -79,7 +79,8 @@ function analyzeAndFixHaiku(text) {
 				const wordSyllables = countSyllables(word);
 
 				if (
-					currentSyllables + wordSyllables <= targetSyllables ||
+					currentSyllables + wordSyllables <=
+						targetSyllables ||
 					currentLine === ''
 				) {
 					currentLine += (currentLine ? ' ' : '') + word;
@@ -206,7 +207,8 @@ async function handleHaiku(message) {
 		if (!targetMessage) {
 			queueMessage({
 				channel: message.channel,
-				content: "I couldn't find a recent message of yours to check",
+				content:
+					"I couldn't find a recent message of yours to check",
 				reply: {message, mention: true},
 			});
 			return;
@@ -217,7 +219,8 @@ async function handleHaiku(message) {
 		if (!result) {
 			queueMessage({
 				channel: message.channel,
-				content: "I couldn't find a recent message of yours to check",
+				content:
+					"I couldn't find a recent message of yours to check",
 				reply: {message, mention: true},
 			});
 			return;

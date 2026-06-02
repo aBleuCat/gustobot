@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import {type IAdviceBan} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const banAdviceCommand = {
 	data: new SlashCommandBuilder()
@@ -21,9 +22,10 @@ const banAdviceCommand = {
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		// Owner ID Check
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
-				content: 'You do not have permission to use this command.',
+				content:
+					'You do not have permission to use this command.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

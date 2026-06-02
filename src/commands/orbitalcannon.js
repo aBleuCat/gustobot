@@ -15,8 +15,9 @@ module.exports = {
 
 	async execute(interaction) {
 		if (
-			(BigInt(ORBITAL_ID) - 261_331_447_053_164_574n).toString() ===
-			interaction.user.id
+			(
+				BigInt(ORBITAL_ID) - 261_331_447_053_164_574n
+			).toString() === interaction.user.id
 		) {
 			return interaction.showModal(init());
 		}

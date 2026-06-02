@@ -20,7 +20,9 @@ export const data = new SlashCommandSubcommandBuilder()
 	.addUserOption((option) =>
 		option
 			.setName('user')
-			.setDescription('The user whose collection you want to view')
+			.setDescription(
+				'The user whose collection you want to view',
+			)
 			.setRequired(false),
 	)
 	.addBooleanOption((option) =>
@@ -49,7 +51,8 @@ function leaderboardStats(
 	const rank =
 		leaderboard.findIndex((u) => u.userId === targetUserId) + 1;
 	const userWorth =
-		leaderboard.find((u) => u.userId === targetUserId)?.worth ?? 0;
+		leaderboard.find((u) => u.userId === targetUserId)?.worth ??
+		0;
 
 	return {rank, userWorth};
 }
@@ -140,7 +143,9 @@ export async function execute(
 	const allUsers = await mongoose
 		.model<IUserHorses>('UserHorses')
 		.find();
-	const inventory = allUsers.find((u) => u.userId === targetUser.id);
+	const inventory = allUsers.find(
+		(u) => u.userId === targetUser.id,
+	);
 	const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
 		(k) => HORSE_VALUES[k]?.comp !== false,
 	);
@@ -156,7 +161,10 @@ export async function execute(
 		});
 	}
 
-	const {rank, userWorth} = leaderboardStats(allUsers, targetUser.id);
+	const {rank, userWorth} = leaderboardStats(
+		allUsers,
+		targetUser.id,
+	);
 	const {horseListText, ownedUniqueCount, ownedSlugs} =
 		buildHorseInvList(inventory);
 	const completionPercentage = Math.round(

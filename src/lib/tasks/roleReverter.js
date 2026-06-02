@@ -18,16 +18,25 @@ function startRoleReverter(client) {
 						.catch(() => null);
 					if (member) {
 						if (doc.addRole)
-							await member.roles.remove(doc.addRole).catch(() => {});
+							await member.roles
+								.remove(doc.addRole)
+								.catch(() => {
+});
 						if (doc.restoreRole)
-							await member.roles.add(doc.restoreRole).catch(() => {});
+							await member.roles
+								.add(doc.restoreRole)
+								.catch(() => {
+});
 					}
 				}
 			} else {
 				// Legacy fallback for docs without guildId
 				for (const guild of client.guilds.cache.values()) {
 					// Fast skip: if guild doesn't have the role, don't check members
-					if (doc.addRole && !guild.roles.cache.has(doc.addRole))
+					if (
+						doc.addRole &&
+						!guild.roles.cache.has(doc.addRole)
+					)
 						continue;
 
 					const member = await guild.members
@@ -35,9 +44,15 @@ function startRoleReverter(client) {
 						.catch(() => null);
 					if (member) {
 						if (doc.addRole)
-							await member.roles.remove(doc.addRole).catch(() => {});
+							await member.roles
+								.remove(doc.addRole)
+								.catch(() => {
+});
 						if (doc.restoreRole)
-							await member.roles.add(doc.restoreRole).catch(() => {});
+							await member.roles
+								.add(doc.restoreRole)
+								.catch(() => {
+});
 						break; // Break since found the guild
 					}
 				}

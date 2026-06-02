@@ -17,7 +17,9 @@ const doCommand = {
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		const {options} = interaction;
-		const actionInput = options.getString('action')?.toLowerCase();
+		const actionInput = options
+			.getString('action')
+			?.toLowerCase();
 		if (!actionInput)
 			return interaction.reply(
 				"Something exploded and I didn't get your input",
@@ -54,7 +56,9 @@ const doCommand = {
 		];
 
 		const randomReason =
-			dumbReasons[Math.floor(Math.random() * dumbReasons.length)];
+			dumbReasons[
+				Math.floor(Math.random() * dumbReasons.length)
+			];
 		return interaction.reply(
 			`> **Request:** ${actionInput}\n${randomReason}`,
 		);

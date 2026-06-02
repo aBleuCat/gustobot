@@ -10,13 +10,14 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IActionResponse} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const actionsList = {
 	data: new SlashCommandBuilder()
 		.setName('actionslist')
 		.setDescription('Shows all learned actions'),
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'Only the great .i.exist can view these.',
 				flags: [MessageFlags.Ephemeral],
@@ -29,7 +30,9 @@ const actionsList = {
 		const actions = await ActionResponse.find({}).lean();
 
 		if (actions.length === 0) {
-			return interaction.reply("I haven't learned any actions yet.");
+			return interaction.reply(
+				"I haven't learned any actions yet.",
+			);
 		}
 
 		const generateEmbed = (page: number): EmbedBuilder => {
@@ -43,7 +46,10 @@ const actionsList = {
 				.setColor('#ffa500')
 				.setDescription(
 					current
-						.map((act) => `• **${act.trigger}** → ${act.response}`)
+						.map(
+							(act) =>
+								`• **${act.trigger}** → ${act.response}`,
+						)
 						.join('\n'),
 				);
 		};
@@ -77,7 +83,8 @@ const actionsList = {
 		collector.on('collect', (i: ButtonInteraction) => {
 			// Run async functions in IIFE since this outer func wants sync only
 			void (async () => {
-				const [, direction, currentPage] = i.customId.split('_');
+				const [, direction, currentPage] =
+					i.customId.split('_');
 
 				if (!currentPage) return;
 
@@ -91,7 +98,10 @@ const actionsList = {
 					components: [generateButtons(newPage)],
 				});
 			})().catch((error: unknown) => {
-				console.error('Failed to update interaction page:', error);
+				console.error(
+					'Failed to update interaction page:',
+					error,
+				);
 			});
 		});
 	},

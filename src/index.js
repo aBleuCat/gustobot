@@ -79,7 +79,9 @@ client.once(Events.ClientReady, async () => {
 	};
 
 	const request = https.request(options, (res) => {
-		console.log(`[DIAGNOSTIC] Discord API Status: ${res.statusCode}`);
+		console.log(
+			`[DIAGNOSTIC] Discord API Status: ${res.statusCode}`,
+		);
 		if (res.statusCode === 429) {
 			devLog(
 				`⚠️ **ERROR**: IP Banned. Discord is rate-limiting this Render IP.`,
@@ -89,7 +91,9 @@ client.once(Events.ClientReady, async () => {
 			);
 		} else if (res.statusCode === 200) {
 			devLog(`✅ **Network OK**: Discord API is reachable.`);
-			console.log(`✅ **Network OK**: Discord API is reachable.`);
+			console.log(
+				`✅ **Network OK**: Discord API is reachable.`,
+			);
 		} else {
 			devLog(
 				`⚠️ **API Warning**: Received status ${res.statusCode} from Discord.`,
@@ -129,7 +133,9 @@ client.once(Events.ClientReady, async () => {
 	await initDevLog(client);
 	devLog('Bot system initialized and devLog is active.');
 
-	const rest = new REST({version: '10'}).setToken(process.env.TOKEN);
+	const rest = new REST({version: '10'}).setToken(
+		process.env.TOKEN,
+	);
 	try {
 		console.log('Refreshing commands...');
 		devLog('Refreshing commands...');
@@ -169,8 +175,7 @@ client.once(Events.ClientReady, async () => {
 					user: client.user,
 				}),
 			)
-			.catch(() => {
-});
+			.catch(() => {});
 	}
 });
 
@@ -187,44 +192,42 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // Health check and webhook server
-http
-	.createServer(async (request, res) => {
-		// Render webhooks
-		if (
-			request.method === 'POST' &&
-			request.url === '/render-webhook'
-		) {
-			let body = '';
-			request.on('data', (chunk) => {
-				body += chunk.toString();
-			});
-			request.on('end', async () => {
-				try {
-					const data = JSON.parse(body);
-					// Extract useful info from Render's payload
-					const {type} = data; // E.g., 'deploy_succeeded', 'deploy_failed'
-					const serviceName = data.service.name;
+http.createServer(async (request, res) => {
+	// Render webhooks
+	if (
+		request.method === 'POST' &&
+		request.url === '/render-webhook'
+	) {
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk.toString();
+		});
+		request.on('end', async () => {
+			try {
+				const data = JSON.parse(body);
+				// Extract useful info from Render's payload
+				const {type} = data; // E.g., 'deploy_succeeded', 'deploy_failed'
+				const serviceName = data.service.name;
 
-					// Log it to devLog or a specific channel
-					devLog(
-						`🚀 **Render Update [${serviceName}]**: ${type.replace('_', ' ')}`,
-					);
+				// Log it to devLog or a specific channel
+				devLog(
+					`🚀 **Render Update [${serviceName}]**: ${type.replace('_', ' ')}`,
+				);
 
-					res.writeHead(200);
-					res.end('Webhook received');
-				} catch {
-					res.writeHead(400);
-					res.end('Invalid JSON');
-				}
-			});
-			return;
-		}
+				res.writeHead(200);
+				res.end('Webhook received');
+			} catch {
+				res.writeHead(400);
+				res.end('Invalid JSON');
+			}
+		});
+		return;
+	}
 
-		// Health check
-		res.writeHead(200);
-		res.end('online');
-	})
-	.listen(process.env.PORT || 8000, '0.0.0.0');
+	// Health check
+	res.writeHead(200);
+	res.end('online');
+}).listen(process.env.PORT || 8000, '0.0.0.0');
 
 // Attach log helper to client so commands can use it
 client.logToModChannel = logToModChannel;

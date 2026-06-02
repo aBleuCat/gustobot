@@ -10,6 +10,7 @@ import rawHorseValues from '../data/horses.json' with {type: 'json'};
 import {conditionHorse} from '../lib/helpers/horse-funcs.js';
 import type {IUserHorses} from '../lib/models.js';
 import {castAsHorseData, castAsTextBased} from '../type-utils.js';
+import {immutConfig} from '../lib/config.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const UserHorses = mongoose.model<IUserHorses>('UserHorses');
@@ -34,7 +35,9 @@ const forceHorseCommand = {
 				.setRequired(true)
 				.setAutocomplete(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		)
 		.setContexts(0),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
@@ -61,9 +64,10 @@ const forceHorseCommand = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
-				content: 'You are not authorized to use this command.',
+				content:
+					'You are not authorized to use this command.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

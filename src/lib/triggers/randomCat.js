@@ -3,8 +3,9 @@ const {queueMessage} = require('../helpers/messageQueue');
 
 async function handleRandomCat(message) {
 	if (
-		Math.floor(Math.random() * config.UNEXPECTED_CAT_PROBABILITY) ===
-		0
+		Math.floor(
+			Math.random() * config.UNEXPECTED_CAT_PROBABILITY,
+		) === 0
 	) {
 		queueMessage({
 			channel: message.channel,

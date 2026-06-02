@@ -6,7 +6,7 @@ import {
 import {type SlashCommandConfig} from '../types.js';
 import {immutConfig} from '../lib/config.js';
 
-const DM_ALLOWED_USER_IDS: ReadonlySet<string> = immutConfig.admins;
+const DM_ALLOWED_USER_IDS: ReadonlySet<string> = immutConfig.ADMINS;
 
 const dmCommand: SlashCommandConfig = {
 	data: new SlashCommandBuilder()
@@ -28,7 +28,8 @@ const dmCommand: SlashCommandConfig = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!DM_ALLOWED_USER_IDS.has(interaction.user.id)) {
 			await interaction.reply({
-				content: 'You do not have permission to use this command.',
+				content:
+					'You do not have permission to use this command.',
 				flags: [MessageFlags.Ephemeral],
 			});
 			return;

@@ -69,7 +69,8 @@ function aggregateHorseStats(users: IUserHorses[]) {
 				if (count <= 0) continue;
 				horseCounts[slug] = (horseCounts[slug] ?? 0) + count;
 				totalHorses += count;
-				userWealth += (HORSE_VALUES[slug]?.value ?? 0) * count;
+				userWealth +=
+					(HORSE_VALUES[slug]?.value ?? 0) * count;
 				userHorseCount += count;
 			}
 		}
@@ -113,7 +114,9 @@ function buildBreakdownPage(
 	sortedHorses: HorseCountEntry[],
 	page: number,
 ) {
-	const totalPages = Math.ceil(sortedHorses.length / HORSES_PER_PAGE);
+	const totalPages = Math.ceil(
+		sortedHorses.length / HORSES_PER_PAGE,
+	);
 	const slice = sortedHorses.slice(
 		page * HORSES_PER_PAGE,
 		(page + 1) * HORSES_PER_PAGE,
@@ -150,7 +153,8 @@ function attachHorseStatsCollector(
 			if (i.user.id !== interaction.user.id) {
 				await i
 					.reply({
-						content: 'Only the command user can use these buttons.',
+						content:
+							'Only the command user can use these buttons.',
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
@@ -170,7 +174,9 @@ function attachHorseStatsCollector(
 
 			await i.update({
 				content: buildBreakdownPage(sortedByCount, page),
-				components: [buildPageButtons(page, totalPages).toJSON()],
+				components: [
+					buildPageButtons(page, totalPages).toJSON(),
+				],
 			});
 		})().catch(() => undefined);
 	});
@@ -219,7 +225,10 @@ export async function execute(
 	} = aggregateHorseStats(allUsers);
 
 	const playersSorted: PlayerStats[] = playerWealth
-		.map((wealth, i) => ({wealth, horses: playerHorseCounts[i] ?? 0}))
+		.map((wealth, i) => ({
+			wealth,
+			horses: playerHorseCounts[i] ?? 0,
+		}))
 		.toSorted((a, b) => b.wealth - a.wealth);
 
 	const n = playersSorted.length;

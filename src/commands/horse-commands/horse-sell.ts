@@ -64,13 +64,18 @@ export async function autocomplete(
 	try {
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
-		const focused = interaction.options.getFocused().toLowerCase();
+		const focused = interaction.options
+			.getFocused()
+			.toLowerCase();
 		const inventory = await UserHorses.findOne({
 			userId: interaction.user.id,
 		});
 
 		const choices = [
-			{name: '📈 top — sell most valuable horses', value: 'top'},
+			{
+				name: '📈 top — sell most valuable horses',
+				value: 'top',
+			},
 			{
 				name: '📉 bottom — sell least valuable horses',
 				value: 'bottom',
@@ -123,12 +128,16 @@ async function topOrBottomBulkSell(
 	let remaining = amount === 0 ? Infinity : amount;
 	for (const {slug, count} of sorted) {
 		if (remaining <= 0) break;
-		const take = amount === 0 ? count : Math.min(count, remaining);
+		const take =
+			amount === 0 ? count : Math.min(count, remaining);
 		sellMap.set(slug, take);
 		remaining -= take;
 	}
 
-	const totalTaken = [...sellMap.values()].reduce((a, b) => a + b, 0);
+	const totalTaken = [...sellMap.values()].reduce(
+		(a, b) => a + b,
+		0,
+	);
 	let totalCoins = 0;
 	for (const [slug, cnt] of sellMap.entries()) {
 		inventory.horses.set(
@@ -180,7 +189,8 @@ async function standardHorseSell(
 		});
 	}
 
-	const coinsEarned = (coinValueForSlug(horseSlug) ?? 0) * sellAmount;
+	const coinsEarned =
+		(coinValueForSlug(horseSlug) ?? 0) * sellAmount;
 	inventory.horses.set(horseSlug, owned - sellAmount);
 	inventory.horseCoins = (inventory.horseCoins || 0) + coinsEarned;
 	await inventory.save();
@@ -218,7 +228,12 @@ export async function execute(
 
 	// Top/bottom bulk sell
 	if (isTopBottom) {
-		return topOrBottomBulkSell(interaction, inventory, isTop, amount);
+		return topOrBottomBulkSell(
+			interaction,
+			inventory,
+			isTop,
+			amount,
+		);
 	}
 
 	// Single horse type sell
@@ -228,5 +243,10 @@ export async function execute(
 		});
 	}
 
-	return standardHorseSell(interaction, inventory, horseSlug, amount);
+	return standardHorseSell(
+		interaction,
+		inventory,
+		horseSlug,
+		amount,
+	);
 }

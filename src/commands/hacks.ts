@@ -14,7 +14,7 @@ type NumericConfigKey = {
 }[ConfigKey];
 type ConfigListKey = Exclude<keyof typeof config.lists, 'botAdmins'>;
 
-const adminIds = immutConfig.admins;
+const adminIds = immutConfig.ADMINS;
 
 const isConfigKey = (key: string): key is ConfigKey =>
 	Object.hasOwn(config, key);
@@ -39,27 +39,44 @@ const hacksCommand = {
 	data: new SlashCommandBuilder()
 		.setName('hacks')
 		.setDescription('Admin tools')
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		)
 		.addSubcommand((sub) =>
 			sub
 				.setName('vars')
-				.setDescription('View or modify runtime config variables')
+				.setDescription(
+					'View or modify runtime config variables',
+				)
 				.addStringOption((option) =>
 					option
 						.setName('variable')
-						.setDescription('The variable to interact with')
+						.setDescription(
+							'The variable to interact with',
+						)
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
 				.addStringOption((option) =>
 					option
 						.setName('action')
-						.setDescription('What to do with the variable')
+						.setDescription(
+							'What to do with the variable',
+						)
 						.setRequired(false)
 						.addChoices(
-							{name: 'get — show current value', value: 'get'},
-							{name: 'set — set to a new value', value: 'set'},
-							{name: 'add — add to current value', value: 'add'},
+							{
+								name: 'get — show current value',
+								value: 'get',
+							},
+							{
+								name: 'set — set to a new value',
+								value: 'set',
+							},
+							{
+								name: 'add — add to current value',
+								value: 'add',
+							},
 						),
 				)
 				.addNumberOption((option) =>
@@ -70,7 +87,9 @@ const hacksCommand = {
 				),
 		)
 		.addSubcommand((sub) =>
-			sub.setName('killbot').setDescription('Shut down the bot'),
+			sub
+				.setName('killbot')
+				.setDescription('Shut down the bot'),
 		)
 		.addSubcommand((sub) =>
 			sub
@@ -114,13 +133,17 @@ const hacksCommand = {
 				.addStringOption((option) =>
 					option
 						.setName('id')
-						.setDescription('The User/Bot ID to add or remove')
+						.setDescription(
+							'The User/Bot ID to add or remove',
+						)
 						.setRequired(false),
 				),
 		),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
-		const focused = interaction.options.getFocused().toLowerCase();
+		const focused = interaction.options
+			.getFocused()
+			.toLowerCase();
 		const choices = Object.keys(config)
 			.filter((k): k is ConfigKey => isConfigKey(k))
 			.filter((k) => k.toLowerCase().includes(focused))
@@ -179,7 +202,8 @@ const hacksCommand = {
 						chunks.push(currentChunk);
 						currentChunk = item;
 					} else {
-						currentChunk += (currentChunk ? '\n' : '') + item;
+						currentChunk +=
+							(currentChunk ? '\n' : '') + item;
 					}
 				}
 
@@ -191,7 +215,9 @@ const hacksCommand = {
 				for (let i = 0; i < chunks.length; i++) {
 					const embed = new EmbedBuilder()
 						.setColor('#00_99_ff')
-						.setTitle(`Runtime Config (${i + 1}/${chunks.length})`)
+						.setTitle(
+							`Runtime Config (${i + 1}/${chunks.length})`,
+						)
 						.setDescription(chunks[i]!);
 
 					if (i === 0) {
@@ -274,7 +300,10 @@ const hacksCommand = {
 				'listname',
 				true,
 			);
-			const action = interaction.options.getString('action', true);
+			const action = interaction.options.getString(
+				'action',
+				true,
+			);
 			const targetId = interaction.options.getString('id');
 
 			if (!isConfigListKey(listName) || !isListAction(action)) {
@@ -316,9 +345,9 @@ const hacksCommand = {
 			}
 
 			if (action === 'remove') {
-				config.lists[listName] = config.lists[listName].filter(
-					(id) => id !== targetId,
-				);
+				config.lists[listName] = config.lists[
+					listName
+				].filter((id) => id !== targetId);
 				return interaction.reply({
 					content: `Removed \`${targetId}\` from ${listName}`,
 					flags: [MessageFlags.Ephemeral],

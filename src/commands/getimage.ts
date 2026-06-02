@@ -7,10 +7,8 @@ import {
 const IMAGES: Record<string, string> = {
 	// Example: "cat": "https://example.com/cat.gif",
 	nahyan: 'https://i.imgur.com/tmyvHLF.png',
-	alvin:
-		'https://cdn.discordapp.com/attachments/1448897193736933498/1485341427742408945/togif.gif ',
-	nathan:
-		'https://cdn.discordapp.com/attachments/1448897193736933498/1485433542438813806/togif.gif ',
+	alvin: 'https://cdn.discordapp.com/attachments/1448897193736933498/1485341427742408945/togif.gif ',
+	nathan: 'https://cdn.discordapp.com/attachments/1448897193736933498/1485433542438813806/togif.gif ',
 };
 
 const getImageCommand = {

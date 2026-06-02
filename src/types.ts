@@ -31,6 +31,9 @@ export type AnyChannel =
 declare module 'discord.js' {
 	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 	interface Client {
-		logToModChannel: (guild: Guild, message: string) => Promise<void>;
+		logToModChannel: (
+			guild: Guild,
+			message: string,
+		) => Promise<void>;
 	}
 }

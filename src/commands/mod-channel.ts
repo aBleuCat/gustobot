@@ -16,7 +16,9 @@ const modChannelConfig = {
 				.setDescription('The channel to log to')
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		)
 		.setContexts(0),
 
 	async execute(interaction: ChatInputCommandInteraction) {
@@ -30,13 +32,16 @@ const modChannelConfig = {
 			});
 		}
 
-		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
+		await interaction.deferReply({
+			flags: [MessageFlags.Ephemeral],
+		});
 
 		const channel = interaction.options.getChannel('channel');
 
 		if (!interaction.member || !interaction.guild || !channel)
 			return interaction.reply({
-				content: 'uhh something exploded and couldnt get your info',
+				content:
+					'uhh something exploded and couldnt get your info',
 			});
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const ModChannel = mongoose.model('ModChannel');

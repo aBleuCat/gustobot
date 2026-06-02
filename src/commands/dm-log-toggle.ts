@@ -25,7 +25,8 @@ const dmLogToggleCommand = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (interaction.user.id !== ADMIN_ID) {
 			return interaction.reply({
-				content: 'You do not have permission to use this command.',
+				content:
+					'You do not have permission to use this command.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

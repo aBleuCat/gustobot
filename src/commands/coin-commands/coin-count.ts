@@ -11,7 +11,9 @@ export const data = new SlashCommandSubcommandBuilder()
 	.addUserOption((option) =>
 		option
 			.setName('user')
-			.setDescription('User to check (optional, defaults to you)')
+			.setDescription(
+				'User to check (optional, defaults to you)',
+			)
 			.setRequired(false),
 	);
 export async function execute(

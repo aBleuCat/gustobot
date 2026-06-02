@@ -12,7 +12,9 @@ const RESPONSES = [
 
 async function handleSixSeven(message) {
 	if (
-		!/\b67\b|six seven|six-seven/.test(message.content.toLowerCase())
+		!/\b67\b|six seven|six-seven/.test(
+			message.content.toLowerCase(),
+		)
 	)
 		return;
 	const isMuted = await MutedChannel.findOne({
@@ -21,7 +23,8 @@ async function handleSixSeven(message) {
 	if (isMuted) return;
 	queueMessage({
 		channel: message.channel,
-		content: RESPONSES[Math.floor(Math.random() * RESPONSES.length)],
+		content:
+			RESPONSES[Math.floor(Math.random() * RESPONSES.length)],
 		reply: {message, mention: true},
 	});
 }

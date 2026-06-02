@@ -11,7 +11,9 @@ async function handleHorseSpawn(message) {
 		guildId: message.guild.id,
 	});
 	if (!hConfig || !hConfig.enabled) {
-		console.log(`[HORSE] Spawning disabled in ${message.guild.name}`);
+		console.log(
+			`[HORSE] Spawning disabled in ${message.guild.name}`,
+		);
 		await devLog(
 			`[HORSE] Spawning disabled in ${message.guild.name} (${message.guild.id})`,
 		);
@@ -79,7 +81,9 @@ async function handleHorseSpawn(message) {
 		const chance = Math.max(
 			1,
 			Math.floor(
-				data.value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR,
+				data.value *
+					config.SPAWN_COEFFICIENT *
+					config.ANTIINFLATOR,
 			),
 		);
 
@@ -96,7 +100,10 @@ async function handleHorseSpawn(message) {
 				data.value > config.FLAIR_THRESHOLD_VALUE ||
 				slug === 'dung_beetle'
 			) {
-				prefix = slug === 'dung_beetle' ? 'gets ✨' : 'found the ✨';
+				prefix =
+					slug === 'dung_beetle'
+						? 'gets ✨'
+						: 'found the ✨';
 				decoration = '✨';
 			}
 
@@ -112,7 +119,10 @@ async function handleHorseSpawn(message) {
 				content: `<@${message.author.id}> ${prefix} **${displayName}**${decoration}!`,
 			});
 			if (data.link)
-				queueMessage({channel: targetChan, content: data.link});
+				queueMessage({
+					channel: targetChan,
+					content: data.link,
+				});
 
 			await conditionHorse(inventory, targetChan);
 		}
@@ -129,9 +139,11 @@ async function handleHorseSpawn(message) {
 				? config.COIN_DROP_MAX
 				: config.COIN_DROP_SIZE || 5;
 			const dropSize =
-				Math.floor(Math.random() * (maxDrop - minDrop + 1)) + minDrop;
+				Math.floor(Math.random() * (maxDrop - minDrop + 1)) +
+				minDrop;
 
-			inventory.horseCoins = (inventory.horseCoins || 0) + dropSize;
+			inventory.horseCoins =
+				(inventory.horseCoins || 0) + dropSize;
 
 			queueMessage({
 				channel: targetChan,

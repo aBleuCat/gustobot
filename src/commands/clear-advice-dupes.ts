@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IAdvice} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 type DuplicateAggregationResult = {
 	_id: {content: string};
@@ -20,30 +21,34 @@ const clearAdviceDupesCommand = {
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		// Owner Check
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'Only the owner can scrub the database.',
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
+		await interaction.deferReply({
+			flags: [MessageFlags.Ephemeral],
+		});
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const AdviceModel = mongoose.model<IAdvice>('Advice');
 
 		try {
 			// Explicitly type the aggregation result using <type[]>
 			const duplicates =
-				await AdviceModel.aggregate<DuplicateAggregationResult>([
-					{
-						$group: {
-							_id: {content: '$content'},
-							dupes: {$push: '$_id'},
-							count: {$sum: 1},
+				await AdviceModel.aggregate<DuplicateAggregationResult>(
+					[
+						{
+							$group: {
+								_id: {content: '$content'},
+								dupes: {$push: '$_id'},
+								count: {$sum: 1},
+							},
 						},
-					},
-					{$match: {count: {$gt: 1}}},
-				]);
+						{$match: {count: {$gt: 1}}},
+					],
+				);
 
 			// Flatten all target IDs into one big array instead of querying inside a loop
 			const allIdsToDelete: mongoose.Types.ObjectId[] = [];

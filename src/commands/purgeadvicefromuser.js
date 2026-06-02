@@ -10,7 +10,9 @@ module.exports = {
 		.addUserOption((option) =>
 			option
 				.setName('target')
-				.setDescription('The user whose advice you want to purge')
+				.setDescription(
+					'The user whose advice you want to purge',
+				)
 				.setRequired(true),
 		),
 
@@ -28,7 +30,9 @@ module.exports = {
 		const target = interaction.options.getUser('target');
 
 		try {
-			const result = await Advice.deleteMany({authorId: target.id});
+			const result = await Advice.deleteMany({
+				authorId: target.id,
+			});
 
 			if (result.deletedCount === 0) {
 				return interaction.reply({

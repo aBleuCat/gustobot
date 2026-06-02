@@ -56,7 +56,9 @@ const dexImpersonateCommand = {
 				)
 				.setRequired(false),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.ManageMessages,
+		)
 		.setContexts(0),
 
 	async execute(interaction: ChatInputCommandInteraction) {
@@ -65,7 +67,8 @@ const dexImpersonateCommand = {
 		const ans = interaction.options.getString('formanswer');
 		const bold = interaction.options.getString('boldtext');
 		const type = interaction.options.getString('texttype');
-		const stats = interaction.options.getString('stats') ?? 'DEFAULT';
+		const stats =
+			interaction.options.getString('stats') ?? 'DEFAULT';
 		if (!target || !image)
 			return interaction.reply(
 				'Something went wrong when trying to get your inputted data',

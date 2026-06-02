@@ -38,7 +38,9 @@ async function handleBotPing(message, client) {
 		finalSelectionPool = matches;
 	} else {
 		// Fall back to untriggered messages if no triggers matched
-		finalSelectionPool = allResponses.filter((e) => !e.trigger?.type);
+		finalSelectionPool = allResponses.filter(
+			(e) => !e.trigger?.type,
+		);
 	}
 
 	// Pick one at random

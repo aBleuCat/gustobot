@@ -32,7 +32,10 @@ async function handleLol(message) {
 	if (isMuted) return;
 
 	// Send the response defined in the TRIGGERS object
-	queueMessage({channel: message.channel, content: TRIGGERS[match]});
+	queueMessage({
+		channel: message.channel,
+		content: TRIGGERS[match],
+	});
 	const stats = await updateLolStatsDB();
 
 	// Check milestones (ordered descending to hit the highest modulo first)

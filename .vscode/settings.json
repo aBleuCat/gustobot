@@ -1,0 +1,15 @@
+{
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+	  "source.fixAll.xo": "always"
+	},
+	"[javascript]": {
+	  "editor.defaultFormatter": "samverschueren.linter-xo"
+	},
+	"[typescript]": {
+	  "editor.defaultFormatter": "samverschueren.linter-xo"
+	},
+	"[javascriptjavascript]": {
+	  "editor.defaultFormatter": "samverschueren.linter-xo"
+	}
+}

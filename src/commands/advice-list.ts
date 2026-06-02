@@ -15,7 +15,9 @@ const adviceListCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advicelist')
 		.setDescription('Shows stored advice in pages (Admin Only)')
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const Advice = mongoose.model<IAdvice>('Advice');
@@ -37,7 +39,10 @@ const adviceListCommand = {
 				.setColor('#00ae86')
 				.setDescription(
 					current
-						.map((a, i) => `**${start + i + 1}.** ${a.content}`)
+						.map(
+							(a, i) =>
+								`**${start + i + 1}.** ${a.content}`,
+						)
 						.join('\n') || 'No more advice.',
 				);
 
@@ -73,7 +78,8 @@ const adviceListCommand = {
 
 		collector.on('collect', (i) => {
 			(async () => {
-				const [type, direction, currentPage] = i.customId.split('_');
+				const [type, direction, currentPage] =
+					i.customId.split('_');
 				if (type !== 'adv') return;
 				if (currentPage === undefined) return;
 

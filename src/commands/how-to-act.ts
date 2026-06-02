@@ -7,8 +7,6 @@ import mongoose from 'mongoose';
 import type {IActionResponse} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
-const {admins} = immutConfig;
-
 const actionConfigCommand = {
 	data: new SlashCommandBuilder()
 		.setName('howtoact')
@@ -26,7 +24,7 @@ const actionConfigCommand = {
 				.setRequired(true),
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (!admins.has(interaction.user.id)) {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: "You can't do that brochacho",
 				flags: [MessageFlags.Ephemeral],
@@ -40,7 +38,8 @@ const actionConfigCommand = {
 		const response = interaction.options.getString('response');
 		if (!trigger || !response)
 			return interaction.reply({
-				content: "Lo siento but your inputs didn't go through",
+				content:
+					"Lo siento but your inputs didn't go through",
 			});
 
 		await ActionResponse.findOneAndUpdate(

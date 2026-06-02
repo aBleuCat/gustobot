@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IUserHorses} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const forceCoinsCommand = {
 	data: new SlashCommandBuilder()
@@ -24,9 +25,11 @@ const forceCoinsCommand = {
 				.setRequired(true)
 				.setMinValue(1),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		),
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: `You are not authorized to use this command.`,
 				flags: [MessageFlags.Ephemeral],

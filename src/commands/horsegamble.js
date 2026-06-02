@@ -97,7 +97,9 @@ function getClosestHorse(targetValue) {
 function calculateCoinCostPerHorse(coinAmount) {
 	return Math.max(
 		1,
-		Math.ceil((coinAmount / 50) * config.PROGRESSIVE_COIN_GAMBLE_TAX),
+		Math.ceil(
+			(coinAmount / 50) * config.PROGRESSIVE_COIN_GAMBLE_TAX,
+		),
 	);
 }
 
@@ -124,7 +126,11 @@ function normalizeHorseMap(inventory) {
 
 async function getOrCreateInventory(UserHorses, userId) {
 	let inv = await UserHorses.findOne({userId});
-	inv ||= new UserHorses({userId, horses: new Map(), horseCoins: 0});
+	inv ||= new UserHorses({
+		userId,
+		horses: new Map(),
+		horseCoins: 0,
+	});
 	return normalizeHorseMap(inv);
 }
 
@@ -167,19 +173,27 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 			virtualInv.horseCoins < 0 &&
 			Math.random() < config.CONFISCATE_CHANCE
 		) {
-			virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+			virtualInv.horses.set(
+				slug,
+				virtualInv.horses.get(slug) - 1,
+			);
 			completeLosses++;
 			continue;
 		}
 
 		const startValue = HORSE_VALUES[slug].value;
-		const change = Math.floor(Math.random() * rollFactor) + minRoll;
+		const change =
+			Math.floor(Math.random() * rollFactor) + minRoll;
 		const targetValue = startValue + change;
 		const effectivelossthresh =
-			config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+			config.LOSS_THRESHOLD -
+			Math.max(0, (startValue - 100) / 10);
 
 		if (change < effectivelossthresh) {
-			virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+			virtualInv.horses.set(
+				slug,
+				virtualInv.horses.get(slug) - 1,
+			);
 			netValueChange -= startValue;
 			completeLosses++;
 		} else {
@@ -187,7 +201,10 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 			const endValue = HORSE_VALUES[closestSlug].value;
 			const actualDiff = endValue - startValue;
 
-			virtualInv.horses.set(slug, virtualInv.horses.get(slug) - 1);
+			virtualInv.horses.set(
+				slug,
+				virtualInv.horses.get(slug) - 1,
+			);
 
 			if (closestSlug === slug) {
 				virtualInv.horses.set(
@@ -195,13 +212,19 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 					(virtualInv.horses.get(slug) || 0) + 1,
 				);
 				noChange++;
-				cycleOutput.set(slug, (cycleOutput.get(slug) || 0) + 1);
+				cycleOutput.set(
+					slug,
+					(cycleOutput.get(slug) || 0) + 1,
+				);
 			} else {
 				virtualInv.horses.set(
 					closestSlug,
 					(virtualInv.horses.get(closestSlug) || 0) + 1,
 				);
-				gained.set(closestSlug, (gained.get(closestSlug) || 0) + 1);
+				gained.set(
+					closestSlug,
+					(gained.get(closestSlug) || 0) + 1,
+				);
 				cycleOutput.set(
 					closestSlug,
 					(cycleOutput.get(closestSlug) || 0) + 1,
@@ -246,7 +269,9 @@ function formatCycleLog(
 	} = result;
 	const totalGambled = wins + losses + completeLosses + noChange;
 	const avgChange =
-		totalGambled > 0 ? Math.round(netValueChange / totalGambled) : 0;
+		totalGambled > 0
+			? Math.round(netValueChange / totalGambled)
+			: 0;
 
 	let gainedLines = '';
 	for (const [slug, cnt] of [...gained.entries()].sort(
@@ -338,7 +363,9 @@ module.exports = {
 	async autocomplete(interaction) {
 		try {
 			const UserHorses = mongoose.model('UserHorses');
-			const focused = interaction.options.getFocused().toLowerCase();
+			const focused = interaction.options
+				.getFocused()
+				.toLowerCase();
 			const inventory = normalizeHorseMap(
 				await UserHorses.findOne({
 					userId: interaction.user.id,
@@ -346,7 +373,10 @@ module.exports = {
 			);
 
 			const choices = [
-				{name: '📈 top — gamble most valuable horses', value: 'top'},
+				{
+					name: '📈 top — gamble most valuable horses',
+					value: 'top',
+				},
 				{
 					name: '📉 bottom — gamble least valuable horses',
 					value: 'bottom',
@@ -354,11 +384,17 @@ module.exports = {
 			];
 
 			if ((inventory?.horseCoins || 0) >= 2) {
-				choices.push({name: '🪙 Horse Coin', value: 'horse_coin'});
+				choices.push({
+					name: '🪙 Horse Coin',
+					value: 'horse_coin',
+				});
 			}
 
 			if (inventory?.horses) {
-				for (const [slug, count] of inventory.horses.entries()) {
+				for (const [
+					slug,
+					count,
+				] of inventory.horses.entries()) {
 					if (count > 0 && HORSE_VALUES[slug]) {
 						choices.push({
 							name: `${horseName(slug)} (x${count})`,
@@ -377,8 +413,7 @@ module.exports = {
 			console.error('horsegamble autocomplete error:', error);
 			try {
 				await interaction.respond([]);
-			} catch {
-}
+			} catch {}
 		}
 	},
 
@@ -389,10 +424,12 @@ module.exports = {
 			.trim()
 			.toLowerCase();
 		const count = interaction.options.getInteger('count') ?? 1;
-		const cycles = interaction.options.getInteger('cycles') ?? null;
+		const cycles =
+			interaction.options.getInteger('cycles') ?? null;
 		const bankAbove =
 			interaction.options.getInteger('bankhorses') ?? null;
-		const isTest = interaction.options.getBoolean('test') ?? false;
+		const isTest =
+			interaction.options.getBoolean('test') ?? false;
 
 		devLog(
 			`/horsegamble: User ${interaction.user.id} initiated gamble | horse=${horseSlug} count=${count} cycles=${cycles} bankAbove=${bankAbove} test=${isTest}`,
@@ -424,14 +461,18 @@ module.exports = {
 			});
 		}
 
-		if (!isHorseCoin && !isTopBottom && !HORSE_VALUES[horseSlug]) {
+		if (
+			!isHorseCoin &&
+			!isTopBottom &&
+			!HORSE_VALUES[horseSlug]
+		) {
 			devLog(
 				`/horsegamble: Invalid horse slug "${horseSlug}" from user ${interaction.user.id}`,
 			);
 			const match = Object.keys(HORSE_VALUES).find(
 				(k) =>
-					HORSE_VALUES[k].name.toLowerCase() === horseSlug ||
-					k.toLowerCase() === horseSlug,
+					HORSE_VALUES[k].name.toLowerCase() ===
+						horseSlug || k.toLowerCase() === horseSlug,
 			);
 			const suggestion = match
 				? ` Did you mean **${horseName(match)}**?`
@@ -444,7 +485,9 @@ module.exports = {
 		let inventory = isTest
 			? null
 			: normalizeHorseMap(
-					await UserHorses.findOne({userId: interaction.user.id}),
+					await UserHorses.findOne({
+						userId: interaction.user.id,
+					}),
 				);
 		devLog(
 			`/horsegamble: Loaded inventory for user ${interaction.user.id} | coins=${inventory?.horseCoins || 0}`,
@@ -493,7 +536,9 @@ module.exports = {
 			devLog(
 				`/horsegamble: Starting horse coin gamble for user ${interaction.user.id} | available=${isTest ? 'test' : inventory.horseCoins}`,
 			);
-			const available = isTest ? Infinity : inventory.horseCoins || 0;
+			const available = isTest
+				? Infinity
+				: inventory.horseCoins || 0;
 			if (!isTest && available < 2) {
 				return interaction.editReply({
 					content: `You need **2 Horse Coins** to gamble a Horse Coin!`,
@@ -517,7 +562,8 @@ module.exports = {
 					'micro',
 				);
 				if (!isTest) {
-					inventory.horseCoins = inventory.horseCoins - 2 + winAmount;
+					inventory.horseCoins =
+						inventory.horseCoins - 2 + winAmount;
 					await inventory.save();
 					devLog(
 						`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`,
@@ -525,7 +571,9 @@ module.exports = {
 					);
 				}
 
-				const testTag = isTest ? ' *(test — no coins spent)*' : '';
+				const testTag = isTest
+					? ' *(test — no coins spent)*'
+					: '';
 				return interaction.editReply({
 					content:
 						`**Horse Coin Gamble**\n\n` +
@@ -557,7 +605,9 @@ module.exports = {
 				);
 			}
 
-			const testTag = isTest ? '\n(test mode — no coins spent)' : '';
+			const testTag = isTest
+				? '\n(test mode — no coins spent)'
+				: '';
 			return interaction.editReply({
 				content:
 					`**Horse Coin Gamble**\n\n` +
@@ -662,13 +712,20 @@ module.exports = {
 				}
 			} else {
 				// Preserve non-cycled horses for final merge; use cycled subset in pool.
-				for (const [slug, count] of inventory.horses.entries()) {
+				for (const [
+					slug,
+					count,
+				] of inventory.horses.entries()) {
 					staticInventory.set(slug, count);
 				}
 
 				for (const slug of initialHorsesToGamble) {
-					if ((staticInventory.get(slug) || 0) <= 0) continue;
-					staticInventory.set(slug, staticInventory.get(slug) - 1);
+					if ((staticInventory.get(slug) || 0) <= 0)
+						continue;
+					staticInventory.set(
+						slug,
+						staticInventory.get(slug) - 1,
+					);
 					if (staticInventory.get(slug) === 0)
 						staticInventory.delete(slug);
 					cycleInventory.set(
@@ -705,7 +762,8 @@ module.exports = {
 
 				// Halt check before each cycle
 				if (
-					virtualInv.horseCoins < (config.MIN_CYCLE_COIN_COUNT ?? 0)
+					virtualInv.horseCoins <
+					(config.MIN_CYCLE_COIN_COUNT ?? 0)
 				) {
 					haltedEarly = true;
 					haltReason = `Halted before cycle ${c}: coins (${virtualInv.horseCoins}) fell below MIN_CYCLE_COIN_COUNT (${config.MIN_CYCLE_COIN_COUNT ?? 0}).`;
@@ -758,7 +816,8 @@ module.exports = {
 
 					// Deduct newly-owed whole coins (ceil increments)
 					const newWholeCoins =
-						Math.ceil(bankingCoinDebt) - totalCoinsSpentOnBanking;
+						Math.ceil(bankingCoinDebt) -
+						totalCoinsSpentOnBanking;
 					if (newWholeCoins > 0) {
 						virtualInv.horseCoins -= newWholeCoins;
 						totalCoinsSpentOnBanking += newWholeCoins;
@@ -805,9 +864,13 @@ module.exports = {
 				// Next cycle pool = only horses that came out of this cycle pass.
 				// Horses not in cycle remain in staticInventory until final merge.
 				const nextCycleHorses = [];
-				for (const [slug, cnt] of result.cycleOutput.entries()) {
+				for (const [
+					slug,
+					cnt,
+				] of result.cycleOutput.entries()) {
 					if (!HORSE_VALUES[slug] || cnt <= 0) continue;
-					for (let i = 0; i < cnt; i++) nextCycleHorses.push(slug);
+					for (let i = 0; i < cnt; i++)
+						nextCycleHorses.push(slug);
 				}
 
 				cycleHorses = nextCycleHorses;
@@ -820,7 +883,8 @@ module.exports = {
 
 			const finalActiveMap = new Map();
 			for (const [s, cnt] of virtualInv.horses.entries()) {
-				if (HORSE_VALUES[s] && cnt > 0) finalActiveMap.set(s, cnt);
+				if (HORSE_VALUES[s] && cnt > 0)
+					finalActiveMap.set(s, cnt);
 			}
 
 			// Final values should also include banked horses (they are protected and still owned)
@@ -844,15 +908,20 @@ module.exports = {
 			}
 
 			const originalValue = [...originalMap.entries()].reduce(
-				(sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
+				(sum, [s, cnt]) =>
+					sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
 				0,
 			);
-			const finalActiveValue = [...finalActiveMap.entries()].reduce(
-				(sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
+			const finalActiveValue = [
+				...finalActiveMap.entries(),
+			].reduce(
+				(sum, [s, cnt]) =>
+					sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
 				0,
 			);
 			const bankedValue = [...bankedHorses.entries()].reduce(
-				(sum, [s, cnt]) => sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
+				(sum, [s, cnt]) =>
+					sum + (HORSE_VALUES[s]?.value ?? 0) * cnt,
 				0,
 			);
 			const finalValue = finalActiveValue + bankedValue;
@@ -874,7 +943,10 @@ module.exports = {
 				);
 				// Write full inventory: unaffected horses + cycled horses + banked horses.
 				inventory.horses = new Map(staticInventory);
-				for (const [slug, cnt] of virtualInv.horses.entries()) {
+				for (const [
+					slug,
+					cnt,
+				] of virtualInv.horses.entries()) {
 					inventory.horses.set(
 						slug,
 						(inventory.horses.get(slug) || 0) + cnt,
@@ -909,7 +981,10 @@ module.exports = {
 				for (const [slug, cnt] of gainedFromHouse.entries()) {
 					houseInv.horses.set(
 						slug,
-						Math.max(0, (houseInv.horses.get(slug) || 0) - cnt),
+						Math.max(
+							0,
+							(houseInv.horses.get(slug) || 0) - cnt,
+						),
 					);
 				}
 
@@ -924,8 +999,13 @@ module.exports = {
 			// Streak tracking: cycle counts as one outcome based on total net change
 			let cycleStreakMessage = '';
 			if (!isTest) {
-				const {newStreak: cycleStreak, awarded: cycleAwarded} =
-					updateStreak(interaction.user.id, totalNetChange > 0);
+				const {
+					newStreak: cycleStreak,
+					awarded: cycleAwarded,
+				} = updateStreak(
+					interaction.user.id,
+					totalNetChange > 0,
+				);
 				if (cycleAwarded) {
 					inventory.horses.set(
 						STREAK_HORSE,
@@ -996,8 +1076,11 @@ module.exports = {
 			);
 			if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
 			if (isTest)
-				finalLines.push(`*(test mode — no horses or coins spent)*`);
-			if (cycleStreakMessage) finalLines.push(cycleStreakMessage);
+				finalLines.push(
+					`*(test mode — no horses or coins spent)*`,
+				);
+			if (cycleStreakMessage)
+				finalLines.push(cycleStreakMessage);
 
 			// Attach cycle logs + final summary in one file
 			const fileContent = [
@@ -1029,7 +1112,8 @@ module.exports = {
 			});
 			if (!isTest)
 				conditionHorse(inventory, interaction.channel).catch(
-					(error) => console.error('conditionHorse error:', error),
+					(error) =>
+						console.error('conditionHorse error:', error),
 				);
 			return;
 		}
@@ -1053,7 +1137,10 @@ module.exports = {
 					devLog(
 						`/horsegamble: Confiscation triggered for user ${interaction.user.id} | horse=${slug} debt=${inventory.horseCoins}`,
 					);
-					inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+					inventory.horses.set(
+						slug,
+						inventory.horses.get(slug) - 1,
+					);
 					const houseInv = await getOrCreateInventory(
 						UserHorses,
 						HOUSE_USER_ID,
@@ -1080,9 +1167,13 @@ module.exports = {
 				Math.random() < config.FRENZY_CHANCE
 			) {
 				const ownedHorses = [];
-				for (const [s, hCount] of inventory.horses.entries()) {
+				for (const [
+					s,
+					hCount,
+				] of inventory.horses.entries()) {
 					if (hCount > 0 && HORSE_VALUES[s]) {
-						const availableCount = s === slug ? hCount - 1 : hCount;
+						const availableCount =
+							s === slug ? hCount - 1 : hCount;
 						for (let i = 0; i < availableCount; i++) {
 							ownedHorses.push({
 								slug: s,
@@ -1102,19 +1193,23 @@ module.exports = {
 							inventory.horses.get(victim.slug) - 1,
 						);
 						const fChange =
-							Math.floor(Math.random() * rollFactor) + minRoll;
+							Math.floor(Math.random() * rollFactor) +
+							minRoll;
 						const fTarget = victim.value + fChange;
 						const effectivelossthresh =
 							config.LOSS_THRESHOLD -
 							Math.max(0, (victim.value - 100) / 10);
 						if (fChange < effectivelossthresh) {
-							const frenzyHouseInv = await getOrCreateInventory(
-								UserHorses,
-								HOUSE_USER_ID,
-							);
+							const frenzyHouseInv =
+								await getOrCreateInventory(
+									UserHorses,
+									HOUSE_USER_ID,
+								);
 							frenzyHouseInv.horses.set(
 								victim.slug,
-								(frenzyHouseInv.horses.get(victim.slug) || 0) + 1,
+								(frenzyHouseInv.horses.get(
+									victim.slug,
+								) || 0) + 1,
 							);
 							await frenzyHouseInv.save();
 							frenzyMessage += `\n* Your **${horseName(victim.slug)}** ran away in the confusion!`;
@@ -1122,7 +1217,8 @@ module.exports = {
 							const fClosest = getClosestHorse(fTarget);
 							inventory.horses.set(
 								fClosest,
-								(inventory.horses.get(fClosest) || 0) + 1,
+								(inventory.horses.get(fClosest) ||
+									0) + 1,
 							);
 							frenzyMessage += `\n* Your **${horseName(victim.slug)}** was traded for a **${horseName(fClosest)}**.`;
 						}
@@ -1131,10 +1227,12 @@ module.exports = {
 			}
 
 			const startValue = HORSE_VALUES[slug].value;
-			const change = Math.floor(Math.random() * rollFactor) + minRoll;
+			const change =
+				Math.floor(Math.random() * rollFactor) + minRoll;
 			const targetValue = startValue + change;
 			const effectivelossthresh =
-				config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+				config.LOSS_THRESHOLD -
+				Math.max(0, (startValue - 100) / 10);
 
 			if (change < effectivelossthresh) {
 				devLog(
@@ -1142,7 +1240,10 @@ module.exports = {
 					'micro',
 				);
 				if (!isTest) {
-					inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+					inventory.horses.set(
+						slug,
+						inventory.horses.get(slug) - 1,
+					);
 					const houseInv = await getOrCreateInventory(
 						UserHorses,
 						HOUSE_USER_ID,
@@ -1158,8 +1259,11 @@ module.exports = {
 				const testTag = isTest ? ' *(test)*' : '';
 				if (!isTest) updateStreak(interaction.user.id, false);
 				if (!isTest)
-					conditionHorse(inventory, interaction.channel).catch(
-						(error) => console.error('conditionHorse error:', error),
+					conditionHorse(
+						inventory,
+						interaction.channel,
+					).catch((error) =>
+						console.error('conditionHorse error:', error),
 					);
 				return interaction.editReply(
 					`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`,
@@ -1175,13 +1279,18 @@ module.exports = {
 			);
 
 			if (!isTest) {
-				inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+				inventory.horses.set(
+					slug,
+					inventory.horses.get(slug) - 1,
+				);
 				inventory.horses.set(
 					closestSlug,
 					(inventory.horses.get(closestSlug) || 0) + 1,
 				);
 
-				const commonTransfer = Math.round(Math.abs(actualDiff) / 25);
+				const commonTransfer = Math.round(
+					Math.abs(actualDiff) / 25,
+				);
 				if (commonTransfer > 0) {
 					const houseInv = await getOrCreateInventory(
 						UserHorses,
@@ -1202,7 +1311,10 @@ module.exports = {
 							houseInv.horses.get(COMMON_HORSE) || 0;
 						houseInv.horses.set(
 							COMMON_HORSE,
-							Math.max(0, houseCurrentCommon - commonTransfer),
+							Math.max(
+								0,
+								houseCurrentCommon - commonTransfer,
+							),
 						);
 						devLog(
 							`/horsegamble: House lost ${commonTransfer} common horses to user ${interaction.user.id}`,
@@ -1255,7 +1367,8 @@ module.exports = {
 
 			if (!isTest)
 				conditionHorse(inventory, interaction.channel).catch(
-					(error) => console.error('conditionHorse error:', error),
+					(error) =>
+						console.error('conditionHorse error:', error),
 				);
 			return interaction.editReply(
 				outcomeMessage + frenzyMessage + singleStreakMessage,
@@ -1284,7 +1397,8 @@ module.exports = {
 			: await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
 
 		for (const slug of initialHorsesToGamble) {
-			if (!isTest && (inventory.horses.get(slug) || 0) <= 0) continue;
+			if (!isTest && (inventory.horses.get(slug) || 0) <= 0)
+				continue;
 
 			if (isTest) {
 				coinsSpent += costPerHorse;
@@ -1295,7 +1409,10 @@ module.exports = {
 					inventory.horseCoins < 0 &&
 					Math.random() < config.CONFISCATE_CHANCE
 				) {
-					inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+					inventory.horses.set(
+						slug,
+						inventory.horses.get(slug) - 1,
+					);
 					houseInv.horses.set(
 						slug,
 						(houseInv.horses.get(slug) || 0) + 1,
@@ -1306,14 +1423,19 @@ module.exports = {
 			}
 
 			const startValue = HORSE_VALUES[slug].value;
-			const change = Math.floor(Math.random() * rollFactor) + minRoll;
+			const change =
+				Math.floor(Math.random() * rollFactor) + minRoll;
 			const targetValue = startValue + change;
 			const effectivelossthresh =
-				config.LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
+				config.LOSS_THRESHOLD -
+				Math.max(0, (startValue - 100) / 10);
 
 			if (change < effectivelossthresh) {
 				if (!isTest) {
-					inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+					inventory.horses.set(
+						slug,
+						inventory.horses.get(slug) - 1,
+					);
 					houseInv.horses.set(
 						slug,
 						(houseInv.horses.get(slug) || 0) + 1,
@@ -1328,7 +1450,10 @@ module.exports = {
 				const actualDiff = endValue - startValue;
 
 				if (!isTest) {
-					inventory.horses.set(slug, inventory.horses.get(slug) - 1);
+					inventory.horses.set(
+						slug,
+						inventory.horses.get(slug) - 1,
+					);
 				}
 
 				if (closestSlug === slug) {
@@ -1344,7 +1469,8 @@ module.exports = {
 					if (!isTest) {
 						inventory.horses.set(
 							closestSlug,
-							(inventory.horses.get(closestSlug) || 0) + 1,
+							(inventory.horses.get(closestSlug) || 0) +
+								1,
 						);
 						const commonTransfer = Math.round(
 							Math.abs(actualDiff) / 25,
@@ -1353,21 +1479,31 @@ module.exports = {
 							if (actualDiff < 0) {
 								houseInv.horses.set(
 									COMMON_HORSE,
-									(houseInv.horses.get(COMMON_HORSE) || 0) +
-										commonTransfer,
+									(houseInv.horses.get(
+										COMMON_HORSE,
+									) || 0) + commonTransfer,
 								);
 							} else if (actualDiff > 0) {
 								const houseCurrentCommon =
-									houseInv.horses.get(COMMON_HORSE) || 0;
+									houseInv.horses.get(
+										COMMON_HORSE,
+									) || 0;
 								houseInv.horses.set(
 									COMMON_HORSE,
-									Math.max(0, houseCurrentCommon - commonTransfer),
+									Math.max(
+										0,
+										houseCurrentCommon -
+											commonTransfer,
+									),
 								);
 							}
 						}
 					}
 
-					gained.set(closestSlug, (gained.get(closestSlug) || 0) + 1);
+					gained.set(
+						closestSlug,
+						(gained.get(closestSlug) || 0) + 1,
+					);
 					netValueChange += actualDiff;
 					if (actualDiff >= 0) totalWins++;
 					else totalLosses++;
@@ -1409,7 +1545,10 @@ module.exports = {
 		}
 
 		const totalGambled =
-			totalWins + totalLosses + totalCompleteLosses + totalNoChange;
+			totalWins +
+			totalLosses +
+			totalCompleteLosses +
+			totalNoChange;
 		const avgChange =
 			totalGambled > 0
 				? Math.round(netValueChange / totalGambled)
@@ -1521,7 +1660,8 @@ module.exports = {
 		if (summary.length > safeLength) {
 			await interaction.editReply({
 				content:
-					`Output too large, see attached file.` + bulkStreakMessage,
+					`Output too large, see attached file.` +
+					bulkStreakMessage,
 				files: [
 					{
 						attachment: Buffer.from(summary, 'utf8'),
@@ -1536,8 +1676,9 @@ module.exports = {
 		}
 
 		if (!isTest)
-			conditionHorse(inventory, interaction.channel).catch((error) =>
-				console.error('conditionHorse error:', error),
+			conditionHorse(inventory, interaction.channel).catch(
+				(error) =>
+					console.error('conditionHorse error:', error),
 			);
 	},
 };

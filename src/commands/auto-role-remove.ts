@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IRule} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const autoRoleRemoveCommand = {
 	data: new SlashCommandBuilder()
@@ -17,10 +18,12 @@ const autoRoleRemoveCommand = {
 				.setDescription('The 6-digit ID of the rule')
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.Administrator,
+		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== '934290747623096381') {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'Owner only.',
 				flags: [MessageFlags.Ephemeral],

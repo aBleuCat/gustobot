@@ -16,7 +16,9 @@ module.exports = {
 				.setDescription('The channel to mute/unmute')
 				.setRequired(true),
 		)
-		.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+		.setDefaultMemberPermissions(
+			PermissionFlagsBits.ManageChannels,
+		),
 
 	async execute(interaction) {
 		const channel = interaction.options.getChannel('channel');

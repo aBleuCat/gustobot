@@ -14,7 +14,9 @@ const adviceBanListCommand = {
 			'Shows all users currently banned from giving advice.',
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
-		await interaction.deferReply({flags: [MessageFlags.Ephemeral]});
+		await interaction.deferReply({
+			flags: [MessageFlags.Ephemeral],
+		});
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const AdviceBans = await mongoose
 			.model<IAdviceBan>('AdviceBan')

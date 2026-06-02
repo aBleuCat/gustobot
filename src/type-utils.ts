@@ -34,7 +34,9 @@ export function isHorseData(
 
 	const entries = Object.values(data);
 	const limit =
-		mode === 'all' ? entries.length : Math.min(mode, entries.length);
+		mode === 'all'
+			? entries.length
+			: Math.min(mode, entries.length);
 
 	for (let i = 0; i < limit; i++) {
 		if (!isHorse(entries[i])) {

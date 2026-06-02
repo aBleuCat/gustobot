@@ -20,11 +20,15 @@ function registerMessageHandler(client) {
 		// Add to blacklists and whitelists with /hacks lists
 		const canUsePrimary =
 			(!isBot &&
-				!config.lists?.primaryTrigBlacklist?.includes(authorId)) ||
+				!config.lists?.primaryTrigBlacklist?.includes(
+					authorId,
+				)) ||
 			config.lists?.primaryTrigWhitelist?.includes(authorId);
 		const canUseSecondary =
 			(!isBot &&
-				!config.lists?.secondaryTrigBlacklist?.includes(authorId)) ||
+				!config.lists?.secondaryTrigBlacklist?.includes(
+					authorId,
+				)) ||
 			config.lists?.secondaryTrigWhitelist?.includes(authorId);
 		if (canUsePrimary) {
 			try {
@@ -45,7 +49,10 @@ function registerMessageHandler(client) {
 			try {
 				await handleHorseSpawn(message);
 			} catch (error) {
-				console.error('Secondary trigger error', error.message);
+				console.error(
+					'Secondary trigger error',
+					error.message,
+				);
 				devLog(`Secondary trigger error: ${error.message}`);
 			}
 		}
