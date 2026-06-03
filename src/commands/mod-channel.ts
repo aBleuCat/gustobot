@@ -3,8 +3,15 @@ import {
 	PermissionFlagsBits,
 	MessageFlags,
 	type ChatInputCommandInteraction,
+	InteractionContextType,
+	ApplicationIntegrationType,
 } from 'discord.js';
 import mongoose from 'mongoose';
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const {Guild} = InteractionContextType;
+const {GuildInstall} = ApplicationIntegrationType;
+/* eslint-enable @typescript-eslint/naming-convention */
 
 const modChannelConfig = {
 	data: new SlashCommandBuilder()
@@ -19,7 +26,8 @@ const modChannelConfig = {
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		)
-		.setContexts(0),
+		.setContexts([Guild])
+		.setIntegrationTypes([GuildInstall]),
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (

@@ -4,6 +4,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
+	InteractionContextType,
 } from 'discord.js';
 import mongoose from 'mongoose';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
@@ -14,6 +15,8 @@ import {immutConfig} from '../lib/config.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const UserHorses = mongoose.model<IUserHorses>('UserHorses');
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const {Guild} = InteractionContextType;
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
 const forceHorseCommand = {
@@ -38,7 +41,7 @@ const forceHorseCommand = {
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		)
-		.setContexts(0),
+		.setContexts([Guild]),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
 		const focusedValue = interaction.options

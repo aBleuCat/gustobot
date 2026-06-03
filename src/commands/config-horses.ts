@@ -3,12 +3,18 @@ import {
 	PermissionFlagsBits,
 	type ChatInputCommandInteraction,
 	MessageFlags,
+	InteractionContextType,
+	ApplicationIntegrationType,
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IHorseConfig} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
-// eslint-disable-next-line @typescript-eslint/naming-convention
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const {Guild} = InteractionContextType;
+const {GuildInstall} = ApplicationIntegrationType;
 const HorseConfig = mongoose.model<IHorseConfig>('HorseConfig');
+/* eslint-enable @typescript-eslint/naming-convention */
 
 const configureHorsesCommand = {
 	data: new SlashCommandBuilder()
@@ -31,8 +37,8 @@ const configureHorsesCommand = {
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		)
-		.setContexts([0, 1, 2])
-		.setIntegrationTypes([0, 1]),
+		.setContexts([Guild])
+		.setIntegrationTypes([GuildInstall]),
 	async execute(interaction: ChatInputCommandInteraction) {
 		const isOwner = immutConfig.ADMINS.has(interaction.user.id);
 		const isAdmin = interaction.memberPermissions?.has(

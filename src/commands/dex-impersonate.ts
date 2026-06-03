@@ -6,9 +6,16 @@ import {
 	PermissionFlagsBits,
 	MessageFlags,
 	type ChatInputCommandInteraction,
+	InteractionContextType,
+	ApplicationIntegrationType,
 } from 'discord.js';
 import {catchDataStore} from '../lib/handlers/interactionHandler.js';
 import {castAsWebhookable} from '../type-utils.js';
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const {Guild} = InteractionContextType;
+const {GuildInstall} = ApplicationIntegrationType;
+/* eslint-enable @typescript-eslint/naming-convention */
 
 const dexImpersonateCommand = {
 	data: new SlashCommandBuilder()
@@ -59,7 +66,8 @@ const dexImpersonateCommand = {
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.ManageMessages,
 		)
-		.setContexts(0),
+		.setContexts([Guild])
+		.setIntegrationTypes([GuildInstall]),
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		const target = interaction.options.getUser('target');

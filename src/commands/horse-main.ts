@@ -7,8 +7,7 @@ import {SubcommandLoader} from './lib/subcommand-loader.js';
 
 const mainCommand = new SlashCommandBuilder()
 	.setName('horses')
-	.setDescription('All horse-related commands')
-	.setContexts(0);
+	.setDescription('All horse-related commands');
 
 const loader = new SubcommandLoader(
 	mainCommand,

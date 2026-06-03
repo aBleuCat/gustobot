@@ -8,9 +8,7 @@ module.exports = {
         .setDescription('Make the bot say something in this channel')
         .addStringOption(opt => opt.setName('message').setDescription('What should I say?').setRequired(true))
         // This hides the command from anyone who isn't an Admin
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-        .setContexts([0, 1, 2]) 
-        .setIntegrationTypes([0, 1]),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction: ChatInputCommandInteraction) {
         const ownerId = '934290747623096381';

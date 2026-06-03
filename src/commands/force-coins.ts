@@ -3,10 +3,14 @@ import {
 	PermissionFlagsBits,
 	MessageFlags,
 	type ChatInputCommandInteraction,
+	InteractionContextType,
 } from 'discord.js';
 import mongoose from 'mongoose';
 import type {IUserHorses} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const {Guild} = InteractionContextType;
 
 const forceCoinsCommand = {
 	data: new SlashCommandBuilder()
@@ -25,9 +29,7 @@ const forceCoinsCommand = {
 				.setRequired(true)
 				.setMinValue(1),
 		)
-		.setDefaultMemberPermissions(
-			PermissionFlagsBits.Administrator,
-		),
+		.setContexts([Guild]),
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({

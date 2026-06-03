@@ -1,10 +1,12 @@
-const {
+import {
 	SlashCommandBuilder,
 	PermissionFlagsBits,
-} = require('discord.js');
-const mongoose = require('mongoose');
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {IMutedChannel} from '../lib/models.js';
 
-module.exports = {
+const muteLolCommand = {
 	data: new SlashCommandBuilder()
 		.setName('mutelol')
 		.setDescription(
@@ -20,9 +22,17 @@ module.exports = {
 			PermissionFlagsBits.ManageChannels,
 		),
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		const channel = interaction.options.getChannel('channel');
-		const MutedChannel = mongoose.model('MutedChannel');
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const MutedChannel =
+			mongoose.model<IMutedChannel>('MutedChannel');
+
+		if (!channel)
+			return interaction.reply({
+				content:
+					'uh oh smth went wrong didnt get ur inputs try again',
+			});
 
 		const existing = await MutedChannel.findOne({
 			channelId: channel.id,
@@ -31,13 +41,13 @@ module.exports = {
 		if (existing) {
 			await existing.deleteOne();
 			return interaction.reply(
-				`I will now say "lol" in ${channel} again.`,
+				`I will now say "lol" in ${channel.name} again.`,
 			);
 		}
 
 		await new MutedChannel({channelId: channel.id}).save();
 		return interaction.reply(
-			`I will no longer say "lol" in ${channel}.`,
+			`I will no longer say "lol" in ${channel.name}.`,
 		);
 	},
 };

@@ -12,8 +12,6 @@ const adviceCommand = {
 	data: new SlashCommandBuilder()
 		.setName('advice')
 		.setDescription('Get advice for your question')
-		.setContexts([0, 1, 2])
-		.setIntegrationTypes([0, 1])
 		.addStringOption((option) =>
 			option
 				.setName('question')
