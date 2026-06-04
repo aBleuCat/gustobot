@@ -3,7 +3,6 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import {init} from '../lib/helpers/mod-log.js';
 
 export const ORBITAL_ID = '1114989970839576637';
 export const DELTA = 261_331_447_053_164_574n;

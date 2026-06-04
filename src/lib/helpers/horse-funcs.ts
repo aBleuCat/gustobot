@@ -1,9 +1,22 @@
-import type {GuildTextBasedChannel} from 'discord.js';
+import type {
+	GuildTextBasedChannel,
+	ChatInputCommandInteraction,
+} from 'discord.js';
 import type {IUserHorses} from '../models.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
+
+type ConditionHorseOptions =
+	| {
+			channel: GuildTextBasedChannel;
+			interaction?: ChatInputCommandInteraction;
+	  }
+	| {
+			interaction: ChatInputCommandInteraction;
+			channel?: GuildTextBasedChannel;
+	  };
 
 export function horseName(slug: string | undefined): string {
 	if (slug === undefined) return '';
@@ -12,7 +25,7 @@ export function horseName(slug: string | undefined): string {
 
 async function checkForEqualitySpawn(
 	user: IUserHorses,
-	channel: GuildTextBasedChannel,
+	options: ConditionHorseOptions,
 ): Promise<boolean> {
 	// Checks if user has brightness and darkness; if so, spawns equality
 	const hasLight =
@@ -29,23 +42,30 @@ async function checkForEqualitySpawn(
 
 	user.horses.set('equality_parallelism', 1);
 	user.markModified('horses');
-
-	await channel
-		.send(
-			`<@${user.userId}> woah the **${lightName}** and the **${darkName}** have spawned a **${equalName}**`,
-		)
-		.catch(() => undefined);
+	const successMessage = `<@${user.userId}> woah the **${lightName}** and the **${darkName}** have spawned a **${equalName}**`;
+	const {channel, interaction} = options;
+	if (interaction) {
+		const messageType =
+			interaction.deferred || interaction.replied
+				? 'followUp'
+				: 'reply';
+		await interaction[messageType]({
+			content: successMessage,
+		}).catch(() => undefined);
+	} else if (channel) {
+		await channel.send(successMessage).catch(() => undefined);
+	}
 
 	return true;
 }
 
 export async function conditionHorse(
 	user: IUserHorses,
-	channel: GuildTextBasedChannel,
+	options: ConditionHorseOptions,
 ) {
 	const equalityModified = await checkForEqualitySpawn(
 		user,
-		channel,
+		options,
 	);
 	if (equalityModified) await user.save();
 }

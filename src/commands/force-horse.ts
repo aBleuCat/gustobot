@@ -112,7 +112,7 @@ const forceHorseCommand = {
 			await channel.send(horseData.link);
 		}
 
-		await conditionHorse(inventory, channel);
+		await conditionHorse(inventory, {channel});
 	},
 };
 

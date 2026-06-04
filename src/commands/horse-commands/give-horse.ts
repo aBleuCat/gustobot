@@ -11,7 +11,7 @@ import {
 	horseName,
 } from '../../lib/helpers/horse-funcs.js';
 import type {IUserHorses} from '../../lib/models.js';
-import {castAsHorseData, castAsTextBased} from '../../type-utils.js';
+import {castAsHorseData} from '../../type-utils.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
@@ -77,7 +77,6 @@ export async function execute(
 		return interaction.reply(
 			'lo siento something went wrong when finding your server',
 		);
-	const channel = castAsTextBased(interaction.channel);
 
 	if (targetUser.id === interaction.user.id) {
 		return interaction.reply({
@@ -134,5 +133,5 @@ export async function execute(
 		`${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`,
 	);
 
-	await conditionHorse(receiverInv, channel);
+	await conditionHorse(receiverInv, {interaction});
 }

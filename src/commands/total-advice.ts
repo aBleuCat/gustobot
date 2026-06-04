@@ -37,7 +37,7 @@ const totalAdviceCommand = {
 		if (topStats[0] && topStats.length > 0) {
 			const topUser = await interaction.client.users
 				.fetch(topStats[0]._id)
-				.catch(() => null);
+				.catch(() => undefined);
 			topText = `\n**Top Contributor:** ${topUser ? topUser.username : 'Unknown'} (${topStats[0].count} entries)`;
 		}
 

@@ -15,7 +15,7 @@ function startRoleReverter(client) {
 				if (guild) {
 					const member = await guild.members
 						.fetch(doc.targetUser)
-						.catch(() => null);
+						.catch(() => undefined);
 					if (member) {
 						if (doc.addRole)
 							await member.roles
@@ -41,7 +41,7 @@ function startRoleReverter(client) {
 
 					const member = await guild.members
 						.fetch(doc.targetUser)
-						.catch(() => null);
+						.catch(() => undefined);
 					if (member) {
 						if (doc.addRole)
 							await member.roles

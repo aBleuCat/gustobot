@@ -20,7 +20,7 @@ export async function dmAdmin(client: Client, message: string) {
 			fs.existsSync(TOGGLE_FILE) &&
 			fs.readFileSync(TOGGLE_FILE, 'utf8').includes('on');
 	} catch {
-		// Apple
+		return undefined;
 	}
 
 	if (!enabled) return;
@@ -28,6 +28,6 @@ export async function dmAdmin(client: Client, message: string) {
 		const user = await client.users.fetch(ADMIN_ID);
 		if (user) await user.send(message);
 	} catch {
-		// Banana
+		return undefined;
 	}
 }

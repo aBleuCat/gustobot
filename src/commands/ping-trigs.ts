@@ -156,7 +156,7 @@ const pingTrigCommand = {
 				const id = interaction.options.getString('id');
 				const deleted = await PingResponse.findByIdAndDelete(
 					id,
-				).catch(() => null);
+				).catch(() => undefined);
 
 				if (deleted)
 					return interaction.editReply(

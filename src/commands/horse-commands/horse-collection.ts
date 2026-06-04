@@ -6,7 +6,7 @@ import {
 import mongoose from 'mongoose';
 import type {IUserHorses} from '../../lib/models.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData, castAsTextBased} from '../../type-utils.js';
+import {castAsHorseData} from '../../type-utils.js';
 import {
 	horseName,
 	conditionHorse,
@@ -182,18 +182,11 @@ export async function execute(
 		: `## 🐎 ${targetUser.username}'s Collection 🐎`;
 	const message = `${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n${horseListText}${missingText}`;
 	await interaction.editReply(message);
-	let channel;
-	try {
-		channel = castAsTextBased(interaction.channel);
-	} catch (error) {
-		console.log(error);
-		return interaction.editReply({
-			content: `${message}\nSomething went wrong when trying to find the channel this was sent in, so some horses may have failed to be awarded\n${error instanceof Error ? error : undefined}`,
-		});
-	}
 
 	// Run after reply so it never blocks the interaction response
-	conditionHorse(inventory, channel).catch((error: unknown) => {
-		console.error('conditionHorse error:', error);
-	});
+	conditionHorse(inventory, {interaction}).catch(
+		(error: unknown) => {
+			console.error('conditionHorse error:', error);
+		},
+	);
 }

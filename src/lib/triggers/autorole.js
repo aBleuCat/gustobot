@@ -65,7 +65,7 @@ async function handleAutorole(message) {
 			try {
 				const member = await message.guild.members
 					.fetch(targetId)
-					.catch(() => null);
+					.catch(() => undefined);
 
 				if (member && !member.roles.cache.has(rule.addRole)) {
 					await member.roles.add(rule.addRole);
