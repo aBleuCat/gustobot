@@ -1,5 +1,9 @@
 // Message queue for multi-layer rate-limited sending
-import type {TextChannel, Message} from 'discord.js';
+import type {
+	TextBasedChannel,
+	PartialGroupDMChannel,
+	Message,
+} from 'discord.js';
 import {config} from '../config.js';
 import {devLog} from './dev-log.js';
 
@@ -9,7 +13,7 @@ type ReplyInfo = {
 };
 
 type QueueItem = {
-	channel: TextChannel;
+	channel: SendableChannel;
 	content: string;
 	reply: ReplyInfo | undefined;
 	priority: number;
@@ -22,6 +26,11 @@ type ChannelState = {
 	isProcessing: boolean;
 	lastSend: number;
 };
+
+type SendableChannel = Exclude<
+	TextBasedChannel,
+	PartialGroupDMChannel
+>;
 
 // Constants
 const CHANNEL_LIMIT_MS = config.CHANNEL_MSG_LIMIT_MS;
@@ -52,7 +61,7 @@ export async function queueMessage({
 	reply,
 	priority = 1,
 }: {
-	channel: TextChannel;
+	channel: SendableChannel;
 	content: string;
 	reply?: ReplyInfo;
 	priority?: number;

