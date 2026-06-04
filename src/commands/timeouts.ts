@@ -1,12 +1,14 @@
-const {
+import {
 	SlashCommandBuilder,
 	EmbedBuilder,
 	PermissionFlagsBits,
 	MessageFlags,
-} = require('discord.js');
-const mongoose = require('mongoose');
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import mongoose from 'mongoose';
+import type {ITimeout} from '../lib/models.js';
 
-module.exports = {
+const timeoutViewCommand = {
 	data: new SlashCommandBuilder()
 		.setName('timeouts')
 		.setDescription('View all active role-swaps')
@@ -14,8 +16,9 @@ module.exports = {
 			PermissionFlagsBits.ManageMessages,
 		),
 
-	async execute(interaction) {
-		const Timeout = mongoose.model('Timeout');
+	async execute(interaction: ChatInputCommandInteraction) {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		const Timeout = mongoose.model<ITimeout>('Timeout');
 		const activeTimeouts = await Timeout.find({}).lean();
 
 		if (activeTimeouts.length === 0) {
@@ -43,3 +46,5 @@ module.exports = {
 		});
 	},
 };
+
+export default timeoutViewCommand;

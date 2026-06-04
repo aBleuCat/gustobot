@@ -1,23 +1,24 @@
-const {SlashCommandBuilder, MessageFlags} = require('discord.js');
-const {init} = require('../lib/helpers/modLog');
+import {
+	SlashCommandBuilder,
+	MessageFlags,
+	type ChatInputCommandInteraction,
+} from 'discord.js';
+import {init} from '../lib/helpers/mod-log.js';
 
-const ORBITAL_ID = '1114989970839576637';
-const DELTA = 261_331_447_053_164_574n;
+export const ORBITAL_ID = '1114989970839576637';
+export const DELTA = 261_331_447_053_164_574n;
 
-module.exports = {
-	ORBITAL_ID,
-	OWNER_ID_DELTA: DELTA,
+const orbitalcannonCommand = {
 	data: new SlashCommandBuilder()
 		.setName('orbitalcannon')
 		.setDescription('use the orbital cannon')
 		.setContexts([0, 1, 2])
 		.setIntegrationTypes([0, 1]),
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		if (
-			(
-				BigInt(ORBITAL_ID) - 261_331_447_053_164_574n
-			).toString() === interaction.user.id
+			(BigInt(ORBITAL_ID) - DELTA).toString() ===
+			interaction.user.id
 		) {
 			return interaction.showModal(init());
 		}
@@ -40,3 +41,5 @@ module.exports = {
 		}
 	},
 };
+
+export default orbitalcannonCommand;
