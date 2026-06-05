@@ -1,5 +1,5 @@
 // Dice bigram coefficient
-export function stringSimilarity(a: string, b: string): number {
+function stringSimilarity(a: string, b: string): number {
 	if (a === b) return 1;
 	if (a.length < 2 || b.length < 2) return 0;
 
@@ -15,3 +15,5 @@ export function stringSimilarity(a: string, b: string): number {
 	const intersection = [...aB].filter((x) => bB.has(x)).length;
 	return (2 * intersection) / (aB.size + bB.size);
 }
+
+export default stringSimilarity;
