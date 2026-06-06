@@ -166,27 +166,37 @@ async function handleHorseSpawn(message: Message) {
 			decoration = '✨';
 		}
 
-		// eslint-disable-next-line no-await-in-loop
-		await queueMessage({
+		queueMessage({
 			channel: castedChannel,
 			content: `<@${message.author.id}> ${prefix} **${data.name}**${decoration}!`,
 			priority: 2,
+		}).catch((error: unknown) => {
+			console.error(
+				`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+			);
 		});
 		if (data.link)
-			// eslint-disable-next-line no-await-in-loop
-			await queueMessage({
+			queueMessage({
 				channel: castedChannel,
 				content: data.link,
 				priority: 2,
+			}).catch((error: unknown) => {
+				console.error(
+					`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+				);
 			});
 	}
 
 	// If we updated inventory atomically, notify about coin drops and run condition
 	if (anySpawned && inventory) {
 		if (typeof coinDropSize === 'number') {
-			await queueMessage({
+			queueMessage({
 				channel: castedChannel,
 				content: `<@${message.author.id}> acquired **${coinDropSize} Horse Coins** 🪙!`,
+			}).catch((error: unknown) => {
+				console.error(
+					`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+				);
 			});
 		}
 
