@@ -7,11 +7,10 @@ import {
 	type ButtonInteraction,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses, type IUserHorses} from '../../lib/models.js';
 
 const HORSES_PER_PAGE = 15;
 
@@ -161,7 +160,7 @@ function attachHorseStatsCollector(
 				return;
 			}
 
-			const [, direction, pageString] = i.customId.split('_');
+			const pageString = i.customId.split('_')[2];
 			if (!pageString) return;
 
 			const requestedPage = Number.parseInt(pageString, 10);
@@ -205,9 +204,6 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const allUsers = await UserHorses.find({});
 
 	if (allUsers.length === 0) {

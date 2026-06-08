@@ -3,8 +3,7 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import {type IUserHorses} from '../lib/models.js';
+import {UserHorses} from '../lib/models.js';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
 import {horseName} from '../lib/helpers/horse-funcs.js';
 import {castAsHorseData} from '../type-utils.js';
@@ -62,8 +61,6 @@ const replaceHorsesCommand = {
 			flags: [MessageFlags.Ephemeral],
 		});
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const targetUsers = await UserHorses.find({
 			[`horses.${horseSlug}`]: {$gt: 0},
 		});
@@ -106,3 +103,5 @@ const replaceHorsesCommand = {
 		);
 	},
 };
+
+export default replaceHorsesCommand;

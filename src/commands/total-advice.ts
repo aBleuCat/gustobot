@@ -1,10 +1,8 @@
 import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
-	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice} from '../lib/models.js';
+import {Advice} from '../lib/models.js';
 
 const totalAdviceCommand = {
 	data: new SlashCommandBuilder()
@@ -14,9 +12,6 @@ const totalAdviceCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Advice = mongoose.model<IAdvice>('Advice');
-
 		const count = await Advice.countDocuments();
 
 		type TopContributorResult = {
@@ -46,3 +41,5 @@ const totalAdviceCommand = {
 		);
 	},
 };
+
+export default totalAdviceCommand;

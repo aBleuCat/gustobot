@@ -3,8 +3,7 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IActionResponse} from '../lib/models.js';
+import {ActionResponse} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const actionConfigCommand = {
@@ -31,9 +30,6 @@ const actionConfigCommand = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const ActionResponse =
-			mongoose.model<IActionResponse>('ActionResponse');
 		const trigger = interaction.options.getString('trigger');
 		const response = interaction.options.getString('response');
 		if (!trigger || !response)

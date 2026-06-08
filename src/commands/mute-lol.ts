@@ -3,8 +3,7 @@ import {
 	PermissionFlagsBits,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IMutedChannel} from '../lib/models.js';
+import {MutedChannel} from '../lib/models.js';
 
 const muteLolCommand = {
 	data: new SlashCommandBuilder()
@@ -24,9 +23,6 @@ const muteLolCommand = {
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		const channel = interaction.options.getChannel('channel');
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const MutedChannel =
-			mongoose.model<IMutedChannel>('MutedChannel');
 
 		if (!channel)
 			return interaction.reply({
@@ -51,3 +47,5 @@ const muteLolCommand = {
 		);
 	},
 };
+
+export default muteLolCommand;

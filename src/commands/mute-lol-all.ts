@@ -7,12 +7,10 @@ import {
 	InteractionContextType,
 	ApplicationIntegrationType,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IMutedChannel} from '../lib/models.js';
+import {MutedChannel} from '../lib/models.js';
 /* eslint-disable @typescript-eslint/naming-convention */
 const {Guild} = InteractionContextType;
 const {GuildInstall} = ApplicationIntegrationType;
-const MutedChannel = mongoose.model<IMutedChannel>('MutedChannel');
 /* eslint-enable @typescript-eslint/naming-convention */
 const muteLolAll = {
 	data: new SlashCommandBuilder()

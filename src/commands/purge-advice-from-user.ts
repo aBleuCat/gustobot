@@ -3,8 +3,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice} from '../lib/models.js';
+import {Advice} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const purgeCommand = {
@@ -31,8 +30,6 @@ const purgeCommand = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Advice = mongoose.model<IAdvice>('Advice');
 		const target = interaction.options.getUser('target');
 		if (!target)
 			return interaction.reply({
@@ -55,3 +52,5 @@ const purgeCommand = {
 		});
 	},
 };
+
+export default purgeCommand;

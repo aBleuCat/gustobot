@@ -3,8 +3,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses} from '../../lib/models.js';
 
 export const data = new SlashCommandBuilder()
 	.setName('give')
@@ -25,8 +24,6 @@ export const data = new SlashCommandBuilder()
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const target = interaction.options.getUser('target');
 	const amount = interaction.options.getInteger('amount');
 	if (!target || !amount)

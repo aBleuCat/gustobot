@@ -4,13 +4,12 @@ import {
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {
 	conditionHorse,
 	horseName,
 } from '../../lib/helpers/horse-funcs.js';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses} from '../../lib/models.js';
 import {castAsHorseData} from '../../type-utils.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
@@ -35,8 +34,6 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function autocomplete(
 	interaction: AutocompleteInteraction,
 ) {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const focused = interaction.options.getFocused().toLowerCase();
 	const inventory = await UserHorses.findOne({
 		userId: interaction.user.id,
@@ -64,8 +61,6 @@ export async function autocomplete(
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const targetUser = interaction.options.getUser('target');
 	const horseSlug = interaction.options.getString('horse');
 	const botId = interaction.client.user.id;

@@ -6,7 +6,7 @@ import {
 	InteractionContextType,
 	ApplicationIntegrationType,
 } from 'discord.js';
-import mongoose from 'mongoose';
+import {ModChannel} from '../lib/models.js';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const {Guild} = InteractionContextType;
@@ -51,8 +51,6 @@ const modChannelConfig = {
 				content:
 					'uhh something exploded and couldnt get your info',
 			});
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const ModChannel = mongoose.model('ModChannel');
 
 		// Update if exists, otherwise create new
 		await ModChannel.findOneAndUpdate(

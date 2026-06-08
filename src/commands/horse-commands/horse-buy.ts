@@ -2,10 +2,9 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
 import {config} from '../../lib/config.js';
 import {devLog} from '../../lib/helpers/dev-log.js';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses} from '../../lib/models.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
 import {handleCommandError} from '../../lib/helpers/error-handlers.js';
 
@@ -28,8 +27,6 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const count = interaction.options.getInteger('count') ?? 1;
 	const totalCost = config.COMMON_BUY_PRICE * count;
 

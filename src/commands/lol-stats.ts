@@ -3,8 +3,7 @@ import {
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {ILolStats} from '../lib/models.js';
+import {LolStats} from '../lib/models.js';
 
 const lolStatsCommand = {
 	data: new SlashCommandBuilder()
@@ -12,8 +11,6 @@ const lolStatsCommand = {
 		.setDescription('Shows how many times the bot has said lol'),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const LolStats = mongoose.model<ILolStats>('LolStats');
 		const stats = await LolStats.findOne({id: 'global_stats'});
 
 		if (!stats?.lastTimestamp) {

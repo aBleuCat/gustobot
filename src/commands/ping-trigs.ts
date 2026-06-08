@@ -3,9 +3,8 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
 import {immutConfig} from '../lib/config.js';
-import type {IPingResponse} from '../lib/models.js';
+import {PingResponse, type IPingResponse} from '../lib/models.js';
 
 function buildList(
 	randomPool: IPingResponse[],
@@ -107,10 +106,6 @@ const pingTrigCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const PingResponse =
-			mongoose.model<IPingResponse>('PingResponse');
-
 		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content: 'nope',

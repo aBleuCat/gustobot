@@ -5,8 +5,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {ITimeout} from '../lib/models.js';
+import {Timeout} from '../lib/models.js';
 
 const timeoutViewCommand = {
 	data: new SlashCommandBuilder()
@@ -17,8 +16,6 @@ const timeoutViewCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Timeout = mongoose.model<ITimeout>('Timeout');
 		const activeTimeouts = await Timeout.find({}).lean();
 
 		if (activeTimeouts.length === 0) {

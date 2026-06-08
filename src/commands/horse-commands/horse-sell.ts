@@ -1,11 +1,9 @@
 import {
 	SlashCommandSubcommandBuilder,
-	MessageFlags,
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses, type IUserHorses} from '../../lib/models.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 import {config} from '../../lib/config.js';
@@ -62,8 +60,6 @@ export async function autocomplete(
 	interaction: AutocompleteInteraction,
 ) {
 	try {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const focused = interaction.options
 			.getFocused()
 			.toLowerCase();
@@ -209,8 +205,6 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const horseSlug = interaction.options.getString('horse');
 	const amount = interaction.options.getInteger('amount') ?? 1;
 	const isTop = horseSlug === 'top';

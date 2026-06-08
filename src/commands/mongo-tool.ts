@@ -15,7 +15,7 @@ for (const [name, value] of Object.entries(models)) {
 }
 
 type JsonObject = Record<string, unknown>;
-
+type ModelRecordThing = mongoose.Model<Record<string, unknown>>;
 type ProjectionObject = Record<
 	string,
 	string | number | boolean | JsonObject
@@ -113,7 +113,7 @@ function buildProjectionOption(
 }
 
 async function handleFind(options: {
-	modelCtor: mongoose.Model<Record<string, unknown>>;
+	modelCtor: ModelRecordThing;
 	modelName: string;
 	queryCriteria: Record<string, unknown>;
 	projection: ProjectionObject;
@@ -166,16 +166,15 @@ async function handleFind(options: {
 }
 
 async function handleCount(
-	modelCtor: mongoose.Model<Record<string, unknown>>,
+	modelCtor: ModelRecordThing,
 	queryCriteria: Record<string, unknown>,
-	modelName: string,
 ): Promise<string> {
 	const count = await modelCtor.countDocuments(queryCriteria);
 	return `📊 **${count}** documents match filter: \`${JSON.stringify(queryCriteria)}\``;
 }
 
 async function handleDelete(
-	modelCtor: mongoose.Model<Record<string, unknown>>,
+	modelCtor: ModelRecordThing,
 	queryCriteria: Record<string, unknown>,
 	modelName: string,
 ): Promise<string> {
@@ -184,7 +183,7 @@ async function handleDelete(
 }
 
 async function handleUpdate(
-	modelCtor: mongoose.Model<Record<string, unknown>>,
+	modelCtor: ModelRecordThing,
 	queryCriteria: Record<string, unknown>,
 	setData: Record<string, unknown>,
 	modelName: string,
@@ -196,7 +195,7 @@ async function handleUpdate(
 }
 
 async function handleInsert(
-	modelCtor: mongoose.Model<Record<string, unknown>>,
+	modelCtor: ModelRecordThing,
 	setData: Record<string, unknown>,
 	modelName: string,
 ): Promise<string> {
@@ -420,7 +419,6 @@ Available models: ${available}`,
 					result = await handleCount(
 						modelClass,
 						queryCriteria,
-						modelName,
 					);
 					break;
 				}

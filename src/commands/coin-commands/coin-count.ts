@@ -2,8 +2,7 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../../lib/models.js';
+import {UserHorses} from '../../lib/models.js';
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName('count')
@@ -19,8 +18,6 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 	const targetUser =
 		interaction.options.getUser('user') ?? interaction.user;
 	const inventory = await UserHorses.findOne({
