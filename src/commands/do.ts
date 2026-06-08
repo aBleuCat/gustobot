@@ -2,8 +2,7 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IActionResponse} from '../lib/models.js';
+import {ActionResponse} from '../lib/models.js';
 
 const doCommand = {
 	data: new SlashCommandBuilder()
@@ -24,9 +23,6 @@ const doCommand = {
 			return interaction.reply(
 				"Something exploded and I didn't get your input",
 			);
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const ActionResponse =
-			mongoose.model<IActionResponse>('ActionResponse');
 
 		// Check database for triggers
 		const allActions = await ActionResponse.find({});

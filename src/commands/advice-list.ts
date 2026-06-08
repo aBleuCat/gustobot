@@ -8,8 +8,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice} from '../lib/models.js';
+import {Advice} from '../lib/models.js';
 
 const adviceListCommand = {
 	data: new SlashCommandBuilder()
@@ -19,8 +18,6 @@ const adviceListCommand = {
 			PermissionFlagsBits.Administrator,
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Advice = mongoose.model<IAdvice>('Advice');
 		const advices = await Advice.find({});
 
 		if (advices.length === 0)

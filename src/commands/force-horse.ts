@@ -1,22 +1,15 @@
 import {
 	SlashCommandBuilder,
-	PermissionFlagsBits,
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
-	InteractionContextType,
 } from 'discord.js';
-import mongoose from 'mongoose';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
 import {conditionHorse} from '../lib/helpers/horse-funcs.js';
-import type {IUserHorses} from '../lib/models.js';
-import {castAsHorseData, castAsTextBased} from '../type-utils.js';
+import {UserHorses} from '../lib/models.js';
+import {castAsHorseData} from '../type-utils.js';
 import {immutConfig} from '../lib/config.js';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const UserHorses = mongoose.model<IUserHorses>('UserHorses');
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const {Guild} = InteractionContextType;
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
 const forceHorseCommand = {
@@ -38,10 +31,14 @@ const forceHorseCommand = {
 				.setRequired(true)
 				.setAutocomplete(true),
 		)
-		.setDefaultMemberPermissions(
-			PermissionFlagsBits.Administrator,
-		)
-		.setContexts([Guild]),
+		.addBooleanOption((option) =>
+			option
+				.setName('ephemeral')
+				.setDescription(
+					'Shall everyone see the spawn message?',
+				)
+				.setRequired(false),
+		),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
 		const focusedValue = interaction.options
@@ -77,11 +74,12 @@ const forceHorseCommand = {
 
 		const target = interaction.options.getUser('target');
 		const type = interaction.options.getString('type');
+		const isEphemeral =
+			interaction.options.getBoolean('ephemeral') ?? true;
 		if (!target || !type)
 			return interaction.reply(
 				'Something went wrong when trying to get your input',
 			);
-		const channel = castAsTextBased(interaction.channel);
 		// Verify the horse type exists in data
 		const horseData = HORSE_VALUES[type];
 		if (!horseData) {
@@ -104,15 +102,21 @@ const forceHorseCommand = {
 
 		const horseDisplay = horseData.name;
 		await interaction.reply({
-			content: `<@${target.id}> has magically obtained a **${horseDisplay}**`,
+			content: `A ${horseDisplay} has been materialized and given to <@${target.id}>`,
 			flags: [MessageFlags.Ephemeral],
 		});
+		await interaction.followUp({
+			content: `<@${target.id}> has magically obtained a **${horseDisplay}**`,
+			flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
+		});
 
-		if (horseData.link) {
-			await channel.send(horseData.link);
-		}
+		if (horseData.link)
+			await interaction.followUp({
+				content: horseData.link,
+				flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
+			});
 
-		await conditionHorse(inventory, {channel});
+		await conditionHorse(inventory, {interaction});
 	},
 };
 

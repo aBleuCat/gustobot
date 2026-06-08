@@ -1,12 +1,10 @@
 import {
 	SlashCommandBuilder,
-	PermissionFlagsBits,
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	InteractionContextType,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../lib/models.js';
+import {UserHorses} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -38,8 +36,6 @@ const forceCoinsCommand = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const UserHorses = mongoose.model<IUserHorses>('UserHorses');
 		const target = interaction.options.getUser('target');
 		const amount = interaction.options.getInteger('amount');
 		if (!target || !amount)

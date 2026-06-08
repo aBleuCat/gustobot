@@ -8,8 +8,7 @@ import {
 	type ChatInputCommandInteraction,
 	type ButtonInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IActionResponse} from '../lib/models.js';
+import {ActionResponse} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const actionsList = {
@@ -24,9 +23,6 @@ const actionsList = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const ActionResponse =
-			mongoose.model<IActionResponse>('ActionResponse');
 		const actions = await ActionResponse.find({}).lean();
 
 		if (actions.length === 0) {

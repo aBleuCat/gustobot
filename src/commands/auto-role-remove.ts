@@ -4,8 +4,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IRule} from '../lib/models.js';
+import {Rule} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const autoRoleRemoveCommand = {
@@ -31,9 +30,6 @@ const autoRoleRemoveCommand = {
 		}
 
 		const id = interaction.options.getString('id');
-
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Rule = mongoose.model<IRule>('Rule');
 		const result = await Rule.deleteOne({ruleId: id});
 
 		if (result.deletedCount === 0) {

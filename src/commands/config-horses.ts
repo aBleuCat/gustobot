@@ -6,14 +6,12 @@ import {
 	InteractionContextType,
 	ApplicationIntegrationType,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IHorseConfig} from '../lib/models.js';
+import {HorseConfig} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const {Guild} = InteractionContextType;
 const {GuildInstall} = ApplicationIntegrationType;
-const HorseConfig = mongoose.model<IHorseConfig>('HorseConfig');
 /* eslint-enable @typescript-eslint/naming-convention */
 
 const configureHorsesCommand = {

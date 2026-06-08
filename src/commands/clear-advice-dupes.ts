@@ -3,8 +3,8 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice} from '../lib/models.js';
+import type mongoose from 'mongoose';
+import {Advice} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 type DuplicateAggregationResult = {
@@ -31,12 +31,10 @@ const clearAdviceDupesCommand = {
 		await interaction.deferReply({
 			flags: [MessageFlags.Ephemeral],
 		});
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const AdviceModel = mongoose.model<IAdvice>('Advice');
 
 		// Explicitly type the aggregation result using <type[]>
 		const duplicates =
-			await AdviceModel.aggregate<DuplicateAggregationResult>([
+			await Advice.aggregate<DuplicateAggregationResult>([
 				{
 					$group: {
 						_id: {content: '$content'},
@@ -55,7 +53,7 @@ const clearAdviceDupesCommand = {
 
 		let totalDeleted = 0;
 		if (allIdsToDelete.length > 0) {
-			const result = await AdviceModel.deleteMany({
+			const result = await Advice.deleteMany({
 				_id: {$in: allIdsToDelete},
 			});
 			totalDeleted = result.deletedCount;

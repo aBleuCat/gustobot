@@ -3,8 +3,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice, IAdviceBan} from '../lib/models.js';
+import {Advice, AdviceBan} from '../lib/models.js';
 
 const adviceGiveCommand = {
 	data: new SlashCommandBuilder()
@@ -20,10 +19,6 @@ const adviceGiveCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Advice = mongoose.model<IAdvice>('Advice');
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const AdviceBan = mongoose.model<IAdviceBan>('AdviceBan');
 		const text = interaction.options.getString('text')?.trim();
 
 		// Check if the user is banned

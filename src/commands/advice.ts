@@ -3,10 +3,8 @@ import {
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
-	Message,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdvice} from '../lib/models.js';
+import {Advice} from '../lib/models.js';
 
 const adviceCommand = {
 	data: new SlashCommandBuilder()
@@ -20,8 +18,6 @@ const adviceCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Advice = mongoose.model<IAdvice>('Advice');
 		const question = interaction.options.getString('question');
 
 		// Fetch all advice from DB

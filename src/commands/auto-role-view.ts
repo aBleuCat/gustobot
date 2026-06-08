@@ -3,8 +3,7 @@ import {
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IRule} from '../lib/models.js';
+import {Rule} from '../lib/models.js';
 
 const autoRoleViewCommand = {
 	data: new SlashCommandBuilder()
@@ -12,8 +11,6 @@ const autoRoleViewCommand = {
 		.setDescription('View all autorole rules'),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Rule = mongoose.model<IRule>('Rule');
 		const rules = await Rule.find();
 
 		if (rules.length === 0)

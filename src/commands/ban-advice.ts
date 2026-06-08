@@ -3,8 +3,7 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import {type IAdviceBan} from '../lib/models.js';
+import {AdviceBan} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const banAdviceCommand = {
@@ -30,8 +29,6 @@ const banAdviceCommand = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const AdviceBan = mongoose.model<IAdviceBan>('AdviceBan');
 		const target = interaction.options.getUser('user');
 
 		if (!target)

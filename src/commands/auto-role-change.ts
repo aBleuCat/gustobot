@@ -3,8 +3,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
-import type {IRule} from '../lib/models.js';
+import {Rule} from '../lib/models.js';
 import {immutConfig} from '../lib/config.js';
 
 const autoRoleSetupCommand = {
@@ -60,10 +59,6 @@ const autoRoleSetupCommand = {
 			});
 		}
 
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		const Rule = mongoose.model<IRule>('Rule');
-
-		// We must use the exact names defined in the SlashCommandBuilder above
 		const watchUser = interaction.options.getUser('messager');
 		const targetUser = interaction.options.getUser('target_user');
 		const addRole = interaction.options.getRole('add_role');
