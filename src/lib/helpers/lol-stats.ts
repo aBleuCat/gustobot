@@ -1,6 +1,6 @@
 import {LolStats} from '../models.js';
 
-export async function updateLolStatsDB() {
+async function updateLolStatsDB() {
 	let stats = await LolStats.findOne({id: 'global_stats'});
 	stats ??= new LolStats({id: 'global_stats'});
 
@@ -32,3 +32,5 @@ export async function updateLolStatsDB() {
 	await stats.save();
 	return stats;
 }
+
+export default updateLolStatsDB;

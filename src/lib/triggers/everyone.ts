@@ -18,7 +18,7 @@ async function handleEveryone(message: Message) {
 			'https://cdn.discordapp.com/attachments/1432537640074219640/1446352311319396484/togif.gif',
 		priority: 1,
 	}).catch((error: unknown) => {
-		if (error instanceof Error) console.error(error);
+		console.error(error);
 	});
 }
 

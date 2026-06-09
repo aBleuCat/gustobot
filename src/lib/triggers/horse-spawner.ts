@@ -172,7 +172,8 @@ async function handleHorseSpawn(message: Message) {
 			priority: 2,
 		}).catch((error: unknown) => {
 			console.error(
-				`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+				'QueueMessage error while spawning horse:',
+				error,
 			);
 		});
 		if (data.link)
@@ -182,7 +183,8 @@ async function handleHorseSpawn(message: Message) {
 				priority: 2,
 			}).catch((error: unknown) => {
 				console.error(
-					`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+					'QueueMessage error while spawning horse:',
+					error,
 				);
 			});
 	}
@@ -195,7 +197,8 @@ async function handleHorseSpawn(message: Message) {
 				content: `<@${message.author.id}> acquired **${coinDropSize} Horse Coins** 🪙!`,
 			}).catch((error: unknown) => {
 				console.error(
-					`QueueMessage error while spawning horse: ${error instanceof Error ? error : 'unknown error'}`,
+					'QueueMessage error while spawning horse:',
+					error,
 				);
 			});
 		}
