@@ -8,6 +8,7 @@ import {
 	type ChatInputCommandInteraction,
 	InteractionContextType,
 	ApplicationIntegrationType,
+	type MessageActionRowComponentBuilder,
 } from 'discord.js';
 import {catchDataStore} from '../lib/handlers/interactionHandler.js';
 import {castAsWebhookable} from '../type-utils.js';
@@ -77,6 +78,9 @@ const dexImpersonateCommand = {
 		const type = interaction.options.getString('texttype');
 		const stats =
 			interaction.options.getString('stats') ?? 'DEFAULT';
+		await interaction.deferReply({
+			flags: [MessageFlags.Ephemeral],
+		});
 		if (!target || !image)
 			return interaction.reply(
 				'Something went wrong when trying to get your inputted data',
@@ -100,12 +104,13 @@ const dexImpersonateCommand = {
 			avatar: target.displayAvatarURL(),
 		});
 
-		const row = new ActionRowBuilder().addComponents(
-			new ButtonBuilder()
-				.setCustomId(`catch::${spawnId}`)
-				.setLabel('Catch me')
-				.setStyle(ButtonStyle.Primary),
-		);
+		const row =
+			new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+				new ButtonBuilder()
+					.setCustomId(`catch::${spawnId}`)
+					.setLabel('Catch me')
+					.setStyle(ButtonStyle.Primary),
+			);
 		await webhook.send({
 			content: `A wild countryball appeared!`,
 			files: [image.url],
@@ -117,9 +122,8 @@ const dexImpersonateCommand = {
 			interaction.guild,
 			`**Spawn**: ${interaction.user.username} spawned **${ans}** impersonating ${target.username}.`,
 		);
-		await interaction.reply({
+		await interaction.editReply({
 			content: 'Spawned successfully!',
-			flags: [MessageFlags.Ephemeral],
 		});
 	},
 };
