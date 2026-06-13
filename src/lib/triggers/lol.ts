@@ -2,7 +2,7 @@ import type {Message} from 'discord.js';
 import {MutedChannel} from '../models.js';
 import updateLolStatsDB from '../helpers/lol-stats.js';
 import {queueMessage} from '../helpers/message-queue.js';
-import {castAsTextBased} from '../../type-utils.js';
+import {returnAsTextBased} from '../../type-utils.js';
 
 const TRIGGERS: Record<string, string> = {
 	'\\blol\\b': 'lol',
@@ -18,8 +18,8 @@ const MILESTONES: Record<number, string> = {
 } as const;
 
 async function handleLol(message: Message) {
-	if (!message.guild) return;
-	const channel = castAsTextBased(message.channel);
+	const channel = returnAsTextBased(message.channel);
+	if (channel instanceof Error) return;
 	const content = message.content.toLowerCase();
 
 	// Find if any key in TRIGGERS matches the message content

@@ -1,7 +1,11 @@
-const {PingResponse} = require('../models');
-const {queueMessage} = require('./messageQueue');
+import type {Client, Message} from 'discord.js';
+import {PingResponse} from '../models.js';
+import {queueMessage} from '../helpers/message-queue.js';
+import {returnAsTextBased} from '../../type-utils.js';
 
-async function handleBotPing(message, client) {
+async function handleBotPing(message: Message, client: Client) {
+	const channel = returnAsTextBased(message.channel);
+	if (channel instanceof Error) return;
 	if (message.author.id === client.user.id) return;
 	if (!message.mentions.has(client.user.id)) return;
 
@@ -10,9 +14,10 @@ async function handleBotPing(message, client) {
 
 	// Filter for all matching triggered responses
 	const matches = allResponses.filter((entry) => {
-		if (!entry.trigger?.type) return false;
+		if (!entry.trigger.type) return false;
 
-		const triggerText = entry.trigger.text.toLowerCase();
+		const triggerText = entry.trigger.text?.toLowerCase();
+		if (!triggerText) return false;
 
 		if (
 			entry.trigger.type === 'contains' &&
@@ -39,7 +44,7 @@ async function handleBotPing(message, client) {
 	} else {
 		// Fall back to untriggered messages if no triggers matched
 		finalSelectionPool = allResponses.filter(
-			(e) => !e.trigger?.type,
+			(response) => !response.trigger.type,
 		);
 	}
 
@@ -49,12 +54,18 @@ async function handleBotPing(message, client) {
 			finalSelectionPool[
 				Math.floor(Math.random() * finalSelectionPool.length)
 			];
+		if (!pick) return;
 		queueMessage({
-			channel: message.channel,
+			channel,
 			content: pick.message,
 			reply: {message, mention: true},
+		}).catch((error: unknown) => {
+			console.error(
+				'QueueMessage Error in ping handler',
+				error,
+			);
 		});
 	}
 }
 
-module.exports = {handleBotPing};
+export default handleBotPing;

@@ -1,5 +1,4 @@
 import {
-	type GuildBasedChannel,
 	type GuildTextBasedChannel,
 	type TextChannel,
 	type NewsChannel,
@@ -77,6 +76,28 @@ export function castAsTextBased(
 	throw new Error(
 		`Expected a text-based channel but received: ${channel?.type ?? 'null'}`,
 	);
+}
+
+export function returnAsTextBased(
+	channel:
+		| AnyChannel
+		| undefined
+		// eslint-disable-next-line @typescript-eslint/no-restricted-types
+		| null,
+): Error | GuildTextBasedChannel {
+	let returnValue;
+	try {
+		returnValue = castAsTextBased(channel);
+	} catch (error: unknown) {
+		returnValue =
+			error instanceof Error
+				? error
+				: new Error(
+						typeof error === 'string' ? error : 'idk',
+					);
+	}
+
+	return returnValue;
 }
 
 function isWebhookableChannel(

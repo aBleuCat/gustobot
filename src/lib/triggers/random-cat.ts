@@ -1,11 +1,11 @@
 import type {Message} from 'discord.js';
 import {config} from '../config.js';
 import {queueMessage} from '../helpers/message-queue.js';
-import {castAsTextBased} from '../../type-utils.js';
+import {returnAsTextBased} from '../../type-utils.js';
 
 async function handleRandomCat(message: Message) {
-	if (!message.guild) return;
-	const channel = castAsTextBased(message.channel);
+	const channel = returnAsTextBased(message.channel);
+	if (channel instanceof Error) return;
 	if (
 		Math.floor(
 			Math.random() * config.UNEXPECTED_CAT_PROBABILITY,

@@ -1,7 +1,7 @@
 import type {Message} from 'discord.js';
 import {MutedChannel} from '../models.js';
 import {queueMessage} from '../helpers/message-queue.js';
-import {castAsTextBased} from '../../type-utils.js';
+import {returnAsTextBased} from '../../type-utils.js';
 
 const RESPONSES = [
 	'grown man btw',
@@ -13,8 +13,8 @@ const RESPONSES = [
 ] as const;
 
 async function handleSixSeven(message: Message) {
-	if (!message.guild) return;
-	const channel = castAsTextBased(message.channel);
+	const channel = returnAsTextBased(message.channel);
+	if (channel instanceof Error) return;
 	if (
 		!/\b67\b|six seven|six-seven/iv.test(
 			message.content.toLowerCase(),

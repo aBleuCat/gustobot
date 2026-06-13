@@ -4,7 +4,10 @@ import stringSimilarity from '../helpers/similarity-helper.js';
 import {config} from '../config.js';
 import {conditionHorse} from '../helpers/horse-funcs.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData, castAsTextBased} from '../../type-utils.js';
+import {
+	castAsHorseData,
+	returnAsTextBased,
+} from '../../type-utils.js';
 import {devLog} from '../helpers/dev-log.js';
 import {queueMessage} from '../helpers/message-queue.js';
 import type {HorseData} from '../../types.js';
@@ -112,14 +115,8 @@ async function handleHorseSpawn(message: Message) {
 	const {spawnedCounts, spawnedHorses, anySpawned} =
 		determineSpawnedHorses(message);
 
-	const castedChannel = (() => {
-		try {
-			return castAsTextBased(targetChannel);
-		} catch {
-			return undefined;
-		}
-	})();
-	if (!castedChannel) return;
+	const castedChannel = returnAsTextBased(targetChannel);
+	if (castedChannel instanceof Error) return;
 
 	// Apply atomic updates to inventory if any spawned
 	let inventory;

@@ -11,5 +11,8 @@
 	},
 	"[javascriptjavascript]": {
 	  "editor.defaultFormatter": "samverschueren.linter-xo"
-	}
+	},
+	"js/ts.preferences.quoteStyle": "single",
+  	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
+	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false
 }

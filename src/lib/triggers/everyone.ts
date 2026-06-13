@@ -1,16 +1,11 @@
 import type {Message} from 'discord.js';
 import {queueMessage} from '../helpers/message-queue.js';
-import {castAsTextBased} from '../../type-utils.js';
+import {returnAsTextBased} from '../../type-utils.js';
 
 async function handleEveryone(message: Message) {
 	if (!message.content.includes('@everyone')) return;
-	let channel;
-	try {
-		channel = castAsTextBased(message.channel);
-	} catch (error) {
-		console.error(error);
-		return;
-	}
+	const channel = returnAsTextBased(message.channel);
+	if (channel instanceof Error) return;
 
 	queueMessage({
 		channel,
