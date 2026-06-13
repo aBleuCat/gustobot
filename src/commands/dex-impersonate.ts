@@ -12,6 +12,8 @@ import {
 } from 'discord.js';
 import {catchDataStore} from '../lib/handlers/interactionHandler.js';
 import {castAsWebhookable} from '../type-utils.js';
+import {logToModChannel} from '../lib/helpers/mod-log.js';
+import {handleCommandError} from '../lib/helpers/error-handlers.js';
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const {Guild} = InteractionContextType;
@@ -73,7 +75,7 @@ const dexImpersonateCommand = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		const target = interaction.options.getUser('target');
 		const image = interaction.options.getAttachment('image');
-		const ans = interaction.options.getString('formanswer');
+		const answer = interaction.options.getString('formanswer');
 		const bold = interaction.options.getString('boldtext');
 		const type = interaction.options.getString('texttype');
 		const stats =
@@ -92,7 +94,7 @@ const dexImpersonateCommand = {
 		// Use a unique key per spawn so multiple spawns don't collide
 		const spawnId = `${target.id}-${Date.now()}`;
 		catchDataStore.set(spawnId, {
-			ans,
+			answer,
 			bold,
 			type,
 			targetId: target.id,
@@ -118,9 +120,11 @@ const dexImpersonateCommand = {
 		});
 		await webhook.delete();
 
-		await interaction.client.logToModChannel(
+		logToModChannel(
 			interaction.guild,
-			`**Spawn**: ${interaction.user.username} spawned **${ans}** impersonating ${target.username}.`,
+			`**Spawn**: ${interaction.user.username} spawned **${answer}** impersonating ${target.username}.`,
+		).catch(async (error: unknown) =>
+			handleCommandError(error, interaction),
 		);
 		await interaction.editReply({
 			content: 'Spawned successfully!',

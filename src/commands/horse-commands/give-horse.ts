@@ -11,6 +11,8 @@ import {
 } from '../../lib/helpers/horse-funcs.js';
 import {UserHorses} from '../../lib/models.js';
 import {castAsHorseData} from '../../type-utils.js';
+import {logToModChannel} from '../../lib/helpers/mod-log.js';
+import {handleCommandError} from '../../lib/helpers/error-handlers.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
@@ -123,9 +125,11 @@ export async function execute(
 			: `You gave your **${horseDisplay}** to <@${targetUser.id}>!`;
 	await interaction.reply({content: message});
 
-	void interaction.client.logToModChannel(
+	logToModChannel(
 		interaction.guild,
 		`${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`,
+	).catch(async (error: unknown) =>
+		handleCommandError(error, interaction),
 	);
 
 	await conditionHorse(receiverInv, {interaction});
