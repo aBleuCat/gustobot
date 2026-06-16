@@ -6,6 +6,7 @@ import {returnAsTextBased} from '../../type-utils.js';
 async function handleBotPing(message: Message, client: Client) {
 	const channel = returnAsTextBased(message.channel);
 	if (channel instanceof Error) return;
+	if (!client.user) return;
 	if (message.author.id === client.user.id) return;
 	if (!message.mentions.has(client.user.id)) return;
 

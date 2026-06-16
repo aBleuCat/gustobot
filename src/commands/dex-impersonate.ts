@@ -10,7 +10,7 @@ import {
 	ApplicationIntegrationType,
 	type MessageActionRowComponentBuilder,
 } from 'discord.js';
-import {catchDataStore} from '../lib/handlers/interactionHandler.js';
+import {catchDataStore} from '../lib/handlers/interaction-handler.js';
 import {castAsWebhookable} from '../type-utils.js';
 import {logToModChannel} from '../lib/helpers/mod-log.js';
 import {handleCommandError} from '../lib/helpers/error-handlers.js';

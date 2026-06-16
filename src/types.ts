@@ -6,12 +6,19 @@ import {
 	type DMChannel,
 	type PartialDMChannel,
 	type PartialGroupDMChannel,
-	type Guild,
+	type AutocompleteInteraction,
+	type SlashCommandSubcommandsOnlyBuilder,
 } from 'discord.js';
 
 export type SlashCommandConfig = {
 	data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
 	execute(interaction: ChatInputCommandInteraction): Promise<void>;
+};
+
+export type SlashCommandModule = SlashCommandConfig & {
+	autocomplete?(
+		interaction: AutocompleteInteraction,
+	): Promise<void>;
 };
 export type Horse = {
 	name: string;
@@ -27,13 +34,15 @@ export type AnyChannel =
 	| DMChannel
 	| PartialDMChannel
 	| PartialGroupDMChannel;
-
-declare module 'discord.js' {
-	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-	interface Client {
-		logToModChannel: (
-			guild: Guild,
-			message: string,
-		) => Promise<void>;
-	}
-}
+export type Command = {
+	data:
+		| SlashCommandBuilder
+		| SlashCommandOptionsOnlyBuilder
+		| SlashCommandSubcommandsOnlyBuilder;
+	execute: (
+		interaction: ChatInputCommandInteraction,
+	) => Promise<void>;
+	autocomplete?: (
+		interaction: AutocompleteInteraction,
+	) => Promise<void>;
+};

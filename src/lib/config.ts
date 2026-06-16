@@ -12,7 +12,7 @@ const currentInverseSum = Object.entries(HORSE_VALUES)
 const antiinflator = currentInverseSum / BASELINE_SUM;
 
 export const config = {
-	// For horseSpawner.js
+	// For horse-spawner.ts
 	DEBOUNCE_MS: 2000,
 	SIMILARITY_THRESHOLD: 0.7,
 	RECENT_MSG_COUNT: 5,
@@ -24,10 +24,10 @@ export const config = {
 	COIN_DROP_MAX: 10,
 	ANTIINFLATOR: antiinflator,
 
-	// For randomCat.js
+	// For random-cat.ts
 	UNEXPECTED_CAT_PROBABILITY: 1000,
 
-	// For horsegamble.js
+	// For horse-gamble.ts
 	MIN_CYCLE_COIN_COUNT: -5,
 	FRENZY_THRESHOLD_MS: 10 * 60 * 1000,
 	FRENZY_CHANCE: 0.2,
@@ -37,35 +37,47 @@ export const config = {
 	MAX_ROLL: 100,
 	MIN_ROLL: -100,
 
-	// For messageCacheCleanup.js
+	// For message-cache-cleanup.ts
 	MESSAGE_CACHE_CLEANUP_MS: 10 * 60 * 1000,
 
-	// For devLog()
+	// For dev-log.ts
 	DEV_GUILD_ID: '1487571282022236313',
 	DEV_LOG_CHANNEL_ID: '1487940219276759202',
 	BG_TASKS_CHANNEL_ID: '1487958978985201755',
 	MICRO_LOG_CHANNEL_ID: '1488302160012644522',
 	STATUS_LOG_CHANNEL: '1489378845545988096',
 
-	// For horsebuy.js and horsesell.js
+	// For horse-buy.ts and horse-sell.ts
 	COMMON_BUY_PRICE: 8,
 	COMMON_SELL_PRICE: 2,
 
-	// For autorole.js
+	// For autorole.ts
 	RULE_CACHE_TTL_MS: 60 * 1000, // 1 minute
 
-	// changeable with /hacks lists
+	// For resource-monitor.ts
+	HEAP_THRESHOLD_MB: 350,
+	CPU_WARN_PERCENT: 80,
+	RESOURCE_MONITOR_INTERVAL: 15_000,
+	WARNING_COOLDOWN_MS: 5 * 60 * 1000,
+
+	// For message-queue.ts
+	CHANNEL_MSG_LIMIT_MS: 1100,
+	GLOBAL_MSG_LIMIT_MS: 50,
+
+	// For role-reverter.ts
+	ROLE_REVERTER_INTERVAL: 10_000,
+
+	// For status-checker.ts
+	STATUS_CHECKER_INTERVAL: 2 * 60 * 1000,
+
+	// Changeable with /hacks lists
 	lists: {
-		// Triggers for messageHandler.js
+		// Triggers for message-handler.ts
 		primaryTrigBlacklist: [] as string[],
 		primaryTrigWhitelist: [] as string[], // The bot crackgpt = 1428178018802733076
 		secondaryTrigBlacklist: [] as string[],
 		secondaryTrigWhitelist: [] as string[],
 	},
-
-	// For messageQueue.js
-	CHANNEL_MSG_LIMIT_MS: 1100,
-	GLOBAL_MSG_LIMIT_MS: 50,
 };
 
 export const immutConfig = {
@@ -73,7 +85,7 @@ export const immutConfig = {
 	ADMINS: new Set(['934290747623096381']),
 } as const;
 
-export const descriptions: Record<string, string> = {
+export const descriptions: Record<keyof typeof config, string> = {
 	DEBOUNCE_MS: 'Min ms between horse rolls per user',
 	SIMILARITY_THRESHOLD:
 		'How similar two messages must be to be blocked (0-1)',
@@ -124,4 +136,15 @@ export const descriptions: Record<string, string> = {
 		'Minimum ms between messages sent by the bot in the same channel',
 	GLOBAL_MSG_LIMIT_MS:
 		'Minimum ms between any messages sent by the bot',
+	HEAP_THRESHOLD_MB: "The threshold for the bot's memory usage",
+	CPU_WARN_PERCENT:
+		'At what percentage of cpu usage should the bot send out a critical warning',
+	WARNING_COOLDOWN_MS:
+		'How frequently the bot sends out warnings when cpu/memory usage is critically high (in ms)',
+	RESOURCE_MONITOR_INTERVAL:
+		'How frequently the bot checks resource consumption (in ms)',
+	ROLE_REVERTER_INTERVAL:
+		'How frequently the bot checks to revert autoroles (in ms)',
+	STATUS_CHECKER_INTERVAL:
+		'How frequently the bot checks the status of the database connection (in ms)',
 };
