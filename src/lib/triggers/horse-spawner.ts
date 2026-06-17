@@ -147,7 +147,6 @@ async function handleHorseSpawn(message: Message) {
 				$inc: inc,
 				$setOnInsert: {
 					userId: message.author.id,
-					horses: {},
 				},
 			},
 			{ upsert: true, new: true },
