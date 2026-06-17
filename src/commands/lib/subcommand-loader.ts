@@ -21,9 +21,9 @@ type SubcommandModule = {
 };
 
 export class SubcommandLoader {
-	private subcommands = new Collection<string, SubcommandModule>();
-	private mainCommand: SlashCommandBuilder;
-	private folderPath: string;
+	private readonly subcommands = new Collection<string, SubcommandModule>();
+	private readonly mainCommand: SlashCommandBuilder;
+	private readonly folderPath: string;
 
 	constructor(
 		mainCommand: SlashCommandBuilder,

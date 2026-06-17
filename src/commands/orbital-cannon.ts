@@ -33,7 +33,7 @@ const orbitalcannonCommand = {
 		}
 
 		try {
-			return interaction.reply({
+			return await interaction.reply({
 				content: `<@${interaction.user.id}> used Orbital Strike Cannon\nhttps://cdn.discordapp.com/attachments/1411174514846466180/1444459198342500423/llVuhDC.gif?ex=69aea4b5&is=69ad5335&hm=5c93193f4fe164cc2e8390cd03a08fd81bbf9632dcafaab019bea5210cc274a9&`,
 			});
 		} catch {

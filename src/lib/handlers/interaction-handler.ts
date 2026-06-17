@@ -13,7 +13,6 @@ import {
 	type Client,
 	type Interaction,
 	type ModalSubmitInteraction,
-	type CacheType,
 } from "discord.js";
 import { config, immutConfig } from "../config.js";
 import devLog from "../helpers/dev-log.js";
@@ -178,7 +177,7 @@ async function handleButtonCatch(interaction: Interaction) {
 }
 
 async function handleModalOrbitalNuke(
-	interaction: ModalSubmitInteraction<CacheType>,
+	interaction: ModalSubmitInteraction,
 ) {
 	let isOwner = false;
 	try {
@@ -254,7 +253,7 @@ async function handleModalOrbitalNuke(
 
 async function handleModalCatchAnswer(
 	client: Client,
-	interaction: ModalSubmitInteraction<CacheType>,
+	interaction: ModalSubmitInteraction,
 ) {
 	const data = catchDataStore.get(interaction.user.id);
 	if (
@@ -362,7 +361,7 @@ async function launchNuke(
 ) {
 	try {
 		const result = await runNukeCode(code, interaction);
-		return reportDamage(
+		return await reportDamage(
 			interaction,
 			result === null || result === undefined
 				? "(no output)"

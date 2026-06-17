@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import mongoose from "mongoose";
 import * as models from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 const AVAILABLE_MODELS = new Map<string, string>();
 for (const [name, value] of Object.entries(models)) {
@@ -342,10 +343,7 @@ const mongoTool = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (
-			interaction.user.id !== "934290747623096381" ||
-			interaction.user.id !== "853658523786412063"
-		) {
+		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return sendChunks(
 				interaction,
 				"❌ You do not have permission to use this command. This is an owner-only action.",
@@ -437,10 +435,11 @@ Available models: ${available}`,
 
 				case "update": {
 					if (Object.keys(setData).length === 0) {
-						return sendChunks(
+						await sendChunks(
 							interaction,
 							"❌ Update operation requires --set with fields to update",
 						);
+						return;
 					}
 
 					result = await handleUpdate(
@@ -454,10 +453,11 @@ Available models: ${available}`,
 
 				case "insert": {
 					if (Object.keys(setData).length === 0) {
-						return sendChunks(
+						await sendChunks(
 							interaction,
 							"❌ Insert operation requires --set with document fields",
 						);
+						return;
 					}
 
 					result = await handleInsert(
@@ -469,14 +469,15 @@ Available models: ${available}`,
 				}
 
 				default: {
-					return sendChunks(
+					await sendChunks(
 						interaction,
 						"❌ Unknown operation",
 					);
+					return;
 				}
 			}
 
-			return sendChunks(interaction, result);
+			await sendChunks(interaction, result);
 		} catch (error: unknown) {
 			console.error("MongoTool Error:", error);
 			return sendChunks(

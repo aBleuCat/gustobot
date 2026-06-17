@@ -178,7 +178,7 @@ const hacksCommand = {
 				content: "Shutting down...",
 				flags: [MessageFlags.Ephemeral],
 			});
-			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
+			// eslint-disable-next-line unicorn/no-process-exit
 			process.exit(0);
 		}
 
@@ -193,7 +193,7 @@ const hacksCommand = {
 				content: "Restarting...",
 				flags: [MessageFlags.Ephemeral],
 			});
-			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
+			// eslint-disable-next-line unicorn/no-process-exit
 			process.exit(0);
 		}
 
