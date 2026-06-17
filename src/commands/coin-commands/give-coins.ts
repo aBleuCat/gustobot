@@ -1,11 +1,11 @@
 import {
-	SlashCommandBuilder,
+	SlashCommandSubcommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
 import {UserHorses} from '../../lib/models.js';
 
-export const data = new SlashCommandBuilder()
+export const data = new SlashCommandSubcommandBuilder()
 	.setName('give')
 	.setDescription('Give your horse coins to another user!')
 	.addUserOption((option) =>
