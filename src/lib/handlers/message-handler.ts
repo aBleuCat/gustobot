@@ -5,7 +5,7 @@ import {
 	type User,
 } from 'discord.js';
 import {config} from '../config.js';
-import {devLog} from '../helpers/dev-log.js';
+import devLog from '../helpers/dev-log.js';
 import handleRandomCat from '../triggers/random-cat.js';
 import handleSixSeven from '../triggers/six-seven.js';
 import handleLol from '../triggers/lol.js';

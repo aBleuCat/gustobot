@@ -7,7 +7,7 @@ import {UserHorses, type IUserHorses} from '../../lib/models.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 import {config} from '../../lib/config.js';
-import {devLog} from '../../lib/helpers/dev-log.js';
+import devLog from '../../lib/helpers/dev-log.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
 import {handleCommandError} from '../../lib/helpers/error-handlers.js';
 

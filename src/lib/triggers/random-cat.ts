@@ -1,6 +1,6 @@
 import type {Message} from 'discord.js';
 import {config} from '../config.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import queueMessage from '../helpers/message-queue.js';
 import {returnAsTextBased} from '../../type-utils.js';
 
 async function handleRandomCat(message: Message) {

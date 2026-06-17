@@ -4,10 +4,11 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 	LabelBuilder,
+	type Client,
 } from 'discord.js';
 import {ModChannel} from '../models.js';
 
-export async function logToModChannel(guild: Guild, message: string) {
+async function logToModChannel(guild: Guild, message: string) {
 	const config = await ModChannel.findOne({
 		guildId: guild.id,
 	}).lean();
@@ -17,6 +18,20 @@ export async function logToModChannel(guild: Guild, message: string) {
 		.catch(() => undefined);
 	if (channel?.isTextBased())
 		await channel.send(`[LOG]: ${message}`);
+}
+
+export async function logToAllModChannels(
+	client: Client,
+	message: string,
+) {
+	const modChannelIds = new Set(
+		await ModChannel.distinct('guildId'),
+	);
+	const logArray = client.guilds.cache
+		.values()
+		.filter((guild) => modChannelIds.has(guild.id))
+		.map(async (guild) => logToModChannel(guild, message));
+	await Promise.all(logArray);
 }
 
 export function init() {
@@ -51,3 +66,5 @@ export function init() {
 
 	return modal;
 }
+
+export default logToModChannel;

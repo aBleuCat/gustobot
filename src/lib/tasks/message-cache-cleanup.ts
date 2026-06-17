@@ -1,6 +1,6 @@
 import {MessageCache} from '../models.js';
 import {config} from '../config.js';
-import {devLog} from '../helpers/dev-log.js';
+import devLog from '../helpers/dev-log.js';
 
 let messageCacheCleanupInterval: NodeJS.Timeout | undefined;
 

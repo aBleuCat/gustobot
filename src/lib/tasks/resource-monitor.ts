@@ -1,9 +1,8 @@
 import process from 'node:process';
 import type {Client} from 'discord.js';
 import {config, immutConfig} from '../config.js';
-import {ModChannel} from '../models.js';
-import {logToModChannel} from '../helpers/mod-log.js';
-import {devLog} from '../helpers/dev-log.js';
+import {logToAllModChannels} from '../helpers/mod-log.js';
+import devLog from '../helpers/dev-log.js';
 
 const {
 	HEAP_THRESHOLD_MB,
@@ -67,21 +66,14 @@ function startResourceMonitor(client: Client) {
 					`[ResourceMonitor] ⚠️ THRESHOLD EXCEEDED - Heap: ${heapUsedMB.toFixed(2)} MB (Limit: ${HEAP_THRESHOLD_MB} MB) | CPU: ${cpuPercent.toFixed(2)}% (Limit: ${CPU_WARN_PERCENT}%)`,
 				);
 
-				// Use Promise.all to send warning to mod channels
-				const logMessage = `⚠️ **HIGH RESOURCE USAGE DETECTED**\n**Heap Memory:** ${heapUsedMB.toFixed(2)} MB\n**CPU Usage:** ${cpuPercent.toFixed(2)}%\nThe bot may become unresponsive or restart.`;
-				const modChannelIds = new Set(
-					await ModChannel.distinct('guildId'),
-				);
-				const logArray = client.guilds.cache
-					.values()
-					.filter((guild) => modChannelIds.has(guild.id))
-					.map(async (guild) =>
-						logToModChannel(guild, logMessage),
-					);
-				await Promise.all(logArray);
+				const logMessage = `⚠️ **HIGH RESOURCE USAGE DETECTED**\n
+				**Heap Memory:** ${heapUsedMB.toFixed(2)} MB\n
+				**CPU Usage:** ${cpuPercent.toFixed(2)}%\n
+				The bot may become unresponsive or restart.`;
+				await logToAllModChannels(client, logMessage);
 			}
 		})();
 	}, RESOURCE_MONITOR_INTERVAL); // Check every 15 seconds
 }
 
-export default startResourceMonitor;
+export {startResourceMonitor};

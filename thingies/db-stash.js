@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-abusive-eslint-disable */
 /* eslint-disable */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -5,7 +5,7 @@ import type {
 	Message,
 } from 'discord.js';
 import {config} from '../config.js';
-import {devLog} from './dev-log.js';
+import devLog from './dev-log.js';
 
 type ReplyInfo = {
 	mention: boolean;
@@ -55,7 +55,7 @@ function getChannelState(channelId: string): ChannelState {
 
 // Add a message to its channel's queue, respecting priority order.
 // Returns a Promise that resolves with the sent message, or rejects on error.
-export async function queueMessage({
+async function queueMessage({
 	channel,
 	content,
 	reply,
@@ -202,3 +202,5 @@ export function getQueueStatus(): {
 		trackedChannels: channelQueues.size,
 	};
 }
+
+export default queueMessage;

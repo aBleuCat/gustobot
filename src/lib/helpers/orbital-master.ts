@@ -5,7 +5,7 @@ import {UserHorses, HorseConfig, OrbitalScript} from '../models.js';
 import rawHorseValues from '../../data/horses.json';
 import {castAsHorseData} from '../../type-utils.js';
 import stringSimilarity from './similarity.js';
-import {dmAdmin} from './dmlog.js';
+import dmAdmin from './dmlog.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 */

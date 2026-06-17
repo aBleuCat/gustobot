@@ -1,5 +1,5 @@
 import type {Message} from 'discord.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import queueMessage from '../helpers/message-queue.js';
 
 type NonEmptyLines = [string, ...string[]];
 

@@ -24,7 +24,7 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const spawnableHorseEntries = Object.entries(horsesData).filter(
-		([_, horse]) => horse.spawn !== false,
+		([, horse]) => horse.spawn !== false,
 	);
 
 	if (spawnableHorseEntries.length === 0) {

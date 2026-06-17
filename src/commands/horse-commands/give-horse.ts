@@ -11,7 +11,7 @@ import {
 } from '../../lib/helpers/horse-funcs.js';
 import {UserHorses} from '../../lib/models.js';
 import {castAsHorseData} from '../../type-utils.js';
-import {logToModChannel} from '../../lib/helpers/mod-log.js';
+import logToModChannel from '../../lib/helpers/mod-log.js';
 import {handleCommandError} from '../../lib/helpers/error-handlers.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);

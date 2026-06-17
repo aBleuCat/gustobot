@@ -16,8 +16,8 @@ import {
 	type CacheType,
 } from 'discord.js';
 import {config, immutConfig} from '../config.js';
-import {devLog} from '../helpers/dev-log.js';
-import {logToModChannel, init} from '../helpers/mod-log.js';
+import devLog from '../helpers/dev-log.js';
+import logToModChannel, {init} from '../helpers/mod-log.js';
 import {ORBITAL_ID, DELTA} from '../../commands/orbital-cannon.js';
 import {OrbitalScript} from '../models.js';
 import {handleCommandError} from '../helpers/error-handlers.js';
@@ -49,7 +49,7 @@ setInterval(() => {
 }, CATCH_DATA_CLEANUP_INTERVAL_MS);
 
 // Registration
-export function registerInteractionHandler(client: Client) {
+function registerInteractionHandler(client: Client) {
 	client.on(
 		Events.InteractionCreate,
 		(interaction: Interaction) => {
@@ -461,3 +461,4 @@ async function reportDamage(
 }
 
 export {catchDataStore};
+export default registerInteractionHandler;

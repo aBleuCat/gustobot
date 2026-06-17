@@ -1,6 +1,6 @@
 import type {Client, Message} from 'discord.js';
 import {PingResponse} from '../models.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import queueMessage from '../helpers/message-queue.js';
 import {returnAsTextBased} from '../../type-utils.js';
 
 async function handleBotPing(message: Message, client: Client) {

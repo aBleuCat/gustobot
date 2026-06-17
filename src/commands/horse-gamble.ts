@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-abusive-eslint-disable */
 /* eslint-disable */
 // @ts-nocheck
 import fs from 'node:fs';
@@ -8,7 +9,7 @@ import mongoose from 'mongoose';
 import rawHorseValues from '../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../type-utils.js';
 import {config, immutConfig} from '../lib/config.js';
-import {devLog} from '../lib/helpers/dev-log.js';
+import devLog from '../lib/helpers/dev-log.js';
 import {conditionHorse, horseName} from '../lib/helpers/horse-funcs.js';
 // NOTE TO SELF: DEFER REPLY EARLY
 

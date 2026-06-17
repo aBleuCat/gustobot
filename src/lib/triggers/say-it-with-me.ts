@@ -1,6 +1,6 @@
 import type {Message} from 'discord.js';
 import {immutConfig} from '../config.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import queueMessage from '../helpers/message-queue.js';
 import {returnAsTextBased} from '../../type-utils.js';
 
 const SAY_IT_WITH_ME_REGEX = /^say it with me[:\s]+(.+)$/iv;

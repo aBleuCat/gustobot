@@ -8,8 +8,8 @@ import {
 	castAsHorseData,
 	returnAsTextBased,
 } from '../../type-utils.js';
-import {devLog} from '../helpers/dev-log.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import devLog from '../helpers/dev-log.js';
+import queueMessage from '../helpers/message-queue.js';
 import type {HorseData} from '../../types.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);

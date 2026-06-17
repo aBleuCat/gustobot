@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import {catchDataStore} from '../lib/handlers/interaction-handler.js';
 import {castAsWebhookable} from '../type-utils.js';
-import {logToModChannel} from '../lib/helpers/mod-log.js';
+import logToModChannel from '../lib/helpers/mod-log.js';
 import {handleCommandError} from '../lib/helpers/error-handlers.js';
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -83,7 +83,7 @@ const dexImpersonateCommand = {
 		await interaction.deferReply({
 			flags: [MessageFlags.Ephemeral],
 		});
-		if (!target || !image)
+		if (!target || !image || !bold || !type || !answer)
 			return interaction.reply(
 				'Something went wrong when trying to get your inputted data',
 			);
@@ -94,7 +94,7 @@ const dexImpersonateCommand = {
 		// Use a unique key per spawn so multiple spawns don't collide
 		const spawnId = `${target.id}-${Date.now()}`;
 		catchDataStore.set(spawnId, {
-			answer,
+			ans: answer,
 			bold,
 			type,
 			targetId: target.id,

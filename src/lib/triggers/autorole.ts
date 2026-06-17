@@ -1,7 +1,7 @@
 import type {Message} from 'discord.js';
 import type {FlattenMaps} from 'mongoose';
 import {Rule, Timeout, type IRule} from '../models.js';
-import {logToModChannel} from '../helpers/mod-log.js';
+import logToModChannel from '../helpers/mod-log.js';
 import {config} from '../config.js';
 
 type RuleCacheKey = `${string}:${string}`;

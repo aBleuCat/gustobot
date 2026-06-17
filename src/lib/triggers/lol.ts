@@ -1,7 +1,7 @@
 import type {Message} from 'discord.js';
 import {MutedChannel} from '../models.js';
 import updateLolStatsDB from '../helpers/lol-stats.js';
-import {queueMessage} from '../helpers/message-queue.js';
+import queueMessage from '../helpers/message-queue.js';
 import {returnAsTextBased} from '../../type-utils.js';
 
 const TRIGGERS: Record<string, string> = {

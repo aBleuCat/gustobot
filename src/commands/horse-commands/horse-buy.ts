@@ -3,7 +3,7 @@ import {
 	type ChatInputCommandInteraction,
 } from 'discord.js';
 import {config} from '../../lib/config.js';
-import {devLog} from '../../lib/helpers/dev-log.js';
+import devLog from '../../lib/helpers/dev-log.js';
 import {UserHorses} from '../../lib/models.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
 import {handleCommandError} from '../../lib/helpers/error-handlers.js';

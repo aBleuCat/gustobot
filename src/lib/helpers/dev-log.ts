@@ -52,7 +52,7 @@ export async function initDevLog(client: Client) {
 	}
 }
 
-export async function devLog(message: string, type = 'standard') {
+async function devLog(message: string, type = 'standard') {
 	let targetChannel = null;
 	let secondaryChannel = null;
 
@@ -117,3 +117,5 @@ export async function devLog(message: string, type = 'standard') {
 			console.error('[devLog Send Error]:', error.message);
 	}
 }
+
+export default devLog;

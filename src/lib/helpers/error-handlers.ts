@@ -2,7 +2,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
-import {devLog} from './dev-log.js';
+import devLog from './dev-log.js';
 // Error logging func for commands
 export async function handleCommandError(
 	error: unknown,

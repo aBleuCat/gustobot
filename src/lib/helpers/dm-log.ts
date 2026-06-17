@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const ADMIN_ID = '853658523786412063';
 const TOGGLE_FILE = path.join(__dirname, '../../.dmlogtoggle');
 
-export async function dmAdmin(client: Client, message: string) {
+async function dmAdmin(client: Client, message: string) {
 	if (!client?.users) return;
 	let enabled = false;
 	try {
@@ -31,3 +31,5 @@ export async function dmAdmin(client: Client, message: string) {
 		return undefined;
 	}
 }
+
+export default dmAdmin;

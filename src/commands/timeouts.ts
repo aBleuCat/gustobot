@@ -32,7 +32,9 @@ const timeoutViewCommand = {
 
 		const list = activeTimeouts
 			.map((t) => {
-				const unixSeconds = Math.floor(t.revertAt / immutConfig.SECOND_MS);
+				const unixSeconds = Math.floor(
+					t.revertAt / immutConfig.SECOND_MS,
+				);
 				return `<@${t.targetUser}>: Has <@&${t.addRole}>, restores to <@&${t.restoreRole}> <t:${unixSeconds}:R>`;
 			})
 			.join('\n');

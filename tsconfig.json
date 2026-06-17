@@ -9,7 +9,10 @@
 	  "moduleResolution": "NodeNext",
 	  "target": "ESNext",
 	  "lib": ["ESNext"],
-	  "types": ["node"], // Explicitly tell TS to use Node types
+	  "types": ["node"],
+	  /* JSON */
+	  "resolveJsonModule": true,
+	  "allowSyntheticDefaultImports": true,
   
 	  /* Other Outputs */
 	  "sourceMap": true,
@@ -27,8 +30,8 @@
 	  "noUncheckedSideEffectImports": true,
 	  "moduleDetection": "force",
 	  "skipLibCheck": true,
-	  "esModuleInterop": true // Essential for many Node libraries
+	  "esModuleInterop": true
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]
-  }
+}

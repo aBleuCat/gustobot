@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import {config, immutConfig} from '../config.js';
-import {devLog} from '../helpers/dev-log.js';
+import devLog from '../helpers/dev-log.js';
 
 const {SECOND_MS} = immutConfig;
 
@@ -42,4 +42,4 @@ function startStatusChecker() {
 	}, config.STATUS_CHECKER_INTERVAL);
 }
 
-export default startStatusChecker;
+export {startStatusChecker};
