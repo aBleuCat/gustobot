@@ -69,7 +69,7 @@ const muteLolAll = {
 			}
 
 			return interaction.reply(
-				`muted all channels ${exception ? `except ${exception.toString()}` : ""}`,
+				`muted all channels ${exception ? `except ${exception.name}` : ""}`,
 			);
 		}
 

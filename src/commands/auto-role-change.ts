@@ -103,7 +103,7 @@ const autoRoleSetupCommand = {
 		);
 
 		return interaction.reply(
-			`**Rule Set** ID: \`${newRuleId}\`\nIn ${String(targetChannel)}, if **${watchUser.username}** mentions **${targetUser.username}**, they get **${addRole.name}** for ${duration}m before restoring to ${restoreRole.name}`,
+			`**Rule Set** ID: \`${newRuleId}\`\nIn ${targetChannel.name}, if **${watchUser.username}** mentions **${targetUser.username}**, they get **${addRole.name}** for ${duration}m before restoring to ${restoreRole.name}`,
 		);
 	},
 };

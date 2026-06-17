@@ -37,7 +37,9 @@ const abortbabyCommand = {
 			}
 
 			await member.roles.remove(roleId);
-			return await interaction.reply({ content: "Baby aborted" });
+			return await interaction.reply({
+				content: "Baby aborted",
+			});
 		} catch {
 			return interaction.reply({
 				content: "I couldn't abort the baby for you",
