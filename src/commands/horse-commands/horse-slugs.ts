@@ -1,5 +1,5 @@
 import {
-	SlashCommandBuilder,
+	SlashCommandSubcommandBuilder,
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
@@ -9,7 +9,7 @@ import {castAsHorseData} from '../../type-utils.js';
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
-export const data = new SlashCommandBuilder()
+export const data = new SlashCommandSubcommandBuilder()
 	.setName('slugs')
 	.setDescription('List all horse name to slug mappings.');
 export async function execute(

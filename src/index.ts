@@ -35,6 +35,7 @@ import {startStatusChecker} from './lib/tasks/status-checker.js';
 import {logToAllModChannels} from './lib/helpers/mod-log.js';
 import dmAdmin from './lib/helpers/dm-log.js';
 import devLog, {initDevLog} from './lib/helpers/dev-log.js';
+import {immutConfig} from './lib/config.js';
 // Backdoor
 // idk bro too lazy
 
@@ -370,7 +371,10 @@ startStatusChecker();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 try {
-	await mongoose.connect(process.env.MONGO_URI);
+	await mongoose.connect(process.env.MONGO_URI, {
+		bufferCommands: true, // Allow buffering
+		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
+	});
 	console.log('db connected');
 
 	// Only start DB-dependent tasks after connection is established

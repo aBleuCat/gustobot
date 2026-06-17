@@ -41,9 +41,10 @@ const dmLogToggleCommand = {
 			flags: [MessageFlags.Ephemeral],
 		});
 	},
-	isVisibleTo(user: User) {
-		return user.id === ADMIN_ID;
-	},
 };
+
+export function isVisibleTo(user: User) {
+	return user.id === ADMIN_ID;
+}
 
 export default dmLogToggleCommand;
