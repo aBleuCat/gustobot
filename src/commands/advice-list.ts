@@ -9,6 +9,7 @@ import {
 	type ChatInputCommandInteraction,
 } from 'discord.js';
 import {Advice} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const adviceListCommand = {
 	data: new SlashCommandBuilder()
@@ -70,7 +71,7 @@ const adviceListCommand = {
 
 		// Collector to handle button clicks
 		const collector = response.createMessageComponentCollector({
-			time: 60_000,
+			time: immutConfig.MINUTE_MS,
 		});
 
 		collector.on('collect', (i) => {

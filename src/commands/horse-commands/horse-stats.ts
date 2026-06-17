@@ -11,6 +11,7 @@ import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
 import {horseName} from '../../lib/helpers/horse-funcs.js';
 import {UserHorses, type IUserHorses} from '../../lib/models.js';
+import {immutConfig} from '../../lib/config.js';
 
 const HORSES_PER_PAGE = 15;
 
@@ -144,7 +145,7 @@ function attachHorseStatsCollector(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const collector = response.createMessageComponentCollector({
-		time: 120_000,
+		time: 2 * immutConfig.MINUTE_MS,
 	});
 
 	collector.on('collect', (i: ButtonInteraction) => {

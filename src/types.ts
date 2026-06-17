@@ -1,13 +1,14 @@
-import {
-	type SlashCommandBuilder,
-	type ChatInputCommandInteraction,
-	type SlashCommandOptionsOnlyBuilder,
-	type GuildBasedChannel,
-	type DMChannel,
-	type PartialDMChannel,
-	type PartialGroupDMChannel,
-	type AutocompleteInteraction,
-	type SlashCommandSubcommandsOnlyBuilder,
+import type {
+	SlashCommandBuilder,
+	ChatInputCommandInteraction,
+	SlashCommandOptionsOnlyBuilder,
+	GuildBasedChannel,
+	DMChannel,
+	PartialDMChannel,
+	PartialGroupDMChannel,
+	AutocompleteInteraction,
+	SlashCommandSubcommandsOnlyBuilder,
+	Collection,
 } from 'discord.js';
 
 export type SlashCommandConfig = {
@@ -46,3 +47,10 @@ export type Command = {
 		interaction: AutocompleteInteraction,
 	) => Promise<void>;
 };
+
+declare module 'discord.js' {
+	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions, no-unused-vars
+	interface Client {
+		commands: Collection<string, Command>;
+	}
+}

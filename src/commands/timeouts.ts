@@ -5,6 +5,7 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
+import {immutConfig} from '../lib/config.js';
 import {Timeout} from '../lib/models.js';
 
 const timeoutViewCommand = {
@@ -31,7 +32,7 @@ const timeoutViewCommand = {
 
 		const list = activeTimeouts
 			.map((t) => {
-				const unixSeconds = Math.floor(t.revertAt / 1000);
+				const unixSeconds = Math.floor(t.revertAt / immutConfig.SECOND_MS);
 				return `<@${t.targetUser}>: Has <@&${t.addRole}>, restores to <@&${t.restoreRole}> <t:${unixSeconds}:R>`;
 			})
 			.join('\n');

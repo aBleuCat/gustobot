@@ -4,6 +4,7 @@ import {
 	type ChatInputCommandInteraction,
 } from 'discord.js';
 import {Rule} from '../lib/models.js';
+import {immutConfig} from '../lib/config.js';
 
 const autoRoleViewCommand = {
 	data: new SlashCommandBuilder()
@@ -22,7 +23,10 @@ const autoRoleViewCommand = {
 
 		const list = rules
 			.map((r) => {
-				return `\`${r.ruleId}\` <@${r.watchUser}> triggers on <@${r.targetUser}>. Adds <@&${r.addRole}> and restores <@&${r.restoreRole}>. Duration: ${r.durationMs / 60_000}m\n`;
+				return `\`${r.ruleId}\`
+					<@${r.watchUser}> triggers on <@${r.targetUser}>.
+					Adds <@&${r.addRole}> and restores <@&${r.restoreRole}>.
+					Duration: ${r.durationMs / immutConfig.MINUTE_MS}m\n`;
 			})
 			.join('\n---\n');
 

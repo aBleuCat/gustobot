@@ -1,3 +1,4 @@
+import {immutConfig} from '../config.js';
 import {LolStats} from '../models.js';
 
 async function updateLolStatsDB() {
@@ -8,7 +9,8 @@ async function updateLolStatsDB() {
 	const todayString = now.toDateString();
 	const startOfYear = new Date(now.getFullYear(), 0, 1);
 	const weekNumber = Math.ceil(
-		((now.getTime() - startOfYear.getTime()) / 86_400_000 +
+		((now.getTime() - startOfYear.getTime()) /
+			immutConfig.DAY_MS +
 			startOfYear.getDay() +
 			1) /
 			7,

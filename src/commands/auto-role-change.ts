@@ -97,7 +97,7 @@ const autoRoleSetupCommand = {
 				ruleId: newRuleId,
 				addRole: addRole.id,
 				restoreRole: restoreRole.id,
-				durationMs: duration * 60_000,
+				durationMs: duration * immutConfig.MINUTE_MS,
 			},
 			{upsert: true},
 		);

@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
-import {config} from '../config.js';
+import {config, immutConfig} from '../config.js';
 import {devLog} from '../helpers/dev-log.js';
+
+const {SECOND_MS} = immutConfig;
 
 function startStatusChecker() {
 	console.log('[StatusChecker] Heartbeat task initialized.');
@@ -25,8 +27,8 @@ function startStatusChecker() {
 
 			const statusMessage = [
 				`**Status Check**`,
-				`Last check: <t:${Math.floor(now.getTime() / 1000)}:R>`,
-				`Next check: <t:${Math.floor(nextCheck.getTime() / 1000)}:R>`,
+				`Last check: <t:${Math.floor(now.getTime() / SECOND_MS)}:R>`,
+				`Next check: <t:${Math.floor(nextCheck.getTime() / SECOND_MS)}:R>`,
 				`*If missing, bot is likely offline.*`,
 				`**DB:** \`${dbStatus}\``,
 			].join('\n');

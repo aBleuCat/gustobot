@@ -73,7 +73,7 @@ const actionsList = {
 		});
 
 		const collector = response.createMessageComponentCollector({
-			time: 60_000,
+			time: immutConfig.MINUTE_MS,
 		});
 
 		collector.on('collect', (i: ButtonInteraction) => {

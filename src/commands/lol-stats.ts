@@ -3,6 +3,7 @@ import {
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
+import {immutConfig} from '../lib/config.js';
 import {LolStats} from '../lib/models.js';
 
 const lolStatsCommand = {
@@ -20,7 +21,9 @@ const lolStatsCommand = {
 		}
 
 		// Convert stored ms to unix seconds for discord timestamps
-		const unixSeconds = Math.floor(stats.lastTimestamp / 1000);
+		const unixSeconds = Math.floor(
+			stats.lastTimestamp / immutConfig.SECOND_MS,
+		);
 		const discordTime = `<t:${unixSeconds}:f>`; // Full, e.g., February 20, 2026 5:31 AM
 		const relativeTime = `<t:${unixSeconds}:R>`; // Relative, e.g., 5 minutes ago
 

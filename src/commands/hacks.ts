@@ -198,7 +198,10 @@ const hacksCommand = {
 				const chunks: string[] = [];
 				let currentChunk = '';
 				for (const item of items) {
-					if ((currentChunk + '\n' + item).length > 1900) {
+					if (
+						(currentChunk + '\n' + item).length >
+						immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT
+					) {
 						chunks.push(currentChunk);
 						currentChunk = item;
 					} else {

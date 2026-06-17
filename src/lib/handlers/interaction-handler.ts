@@ -3,7 +3,6 @@ import process from 'node:process';
 import {Buffer} from 'node:buffer';
 import vm from 'node:vm';
 import {
-	type Collection,
 	Events,
 	LabelBuilder,
 	MessageFlags,
@@ -16,23 +15,15 @@ import {
 	type ModalSubmitInteraction,
 	type CacheType,
 } from 'discord.js';
+import {config, immutConfig} from '../config.js';
 import {devLog} from '../helpers/dev-log.js';
 import {logToModChannel, init} from '../helpers/mod-log.js';
 import {ORBITAL_ID, DELTA} from '../../commands/orbital-cannon.js';
 import {OrbitalScript} from '../models.js';
-import {type Command} from '../../types.js';
 import {handleCommandError} from '../helpers/error-handlers.js';
 import {castAsWebhookable} from '../../type-utils.js';
 
-declare module 'discord.js' {
-	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions, no-unused-vars
-	interface Client {
-		commands: Collection<string, Command>;
-	}
-}
-
 // Catch data store
-
 type CatchDataStoreValue = {
 	ans: string;
 	bold: string;
@@ -42,8 +33,8 @@ type CatchDataStoreValue = {
 	_expiresAt?: number;
 };
 
+const {CATCH_DATA_TTL_MS, CATCH_DATA_CLEANUP_INTERVAL_MS} = config;
 const catchDataStore = new Map<string, CatchDataStoreValue>();
-const CATCH_DATA_TTL_MS = 2 * 60 * 1000;
 
 setInterval(() => {
 	const now = Date.now();
@@ -55,10 +46,9 @@ setInterval(() => {
 			catchDataStore.delete(key);
 		}
 	}
-}, 60 * 1000);
+}, CATCH_DATA_CLEANUP_INTERVAL_MS);
 
 // Registration
-
 export function registerInteractionHandler(client: Client) {
 	client.on(
 		Events.InteractionCreate,
@@ -450,7 +440,7 @@ async function reportDamage(
 	}
 
 	const codeBlock = `\`\`\`js\n${safeText}\n\`\`\``;
-	if (codeBlock.length <= 2000) {
+	if (codeBlock.length <= immutConfig.DISCORD_MSG_CHAR_LIMIT) {
 		return interaction.reply({
 			content: codeBlock,
 			flags: [MessageFlags.Ephemeral],

@@ -11,7 +11,29 @@ const currentInverseSum = Object.entries(HORSE_VALUES)
 	.reduce((sum, [, data]) => sum + 1 / data.value, 0);
 const antiinflator = currentInverseSum / BASELINE_SUM;
 
+const SECOND_MS = 1000;
+const MINUTE_MS = 60 * SECOND_MS;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+export const immutConfig = {
+	// Time constants. Instead of doing 2 * 60 * 1000 or even worse 120_000, do 2 * MINUTE_MS
+	SECOND_MS,
+	MINUTE_MS,
+	HOUR_MS,
+	DAY_MS,
+	// Discord caps messages at 2000 characters; above that, the message is dumped into a text file, I think
+	DISCORD_MSG_CHAR_LIMIT: 2000,
+	DISCORD_MSG_SAFE_CHAR_LIMIT: 1900,
+	// Bot admins (User Ids) that can use admin-only commands
+	ADMINS: new Set(['934290747623096381']),
+} as const;
+
 export const config = {
+	// For interaction-handler.ts
+	CATCH_DATA_TTL_MS: 2 * MINUTE_MS,
+	CATCH_DATA_CLEANUP_INTERVAL_MS: MINUTE_MS,
+
 	// For horse-spawner.ts
 	DEBOUNCE_MS: 2000,
 	SIMILARITY_THRESHOLD: 0.7,
@@ -29,7 +51,7 @@ export const config = {
 
 	// For horse-gamble.ts
 	MIN_CYCLE_COIN_COUNT: -5,
-	FRENZY_THRESHOLD_MS: 10 * 60 * 1000,
+	FRENZY_THRESHOLD_MS: 10 * MINUTE_MS,
 	FRENZY_CHANCE: 0.2,
 	CONFISCATE_CHANCE: 0.25,
 	LOSS_THRESHOLD: -75,
@@ -38,7 +60,7 @@ export const config = {
 	MIN_ROLL: -100,
 
 	// For message-cache-cleanup.ts
-	MESSAGE_CACHE_CLEANUP_MS: 10 * 60 * 1000,
+	MESSAGE_CACHE_CLEANUP_MS: 10 * MINUTE_MS,
 
 	// For dev-log.ts
 	DEV_GUILD_ID: '1487571282022236313',
@@ -52,13 +74,13 @@ export const config = {
 	COMMON_SELL_PRICE: 2,
 
 	// For autorole.ts
-	RULE_CACHE_TTL_MS: 60 * 1000, // 1 minute
+	RULE_CACHE_TTL_MS: MINUTE_MS,
 
 	// For resource-monitor.ts
 	HEAP_THRESHOLD_MB: 350,
 	CPU_WARN_PERCENT: 80,
 	RESOURCE_MONITOR_INTERVAL: 15_000,
-	WARNING_COOLDOWN_MS: 5 * 60 * 1000,
+	WARNING_COOLDOWN_MS: 5 * MINUTE_MS,
 
 	// For message-queue.ts
 	CHANNEL_MSG_LIMIT_MS: 1100,
@@ -68,7 +90,7 @@ export const config = {
 	ROLE_REVERTER_INTERVAL: 10_000,
 
 	// For status-checker.ts
-	STATUS_CHECKER_INTERVAL: 2 * 60 * 1000,
+	STATUS_CHECKER_INTERVAL: 2 * MINUTE_MS,
 
 	// Changeable with /hacks lists
 	lists: {
@@ -80,12 +102,11 @@ export const config = {
 	},
 };
 
-export const immutConfig = {
-	// Bot admins (User Ids) that can use admin-only commands
-	ADMINS: new Set(['934290747623096381']),
-} as const;
-
 export const descriptions: Record<keyof typeof config, string> = {
+	CATCH_DATA_TTL_MS:
+		'How long a user gets to catch a fake countryball before it expires (in ms)',
+	CATCH_DATA_CLEANUP_INTERVAL_MS:
+		'How frequently expired fake countryball spawn data is cleaned up',
 	DEBOUNCE_MS: 'Min ms between horse rolls per user',
 	SIMILARITY_THRESHOLD:
 		'How similar two messages must be to be blocked (0-1)',

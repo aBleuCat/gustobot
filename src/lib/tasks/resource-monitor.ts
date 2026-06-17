@@ -1,6 +1,6 @@
 import process from 'node:process';
 import type {Client} from 'discord.js';
-import {config} from '../config.js';
+import {config, immutConfig} from '../config.js';
 import {ModChannel} from '../models.js';
 import {logToModChannel} from '../helpers/mod-log.js';
 import {devLog} from '../helpers/dev-log.js';
@@ -11,6 +11,7 @@ const {
 	WARNING_COOLDOWN_MS,
 	RESOURCE_MONITOR_INTERVAL,
 } = config;
+const {SECOND_MS} = immutConfig;
 
 let lastCpuUsage = process.cpuUsage();
 let lastTime = process.hrtime();
@@ -34,9 +35,9 @@ function startResourceMonitor(client: Client) {
 				currentCpu.system - lastCpuUsage.system;
 
 			const timeDiffMs =
-				(currentTime[0] - lastTime[0]) * 1000 +
+				(currentTime[0] - lastTime[0]) * SECOND_MS +
 				(currentTime[1] - lastTime[1]) / 1e6;
-			const totalCpuMs = (userDiff + systemDiff) / 1000;
+			const totalCpuMs = (userDiff + systemDiff) / SECOND_MS;
 			const cpuPercent = (totalCpuMs / timeDiffMs) * 100;
 
 			lastCpuUsage = currentCpu;

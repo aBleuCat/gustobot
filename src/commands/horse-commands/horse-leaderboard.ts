@@ -13,7 +13,7 @@ import mongoose from 'mongoose';
 import type {IUserHorses} from '../../lib/models.js';
 import rawHorseValues from '../../data/horses.json' with {type: 'json'};
 import {castAsHorseData} from '../../type-utils.js';
-import {horseName} from '../../lib/helpers/horse-funcs.js';
+import {immutConfig} from '../../lib/config.js';
 import {fetchWithTimeout} from '../../lib/helpers/timeout-helpers.js';
 
 type SortList = Array<{
@@ -104,7 +104,7 @@ export async function execute(
 				try {
 					const user = await fetchWithTimeout<User>(
 						interaction.client.users.fetch(userId),
-						2000,
+						2 * immutConfig.SECOND_MS,
 					);
 					const name =
 						user?.displayName ??
@@ -201,7 +201,7 @@ export async function execute(
 
 	const reply = await interaction.fetchReply();
 	const collector = reply.createMessageComponentCollector({
-		time: 120_000,
+		time: 2 * immutConfig.MINUTE_MS,
 	});
 
 	collector.on('collect', (i: ButtonInteraction) => {
