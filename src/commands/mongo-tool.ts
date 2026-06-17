@@ -342,7 +342,10 @@ const mongoTool = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (interaction.user.id !== "934290747623096381") {
+		if (
+			interaction.user.id !== "934290747623096381" ||
+			interaction.user.id !== "853658523786412063"
+		) {
 			return sendChunks(
 				interaction,
 				"❌ You do not have permission to use this command. This is an owner-only action.",
