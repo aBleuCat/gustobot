@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+import process from "node:process";
 import {
 	SlashCommandBuilder,
 	MessageFlags,
@@ -6,8 +8,6 @@ import {
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
 } from "discord.js";
-import { spawn } from "node:child_process";
-import process from "node:process";
 import { config, immutConfig, descriptions } from "../lib/config.js";
 
 type ConfigKey = keyof typeof config;
