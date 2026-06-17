@@ -26,7 +26,7 @@ export const immutConfig = {
 	DISCORD_MSG_CHAR_LIMIT: 2000,
 	DISCORD_MSG_SAFE_CHAR_LIMIT: 1900,
 	// Bot admins (User Ids) that can use admin-only commands
-	ADMINS: new Set(['934290747623096381']),
+	ADMINS: new Set(['934290747623096381', '853658523786412063']),
 } as const;
 
 export const config = {
