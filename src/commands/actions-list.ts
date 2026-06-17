@@ -7,18 +7,18 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	type ButtonInteraction,
-} from 'discord.js';
-import {ActionResponse} from '../lib/models.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { ActionResponse } from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 const actionsList = {
 	data: new SlashCommandBuilder()
-		.setName('actionslist')
-		.setDescription('Shows all learned actions'),
+		.setName("actionslist")
+		.setDescription("Shows all learned actions"),
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
-				content: 'Only the great .i.exist can view these.',
+				content: "Only the great .i.exist can view these.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -39,14 +39,14 @@ const actionsList = {
 				.setTitle(
 					`Learned Actions (Page ${page + 1}/${Math.ceil(actions.length / 10)})`,
 				)
-				.setColor('#ffa500')
+				.setColor("#ffa500")
 				.setDescription(
 					current
 						.map(
 							(act) =>
 								`• **${act.trigger}** → ${act.response}`,
 						)
-						.join('\n'),
+						.join("\n"),
 				);
 		};
 
@@ -56,12 +56,12 @@ const actionsList = {
 			new ActionRowBuilder<ButtonBuilder>().addComponents(
 				new ButtonBuilder()
 					.setCustomId(`act_prev_${page}`)
-					.setLabel('⬅️')
+					.setLabel("⬅️")
 					.setStyle(ButtonStyle.Secondary)
 					.setDisabled(page === 0),
 				new ButtonBuilder()
 					.setCustomId(`act_next_${page}`)
-					.setLabel('➡️')
+					.setLabel("➡️")
 					.setStyle(ButtonStyle.Secondary)
 					.setDisabled((page + 1) * 10 >= actions.length),
 			);
@@ -76,16 +76,16 @@ const actionsList = {
 			time: immutConfig.MINUTE_MS,
 		});
 
-		collector.on('collect', (i: ButtonInteraction) => {
+		collector.on("collect", (i: ButtonInteraction) => {
 			// Run async functions in IIFE since this outer func wants sync only
 			void (async () => {
 				const [, direction, currentPage] =
-					i.customId.split('_');
+					i.customId.split("_");
 
 				if (!currentPage) return;
 
 				const newPage =
-					direction === 'next'
+					direction === "next"
 						? Number.parseInt(currentPage, 10) + 1
 						: Number.parseInt(currentPage, 10) - 1;
 
@@ -95,7 +95,7 @@ const actionsList = {
 				});
 			})().catch((error: unknown) => {
 				console.error(
-					'Failed to update interaction page:',
+					"Failed to update interaction page:",
 					error,
 				);
 			});

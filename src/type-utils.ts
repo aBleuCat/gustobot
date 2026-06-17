@@ -3,28 +3,28 @@ import {
 	type TextChannel,
 	type NewsChannel,
 	ChannelType,
-} from 'discord.js';
-import type {Horse, HorseData, AnyChannel} from './types.js';
+} from "discord.js";
+import type { Horse, HorseData, AnyChannel } from "./types.js";
 
 function isHorse(item: unknown): item is Horse {
 	return (
-		typeof item === 'object' &&
+		typeof item === "object" &&
 		item !== null &&
-		'name' in item &&
-		typeof (item as Record<string, unknown>).name === 'string' &&
-		'value' in item &&
-		typeof (item as Record<string, unknown>).value === 'number' &&
-		'link' in item &&
-		typeof (item as Record<string, unknown>).link === 'string'
+		"name" in item &&
+		typeof (item as Record<string, unknown>).name === "string" &&
+		"value" in item &&
+		typeof (item as Record<string, unknown>).value === "number" &&
+		"link" in item &&
+		typeof (item as Record<string, unknown>).link === "string"
 	);
 }
 
 export function isHorseData(
 	data: unknown,
-	mode: 'all' | number = 'all',
+	mode: "all" | number = "all",
 ): data is Record<string, Horse> {
 	if (
-		typeof data !== 'object' ||
+		typeof data !== "object" ||
 		data === null ||
 		Array.isArray(data)
 	) {
@@ -33,7 +33,7 @@ export function isHorseData(
 
 	const entries = Object.values(data);
 	const limit =
-		mode === 'all'
+		mode === "all"
 			? entries.length
 			: Math.min(mode, entries.length);
 
@@ -48,11 +48,11 @@ export function isHorseData(
 
 export function castAsHorseData(
 	data: unknown,
-	mode: 'all' | number = 5,
+	mode: "all" | number = 5,
 ): HorseData {
 	if (!isHorseData(data, mode)) {
 		throw new TypeError(
-			'Data (likely horses.json) does not abide by HorseData type',
+			"Data (likely horses.json) does not abide by HorseData type",
 		);
 	}
 
@@ -74,7 +74,7 @@ export function castAsTextBased(
 ): GuildTextBasedChannel {
 	if (channel && isGuildTextBased(channel)) return channel;
 	throw new Error(
-		`Expected a text-based channel but received: ${channel?.type ?? 'null'}`,
+		`Expected a text-based channel but received: ${channel?.type ?? "null"}`,
 	);
 }
 
@@ -93,7 +93,7 @@ export function returnAsTextBased(
 			error instanceof Error
 				? error
 				: new Error(
-						typeof error === 'string' ? error : 'idk',
+						typeof error === "string" ? error : "idk",
 					);
 	}
 
@@ -105,7 +105,7 @@ function isWebhookableChannel(
 ): channel is TextChannel | NewsChannel {
 	return (
 		channel &&
-		'type' in channel &&
+		"type" in channel &&
 		(channel.type === ChannelType.GuildText ||
 			channel.type === ChannelType.GuildAnnouncement)
 	);
@@ -117,6 +117,6 @@ export function castAsWebhookable(
 ): TextChannel | NewsChannel {
 	if (channel && isWebhookableChannel(channel)) return channel;
 	throw new Error(
-		`Expected a text or announcements channel but received: ${channel?.type ?? 'null'}`,
+		`Expected a text or announcements channel but received: ${channel?.type ?? "null"}`,
 	);
 }

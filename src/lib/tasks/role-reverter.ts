@@ -1,6 +1,6 @@
-import type {Client, GuildMember} from 'discord.js';
-import {Timeout} from '../models.js';
-import {config} from '../config.js';
+import type { Client, GuildMember } from "discord.js";
+import { Timeout } from "../models.js";
+import { config } from "../config.js";
 
 let roleReverterInterval: NodeJS.Timeout | undefined;
 
@@ -32,7 +32,7 @@ export function startRoleReverter(client: Client) {
 	roleReverterInterval = setInterval(() => {
 		(async () => {
 			const expired = await Timeout.find({
-				revertAt: {$lte: Date.now()},
+				revertAt: { $lte: Date.now() },
 			}).lean();
 
 			const deletionPromises = expired.map(async (doc) => {
@@ -75,7 +75,7 @@ export function startRoleReverter(client: Client) {
 					}
 				}
 
-				await Timeout.deleteOne({_id: doc._id});
+				await Timeout.deleteOne({ _id: doc._id });
 			});
 
 			await Promise.all(deletionPromises);

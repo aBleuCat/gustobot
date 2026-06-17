@@ -1,16 +1,16 @@
-import type {Message} from 'discord.js';
-import {HorseConfig, UserHorses, MessageCache} from '../models.js';
-import stringSimilarity from '../helpers/similarity-helper.js';
-import {config} from '../config.js';
-import {conditionHorse} from '../helpers/horse-funcs.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
+import type { Message } from "discord.js";
+import { HorseConfig, UserHorses, MessageCache } from "../models.js";
+import stringSimilarity from "../helpers/similarity-helper.js";
+import { config } from "../config.js";
+import { conditionHorse } from "../helpers/horse-funcs.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import {
 	castAsHorseData,
 	returnAsTextBased,
-} from '../../type-utils.js';
-import devLog from '../helpers/dev-log.js';
-import queueMessage from '../helpers/message-queue.js';
-import type {HorseData} from '../../types.js';
+} from "../../type-utils.js";
+import devLog from "../helpers/dev-log.js";
+import queueMessage from "../helpers/message-queue.js";
+import type { HorseData } from "../../types.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
@@ -43,7 +43,7 @@ function determineSpawnedHorses(message: Message) {
 		}
 	}
 
-	return {spawnedCounts, spawnedHorses, anySpawned};
+	return { spawnedCounts, spawnedHorses, anySpawned };
 }
 
 async function cacheAndCheckMessage(
@@ -76,7 +76,7 @@ async function cacheAndCheckMessage(
 	}
 
 	await MessageCache.findOneAndUpdate(
-		{userId: message.author.id, guildId: message.guild.id},
+		{ userId: message.author.id, guildId: message.guild.id },
 		{
 			lastMessageTime: now,
 			recentMessages: [
@@ -84,7 +84,7 @@ async function cacheAndCheckMessage(
 				...(cache.recentMessages ?? []),
 			].slice(0, config.RECENT_MSG_COUNT),
 		},
-		{upsert: true},
+		{ upsert: true },
 	);
 
 	return true;
@@ -112,7 +112,7 @@ async function handleHorseSpawn(message: Message) {
 		.catch(() => message.channel);
 
 	// Determine what spawns (does not modify DB)
-	const {spawnedCounts, spawnedHorses, anySpawned} =
+	const { spawnedCounts, spawnedHorses, anySpawned } =
 		determineSpawnedHorses(message);
 
 	const castedChannel = returnAsTextBased(targetChannel);
@@ -142,25 +142,28 @@ async function handleHorseSpawn(message: Message) {
 		}
 
 		inventory = await UserHorses.findOneAndUpdate(
-			{userId: message.author.id},
+			{ userId: message.author.id },
 			{
 				$inc: inc,
-				$setOnInsert: {userId: message.author.id, horses: {}},
+				$setOnInsert: {
+					userId: message.author.id,
+					horses: {},
+				},
 			},
-			{upsert: true, new: true},
+			{ upsert: true, new: true },
 		);
 	}
 
 	for (const [slug, data] of Object.entries(spawnedHorses)) {
-		let prefix = 'found the';
-		let decoration = '';
+		let prefix = "found the";
+		let decoration = "";
 		if (
 			data.value > config.FLAIR_THRESHOLD_VALUE ||
-			slug === 'dung_beetle'
+			slug === "dung_beetle"
 		) {
 			prefix =
-				slug === 'dung_beetle' ? 'gets ✨' : 'found the ✨';
-			decoration = '✨';
+				slug === "dung_beetle" ? "gets ✨" : "found the ✨";
+			decoration = "✨";
 		}
 
 		queueMessage({
@@ -169,7 +172,7 @@ async function handleHorseSpawn(message: Message) {
 			priority: 2,
 		}).catch((error: unknown) => {
 			console.error(
-				'QueueMessage error while spawning horse:',
+				"QueueMessage error while spawning horse:",
 				error,
 			);
 		});
@@ -180,7 +183,7 @@ async function handleHorseSpawn(message: Message) {
 				priority: 2,
 			}).catch((error: unknown) => {
 				console.error(
-					'QueueMessage error while spawning horse:',
+					"QueueMessage error while spawning horse:",
 					error,
 				);
 			});
@@ -188,19 +191,19 @@ async function handleHorseSpawn(message: Message) {
 
 	// If we updated inventory atomically, notify about coin drops and run condition
 	if (anySpawned && inventory) {
-		if (typeof coinDropSize === 'number') {
+		if (typeof coinDropSize === "number") {
 			queueMessage({
 				channel: castedChannel,
 				content: `<@${message.author.id}> acquired **${coinDropSize} Horse Coins** 🪙!`,
 			}).catch((error: unknown) => {
 				console.error(
-					'QueueMessage error while spawning horse:',
+					"QueueMessage error while spawning horse:",
 					error,
 				);
 			});
 		}
 
-		await conditionHorse(inventory, {channel: castedChannel});
+		await conditionHorse(inventory, { channel: castedChannel });
 	}
 }
 

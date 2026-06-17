@@ -2,33 +2,33 @@ import {
 	SlashCommandSubcommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {UserHorses} from '../../lib/models.js';
+} from "discord.js";
+import { UserHorses } from "../../lib/models.js";
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('give')
-	.setDescription('Give your horse coins to another user!')
+	.setName("give")
+	.setDescription("Give your horse coins to another user!")
 	.addUserOption((option) =>
 		option
-			.setName('target')
-			.setDescription('Who to give coins to')
+			.setName("target")
+			.setDescription("Who to give coins to")
 			.setRequired(true),
 	)
 	.addIntegerOption((option) =>
 		option
-			.setName('amount')
-			.setDescription('How many coins to give')
+			.setName("amount")
+			.setDescription("How many coins to give")
 			.setRequired(true)
 			.setMinValue(1),
 	);
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const target = interaction.options.getUser('target');
-	const amount = interaction.options.getInteger('amount');
+	const target = interaction.options.getUser("target");
+	const amount = interaction.options.getInteger("amount");
 	if (!target || !amount)
 		return interaction.reply(
-			'Something went kaboom when trying to get your inputs',
+			"Something went kaboom when trying to get your inputs",
 		);
 
 	if (target.id === interaction.user.id) {
@@ -62,7 +62,7 @@ export async function execute(
 		});
 	}
 
-	let receiver = await UserHorses.findOne({userId: target.id});
+	let receiver = await UserHorses.findOne({ userId: target.id });
 	receiver ??= new UserHorses({
 		userId: target.id,
 		horses: new Map(),
@@ -75,6 +75,6 @@ export async function execute(
 	await receiver.save();
 
 	return interaction.reply(
-		`<@${interaction.user.id}> gave **${amount}** 🪙 Horse Coin${amount === 1 ? '' : 's'} to <@${target.id}>!`,
+		`<@${interaction.user.id}> gave **${amount}** 🪙 Horse Coin${amount === 1 ? "" : "s"} to <@${target.id}>!`,
 	);
 }

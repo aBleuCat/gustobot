@@ -1,6 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import {fileURLToPath, pathToFileURL} from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
 	Collection,
 	MessageFlags,
@@ -8,7 +8,7 @@ import {
 	type SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
-} from 'discord.js';
+} from "discord.js";
 
 type SubcommandModule = {
 	data: SlashCommandSubcommandBuilder;
@@ -50,7 +50,7 @@ export class SubcommandLoader {
 			.readdirSync(this.folderPath)
 			.filter(
 				(file) =>
-					file.endsWith('.ts') || file.endsWith('.js'),
+					file.endsWith(".ts") || file.endsWith(".js"),
 			);
 
 		// Map files to dynamic import promises to load them concurrently
@@ -92,7 +92,7 @@ export class SubcommandLoader {
 
 		if (!subcommand) {
 			await interaction.reply({
-				content: 'Subcommand not found.',
+				content: "Subcommand not found.",
 				flags: [MessageFlags.Ephemeral],
 			});
 			return;
@@ -110,7 +110,7 @@ export class SubcommandLoader {
 		// Explicitly check that the subcommand exists and contains an autocomplete function
 		if (
 			subcommand &&
-			typeof subcommand.autocomplete === 'function'
+			typeof subcommand.autocomplete === "function"
 		) {
 			await subcommand.autocomplete(interaction);
 		}

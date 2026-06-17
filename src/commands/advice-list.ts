@@ -7,14 +7,14 @@ import {
 	EmbedBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {Advice} from '../lib/models.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { Advice } from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 const adviceListCommand = {
 	data: new SlashCommandBuilder()
-		.setName('advicelist')
-		.setDescription('Shows stored advice in pages (Admin Only)')
+		.setName("advicelist")
+		.setDescription("Shows stored advice in pages (Admin Only)")
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		),
@@ -23,7 +23,7 @@ const adviceListCommand = {
 
 		if (advices.length === 0)
 			return interaction.reply(
-				'The circle of advice is currently empty.',
+				"The circle of advice is currently empty.",
 			);
 
 		const generateEmbed = (page: number) => {
@@ -34,14 +34,14 @@ const adviceListCommand = {
 				.setTitle(
 					`📜 Scrolls of Muy Advice (Page ${page + 1}/${Math.ceil(advices.length / 10)})`,
 				)
-				.setColor('#00ae86')
+				.setColor("#00ae86")
 				.setDescription(
 					current
 						.map(
 							(a, i) =>
 								`**${start + i + 1}.** ${a.content}`,
 						)
-						.join('\n') || 'No more advice.',
+						.join("\n") || "No more advice.",
 				);
 
 			return embed;
@@ -51,12 +51,12 @@ const adviceListCommand = {
 			const row = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setCustomId(`adv_prev_${page}`)
-					.setLabel('Previous')
+					.setLabel("Previous")
 					.setStyle(ButtonStyle.Primary)
 					.setDisabled(page === 0),
 				new ButtonBuilder()
 					.setCustomId(`adv_next_${page}`)
-					.setLabel('Next')
+					.setLabel("Next")
 					.setStyle(ButtonStyle.Primary)
 					.setDisabled((page + 1) * 10 >= advices.length),
 			);
@@ -74,15 +74,15 @@ const adviceListCommand = {
 			time: immutConfig.MINUTE_MS,
 		});
 
-		collector.on('collect', (i) => {
+		collector.on("collect", (i) => {
 			(async () => {
 				const [type, direction, currentPage] =
-					i.customId.split('_');
-				if (type !== 'adv') return;
+					i.customId.split("_");
+				if (type !== "adv") return;
 				if (currentPage === undefined) return;
 
 				const newPage =
-					direction === 'next'
+					direction === "next"
 						? Number.parseInt(currentPage, 10) + 1
 						: Number.parseInt(currentPage, 10) - 1;
 
@@ -91,7 +91,7 @@ const adviceListCommand = {
 					components: [generateButtons(newPage)],
 				});
 			})().catch((error: unknown) => {
-				console.error('Collector execution failed:', error);
+				console.error("Collector execution failed:", error);
 			});
 		});
 	},

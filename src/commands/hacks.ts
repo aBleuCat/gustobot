@@ -5,16 +5,16 @@ import {
 	EmbedBuilder,
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {spawn} from 'node:child_process';
-import process from 'node:process';
-import {config, immutConfig, descriptions} from '../lib/config.js';
+} from "discord.js";
+import { spawn } from "node:child_process";
+import process from "node:process";
+import { config, immutConfig, descriptions } from "../lib/config.js";
 
 type ConfigKey = keyof typeof config;
 type NumericConfigKey = {
 	[K in ConfigKey]: (typeof config)[K] extends number ? K : never;
 }[ConfigKey];
-type ConfigListKey = Exclude<keyof typeof config.lists, 'botAdmins'>;
+type ConfigListKey = Exclude<keyof typeof config.lists, "botAdmins">;
 
 const adminIds = immutConfig.ADMINS;
 
@@ -22,126 +22,126 @@ const isConfigKey = (key: string): key is ConfigKey =>
 	Object.hasOwn(config, key);
 
 const isNumericConfigKey = (key: string): key is NumericConfigKey =>
-	isConfigKey(key) && typeof config[key] === 'number';
+	isConfigKey(key) && typeof config[key] === "number";
 
 const isConfigListKey = (key: string): key is ConfigListKey =>
-	key in config.lists && key !== 'botAdmins';
+	key in config.lists && key !== "botAdmins";
 
 const isListAction = (
 	value: string,
-): value is 'add' | 'remove' | 'view' =>
-	value === 'add' || value === 'remove' || value === 'view';
+): value is "add" | "remove" | "view" =>
+	value === "add" || value === "remove" || value === "view";
 
 const renderConfigValue = (value: unknown): string =>
-	typeof value === 'object' && value !== null
+	typeof value === "object" && value !== null
 		? JSON.stringify(value)
 		: String(value);
 
 const hacksCommand = {
 	data: new SlashCommandBuilder()
-		.setName('hacks')
-		.setDescription('Admin tools')
+		.setName("hacks")
+		.setDescription("Admin tools")
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		)
 		.addSubcommand((sub) =>
 			sub
-				.setName('vars')
+				.setName("vars")
 				.setDescription(
-					'View or modify runtime config variables',
+					"View or modify runtime config variables",
 				)
 				.addStringOption((option) =>
 					option
-						.setName('variable')
+						.setName("variable")
 						.setDescription(
-							'The variable to interact with',
+							"The variable to interact with",
 						)
 						.setRequired(false)
 						.setAutocomplete(true),
 				)
 				.addStringOption((option) =>
 					option
-						.setName('action')
+						.setName("action")
 						.setDescription(
-							'What to do with the variable',
+							"What to do with the variable",
 						)
 						.setRequired(false)
 						.addChoices(
 							{
-								name: 'get — show current value',
-								value: 'get',
+								name: "get — show current value",
+								value: "get",
 							},
 							{
-								name: 'set — set to a new value',
-								value: 'set',
+								name: "set — set to a new value",
+								value: "set",
 							},
 							{
-								name: 'add — add to current value',
-								value: 'add',
+								name: "add — add to current value",
+								value: "add",
 							},
 						),
 				)
 				.addNumberOption((option) =>
 					option
-						.setName('value')
-						.setDescription('Value to set or add')
+						.setName("value")
+						.setDescription("Value to set or add")
 						.setRequired(false),
 				),
 		)
 		.addSubcommand((sub) =>
 			sub
-				.setName('killbot')
-				.setDescription('Shut down the bot'),
+				.setName("killbot")
+				.setDescription("Shut down the bot"),
 		)
 		.addSubcommand((sub) =>
 			sub
-				.setName('restartbot')
-				.setDescription('Restart the bot'),
+				.setName("restartbot")
+				.setDescription("Restart the bot"),
 		)
 		.addSubcommand((sub) =>
 			sub
-				.setName('lists')
-				.setDescription('Manage whitelists and blacklists')
+				.setName("lists")
+				.setDescription("Manage whitelists and blacklists")
 				.addStringOption((option) =>
 					option
-						.setName('listname')
-						.setDescription('Which list to modify')
+						.setName("listname")
+						.setDescription("Which list to modify")
 						.setRequired(true)
 						.addChoices(
 							{
-								name: 'Primary Whitelist',
-								value: 'primaryTrigWhitelist',
+								name: "Primary Whitelist",
+								value: "primaryTrigWhitelist",
 							},
 							{
-								name: 'Primary Blacklist',
-								value: 'primaryTrigBlacklist',
+								name: "Primary Blacklist",
+								value: "primaryTrigBlacklist",
 							},
 							{
-								name: 'Secondary Whitelist',
-								value: 'secondaryTrigWhitelist',
+								name: "Secondary Whitelist",
+								value: "secondaryTrigWhitelist",
 							},
 							{
-								name: 'Secondary Blacklist',
-								value: 'secondaryTrigBlacklist',
+								name: "Secondary Blacklist",
+								value: "secondaryTrigBlacklist",
 							},
 						),
 				)
 				.addStringOption((option) =>
 					option
-						.setName('action')
-						.setDescription('Add or remove an ID')
+						.setName("action")
+						.setDescription("Add or remove an ID")
 						.setRequired(true)
 						.addChoices(
-							{name: 'add', value: 'add'},
-							{name: 'remove', value: 'remove'},
-							{name: 'view', value: 'view'},
+							{ name: "add", value: "add" },
+							{ name: "remove", value: "remove" },
+							{ name: "view", value: "view" },
 						),
 				)
 				.addStringOption((option) =>
 					option
-						.setName('id')
+						.setName("id")
 						.setDescription(
-							'The User/Bot ID to add or remove',
+							"The User/Bot ID to add or remove",
 						)
 						.setRequired(false),
 				),
@@ -165,7 +165,7 @@ const hacksCommand = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!adminIds.has(interaction.user.id)) {
 			return interaction.reply({
-				content: 'you cannot do that bro',
+				content: "you cannot do that bro",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -173,24 +173,24 @@ const hacksCommand = {
 		const sub = interaction.options.getSubcommand();
 
 		// Kills bot
-		if (sub === 'killbot') {
+		if (sub === "killbot") {
 			await interaction.reply({
-				content: 'Shutting down...',
+				content: "Shutting down...",
 				flags: [MessageFlags.Ephemeral],
 			});
 			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
 			process.exit(0);
 		}
 
-		if (sub === 'restartbot') {
+		if (sub === "restartbot") {
 			spawn(process.execPath, process.argv.slice(1), {
 				detached: true,
-				stdio: 'ignore',
+				stdio: "ignore",
 				windowsHide: true,
 			}).unref();
 
 			await interaction.reply({
-				content: 'Restarting...',
+				content: "Restarting...",
 				flags: [MessageFlags.Ephemeral],
 			});
 			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
@@ -198,10 +198,10 @@ const hacksCommand = {
 		}
 
 		// Vars
-		if (sub === 'vars') {
-			const varName = interaction.options.getString('variable');
-			const action = interaction.options.getString('action');
-			const value = interaction.options.getNumber('value');
+		if (sub === "vars") {
+			const varName = interaction.options.getString("variable");
+			const action = interaction.options.getString("action");
+			const value = interaction.options.getNumber("value");
 
 			// No variable specified — list all
 			if (!varName) {
@@ -212,23 +212,23 @@ const hacksCommand = {
 					}
 
 					items.push(
-						`**${key}**: \`${renderConfigValue(config[key])}\`\n${descriptions[key] ?? ''}`,
+						`**${key}**: \`${renderConfigValue(config[key])}\`\n${descriptions[key] ?? ""}`,
 					);
 				}
 
 				// Split into chunks to avoid 2000 char limit
 				const chunks: string[] = [];
-				let currentChunk = '';
+				let currentChunk = "";
 				for (const item of items) {
 					if (
-						(currentChunk + '\n' + item).length >
+						(currentChunk + "\n" + item).length >
 						immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT
 					) {
 						chunks.push(currentChunk);
 						currentChunk = item;
 					} else {
 						currentChunk +=
-							(currentChunk ? '\n' : '') + item;
+							(currentChunk ? "\n" : "") + item;
 					}
 				}
 
@@ -239,7 +239,7 @@ const hacksCommand = {
 				// Send each chunk as a separate embed
 				for (let i = 0; i < chunks.length; i++) {
 					const embed = new EmbedBuilder()
-						.setColor('#00_99_ff')
+						.setColor("#00_99_ff")
 						.setTitle(
 							`Runtime Config (${i + 1}/${chunks.length})`,
 						)
@@ -273,9 +273,9 @@ const hacksCommand = {
 			const configKey = varName;
 
 			// No action — default to get
-			if (!action || action === 'get') {
+			if (!action || action === "get") {
 				return interaction.reply({
-					content: `**${configKey}**: \`${renderConfigValue(config[configKey])}\`\n${descriptions[configKey] ?? ''}`,
+					content: `**${configKey}**: \`${renderConfigValue(config[configKey])}\`\n${descriptions[configKey] ?? ""}`,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
@@ -289,7 +289,7 @@ const hacksCommand = {
 
 			const oldValue = config[configKey];
 
-			if (action === 'set') {
+			if (action === "set") {
 				if (!isNumericConfigKey(configKey)) {
 					return interaction.reply({
 						content: `Can't set a non-number variable.`,
@@ -304,7 +304,7 @@ const hacksCommand = {
 				});
 			}
 
-			if (action === 'add') {
+			if (action === "add") {
 				if (!isNumericConfigKey(configKey)) {
 					return interaction.reply({
 						content: `Can't add to a non-number variable.`,
@@ -320,31 +320,31 @@ const hacksCommand = {
 			}
 		}
 
-		if (sub === 'lists') {
+		if (sub === "lists") {
 			const listName = interaction.options.getString(
-				'listname',
+				"listname",
 				true,
 			);
 			const action = interaction.options.getString(
-				'action',
+				"action",
 				true,
 			);
-			const targetId = interaction.options.getString('id');
+			const targetId = interaction.options.getString("id");
 
 			if (!isConfigListKey(listName) || !isListAction(action)) {
 				return interaction.reply({
-					content: 'Invalid list command options provided.',
+					content: "Invalid list command options provided.",
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
 			config.lists[listName] ??= [];
 
-			if (action === 'view') {
+			if (action === "view") {
 				const listString =
 					config.lists[listName].length > 0
-						? config.lists[listName].join(', ')
-						: 'Empty';
+						? config.lists[listName].join(", ")
+						: "Empty";
 				return interaction.reply({
 					content: `**${listName}**: ${listString}`,
 					flags: [MessageFlags.Ephemeral],
@@ -353,13 +353,13 @@ const hacksCommand = {
 
 			if (!targetId) {
 				return interaction.reply({
-					content: 'ID required for this action.',
+					content: "ID required for this action.",
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
 			if (
-				action === 'add' &&
+				action === "add" &&
 				!config.lists[listName].includes(targetId)
 			) {
 				config.lists[listName].push(targetId);
@@ -369,7 +369,7 @@ const hacksCommand = {
 				});
 			}
 
-			if (action === 'remove') {
+			if (action === "remove") {
 				config.lists[listName] = config.lists[
 					listName
 				].filter((id) => id !== targetId);

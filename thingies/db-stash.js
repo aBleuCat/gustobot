@@ -1,22 +1,22 @@
 /* eslint-disable unicorn/no-abusive-eslint-disable */
 /* eslint-disable */
-import fs from 'node:fs';
-import path from 'node:path';
-import readline from 'node:readline';
-import {fileURLToPath} from 'node:url';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import * as Models from '../src/lib/models.js';
+import fs from "node:fs";
+import path from "node:path";
+import readline from "node:readline";
+import { fileURLToPath } from "node:url";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import * as Models from "../src/lib/models.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({path: path.join(__dirname, '.env')});
+dotenv.config({ path: path.join(__dirname, ".env") });
 const ModelsMap = Models;
 
-const {MONGO_URI} = process.env;
+const { MONGO_URI } = process.env;
 
 async function connectDB() {
 	if (!MONGO_URI) {
-		console.error('Error: MONGO_URI not found in .env file.');
+		console.error("Error: MONGO_URI not found in .env file.");
 		process.exit(1);
 	}
 
@@ -39,9 +39,9 @@ async function askQuestion(query) {
 }
 
 function resolveArgs(modelArg, fileArg) {
-	const modelName = modelArg === 'd' ? 'UserHorses' : modelArg;
+	const modelName = modelArg === "d" ? "UserHorses" : modelArg;
 	const fileName =
-		fileArg === 'd' ? '../backups/dbbackup.json' : fileArg;
+		fileArg === "d" ? "../backups/dbbackup.json" : fileArg;
 	const Model = ModelsMap[modelName];
 	if (!Model) {
 		console.error(
@@ -50,11 +50,11 @@ function resolveArgs(modelArg, fileArg) {
 		process.exit(1);
 	}
 
-	return {Model, modelName, fileName};
+	return { Model, modelName, fileName };
 }
 
 async function pull(modelArg, fileArg) {
-	const {Model, modelName, fileName} = resolveArgs(
+	const { Model, modelName, fileName } = resolveArgs(
 		modelArg,
 		fileArg,
 	);
@@ -66,9 +66,9 @@ async function pull(modelArg, fileArg) {
 		modelName,
 		timestamp: Date.now(),
 		fields: Object.keys(Model.schema.paths).filter(
-			(p) => p !== '__v' && p !== '_id',
+			(p) => p !== "__v" && p !== "_id",
 		),
-		data: docs.map(({_id, __v, ...rest}) => rest),
+		data: docs.map(({ _id, __v, ...rest }) => rest),
 	};
 
 	fs.writeFileSync(fileName, JSON.stringify(output, null, 2));
@@ -76,7 +76,7 @@ async function pull(modelArg, fileArg) {
 }
 
 async function compare(modelArg, fileArg) {
-	const {Model, modelName, fileName} = resolveArgs(
+	const { Model, modelName, fileName } = resolveArgs(
 		modelArg,
 		fileArg,
 	);
@@ -85,12 +85,12 @@ async function compare(modelArg, fileArg) {
 		process.exit(1);
 	}
 
-	const fileContent = JSON.parse(fs.readFileSync(fileName, 'utf8'));
+	const fileContent = JSON.parse(fs.readFileSync(fileName, "utf8"));
 	await connectDB();
 
 	const dbData = await Model.find({}).lean();
 	const dbFields = Object.keys(Model.schema.paths)
-		.filter((p) => p !== '__v' && p !== '_id')
+		.filter((p) => p !== "__v" && p !== "_id")
 		.sort();
 	const fileFields = (fileContent.fields || []).sort();
 
@@ -100,15 +100,15 @@ async function compare(modelArg, fileArg) {
 
 	console.log(`--- Comparison: ${modelName} ---`);
 	console.log(
-		`Backup Model: ${fileContent.modelName} [${nameMatch ? 'MATCH' : 'MISMATCH'}]`,
+		`Backup Model: ${fileContent.modelName} [${nameMatch ? "MATCH" : "MISMATCH"}]`,
 	);
-	console.log(`Fields Match: ${fieldsMatch ? '✅' : '❌'}`);
+	console.log(`Fields Match: ${fieldsMatch ? "✅" : "❌"}`);
 	console.log(
 		`Counts:       File(${fileContent.data.length}) vs DB(${dbData.length})`,
 	);
 
 	const primaryKey = dbFields.find((f) =>
-		['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(
+		["userId", "ruleId", "guildId", "id", "channelId"].includes(
 			f,
 		),
 	);
@@ -158,7 +158,7 @@ async function compare(modelArg, fileArg) {
 	}
 
 	if (diffCount === 0)
-		console.log('✨ No value differences found.');
+		console.log("✨ No value differences found.");
 	console.log(`-----------------------------`);
 
 	return {
@@ -178,8 +178,8 @@ async function push(modelArg, fileArg, optionArg) {
 		fieldsMatch,
 		primaryKey,
 	} = await compare(modelArg, fileArg);
-	const isForced = optionArg === 'force';
-	const isMerge = optionArg === 'merge';
+	const isForced = optionArg === "force";
+	const isMerge = optionArg === "merge";
 
 	if (!nameMatch || (!fieldsMatch && !isMerge)) {
 		console.log(`\n❌ PUSH PREVENTED: Data mismatch.`);
@@ -192,27 +192,27 @@ async function push(modelArg, fileArg, optionArg) {
 	}
 
 	const modeText = isMerge
-		? 'MERGE (update existing, keep new fields)'
-		: 'OVERWRITE (delete everything first)';
+		? "MERGE (update existing, keep new fields)"
+		: "OVERWRITE (delete everything first)";
 	const confirm = await askQuestion(
 		`\n⚠️  MODE: ${modeText}\nType 'yes' to proceed: `,
 	);
 
-	if (confirm.toLowerCase() === 'yes') {
-		const {Model} = resolveArgs(modelArg, fileArg);
+	if (confirm.toLowerCase() === "yes") {
+		const { Model } = resolveArgs(modelArg, fileArg);
 
 		if (isMerge) {
 			if (!primaryKey) {
 				console.error(
-					'Merge failed: Could not find a unique key (userId/ruleId) to match records.',
+					"Merge failed: Could not find a unique key (userId/ruleId) to match records.",
 				);
 				process.exit(1);
 			}
 
 			const ops = fileContent.data.map((item) => ({
 				updateOne: {
-					filter: {[primaryKey]: item[primaryKey]},
-					update: {$set: item},
+					filter: { [primaryKey]: item[primaryKey] },
+					update: { $set: item },
 					upsert: true,
 				},
 			}));
@@ -228,7 +228,7 @@ async function push(modelArg, fileArg, optionArg) {
 			);
 		}
 	} else {
-		console.log('\nPush cancelled.');
+		console.log("\nPush cancelled.");
 	}
 }
 
@@ -236,12 +236,12 @@ async function push(modelArg, fileArg, optionArg) {
 const [, , command, model, file, option] = process.argv;
 if (!command || !model || !file) {
 	console.log(
-		'Usage: node dbstash.js [pull|push|compare] [model|d] [file|d] [force|merge]',
+		"Usage: node dbstash.js [pull|push|compare] [model|d] [file|d] [force|merge]",
 	);
 	process.exit(1);
 }
 
-const actions = {pull, push, compare};
+const actions = { pull, push, compare };
 
 if (actions[command]) {
 	actions[command](model, file, option)

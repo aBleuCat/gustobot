@@ -726,7 +726,7 @@ async function initOrbital(client) {
 } */
 
 const initOrbital = () => {
-	console.log('poop');
+	console.log("poop");
 };
 
 export default initOrbital;

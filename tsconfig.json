@@ -1,36 +1,36 @@
 {
 	"compilerOptions": {
-	  /* File Layout */
-	  "rootDir": "./src",
-	  "outDir": "./dist",
-  
-	  /* Environment Settings */
-	  "module": "NodeNext",
-	  "moduleResolution": "NodeNext",
-	  "target": "ESNext",
-	  "lib": ["ESNext"],
-	  "types": ["node"],
-	  /* JSON */
-	  "resolveJsonModule": true,
-	  "allowSyntheticDefaultImports": true,
-  
-	  /* Other Outputs */
-	  "sourceMap": true,
-	  "declaration": true,
-	  "declarationMap": true,
-  
-	  /* Stricter Typechecking Options */
-	  "noUncheckedIndexedAccess": true,
-	  "exactOptionalPropertyTypes": true,
-  
-	  /* Recommended Options */
-	  "strict": true,
-	  "verbatimModuleSyntax": true,
-	  "isolatedModules": true,
-	  "noUncheckedSideEffectImports": true,
-	  "moduleDetection": "force",
-	  "skipLibCheck": true,
-	  "esModuleInterop": true
+		/* File Layout */
+		"rootDir": "./src",
+		"outDir": "./dist",
+
+		/* Environment Settings */
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ESNext",
+		"lib": ["ESNext"],
+		"types": ["node"],
+		/* JSON */
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+
+		/* Other Outputs */
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true,
+
+		/* Stricter Typechecking Options */
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+
+		/* Recommended Options */
+		"strict": true,
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"noUncheckedSideEffectImports": true,
+		"moduleDetection": "force",
+		"skipLibCheck": true,
+		"esModuleInterop": true
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]

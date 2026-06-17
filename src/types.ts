@@ -9,7 +9,7 @@ import type {
 	AutocompleteInteraction,
 	SlashCommandSubcommandsOnlyBuilder,
 	Collection,
-} from 'discord.js';
+} from "discord.js";
 
 export type SlashCommandConfig = {
 	data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
@@ -48,7 +48,7 @@ export type Command = {
 	) => Promise<void>;
 };
 
-declare module 'discord.js' {
+declare module "discord.js" {
 	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions, no-unused-vars
 	interface Client {
 		commands: Collection<string, Command>;

@@ -5,8 +5,8 @@ import {
 	TextInputStyle,
 	LabelBuilder,
 	type Client,
-} from 'discord.js';
-import {ModChannel} from '../models.js';
+} from "discord.js";
+import { ModChannel } from "../models.js";
 
 async function logToModChannel(guild: Guild, message: string) {
 	const config = await ModChannel.findOne({
@@ -25,7 +25,7 @@ export async function logToAllModChannels(
 	message: string,
 ) {
 	const modChannelIds = new Set(
-		await ModChannel.distinct('guildId'),
+		await ModChannel.distinct("guildId"),
 	);
 	const logArray = client.guilds.cache
 		.values()
@@ -36,30 +36,30 @@ export async function logToAllModChannels(
 
 export function init() {
 	const modal = new ModalBuilder()
-		.setCustomId('orbital_nuke_modal')
-		.setTitle('stab shot');
+		.setCustomId("orbital_nuke_modal")
+		.setTitle("stab shot");
 
 	const codeInput = new LabelBuilder()
-		.setLabel('nuclear launch code')
+		.setLabel("nuclear launch code")
 		.setTextInputComponent(
 			new TextInputBuilder()
-				.setCustomId('orbital_nuke_code')
+				.setCustomId("orbital_nuke_code")
 				.setStyle(TextInputStyle.Paragraph)
 				.setRequired(false)
 				.setPlaceholder(
-					'inline code or leave empty to use link',
+					"inline code or leave empty to use link",
 				)
 				.setMaxLength(4000),
 		);
 
 	const linkInput = new LabelBuilder()
-		.setLabel('link')
+		.setLabel("link")
 		.setTextInputComponent(
 			new TextInputBuilder()
-				.setCustomId('orbital_nuke_link')
+				.setCustomId("orbital_nuke_link")
 				.setStyle(TextInputStyle.Short)
 				.setRequired(false)
-				.setPlaceholder('https://...'),
+				.setPlaceholder("https://..."),
 		);
 
 	modal.addLabelComponents(codeInput, linkInput);

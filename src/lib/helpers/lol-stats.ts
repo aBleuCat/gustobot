@@ -1,9 +1,9 @@
-import {immutConfig} from '../config.js';
-import {LolStats} from '../models.js';
+import { immutConfig } from "../config.js";
+import { LolStats } from "../models.js";
 
 async function updateLolStatsDB() {
-	let stats = await LolStats.findOne({id: 'global_stats'});
-	stats ??= new LolStats({id: 'global_stats'});
+	let stats = await LolStats.findOne({ id: "global_stats" });
+	stats ??= new LolStats({ id: "global_stats" });
 
 	const now = new Date();
 	const todayString = now.toDateString();

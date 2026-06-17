@@ -1,16 +1,16 @@
 import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {config} from '../../lib/config.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
+} from "discord.js";
+import { config } from "../../lib/config.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
 
 const horsesData = castAsHorseData(rawHorseValues);
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('probabilities')
-	.setDescription('Check horse probabilities');
+	.setName("probabilities")
+	.setDescription("Check horse probabilities");
 
 export async function execute(
 	interaction: ChatInputCommandInteraction,
@@ -49,10 +49,10 @@ export async function execute(
 		return `${nameTag.padEnd(35)} | ${s.prob}% | 1 in ${s.msgFreq}`;
 	});
 
-	const header = `Name                                | Prob       | Avg Messages\n${'-'.repeat(70)}`;
+	const header = `Name                                | Prob       | Avg Messages\n${"-".repeat(70)}`;
 	const footer = `\nTotal chance for ANY horse: ${(totalRate * 100).toFixed(4)}%\nAverage 1 horse every ${Math.round(1 / totalRate)} messages.`;
 
-	const fullTable = `\`\`\`\n${header}\n${statsLines.join('\n')}\n${footer}\n\`\`\``;
+	const fullTable = `\`\`\`\n${header}\n${statsLines.join("\n")}\n${footer}\n\`\`\``;
 
-	return interaction.reply({content: fullTable});
+	return interaction.reply({ content: fullTable });
 }

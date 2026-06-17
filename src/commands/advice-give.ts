@@ -2,24 +2,24 @@ import {
 	SlashCommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {Advice, AdviceBan} from '../lib/models.js';
+} from "discord.js";
+import { Advice, AdviceBan } from "../lib/models.js";
 
 const adviceGiveCommand = {
 	data: new SlashCommandBuilder()
-		.setName('advicegive')
+		.setName("advicegive")
 		.setDescription(
-			'Add a piece of advice to the goon circle of advice',
+			"Add a piece of advice to the goon circle of advice",
 		)
 		.addStringOption((option) =>
 			option
-				.setName('text')
-				.setDescription('The advice')
+				.setName("text")
+				.setDescription("The advice")
 				.setRequired(true),
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const text = interaction.options.getString('text')?.trim();
+		const text = interaction.options.getString("text")?.trim();
 
 		// Check if the user is banned
 		const isBanned = await AdviceBan.findOne({
@@ -28,7 +28,7 @@ const adviceGiveCommand = {
 		if (isBanned) {
 			return interaction.reply({
 				content:
-					'You are banned from contributing wisdom to the circle.',
+					"You are banned from contributing wisdom to the circle.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -37,10 +37,10 @@ const adviceGiveCommand = {
 		if (!text) {
 			await interaction.reply({
 				content:
-					'oopsie poopsie something went wrong when recieving your wisdom uh oh',
+					"oopsie poopsie something went wrong when recieving your wisdom uh oh",
 				flags: [MessageFlags.Ephemeral],
 			});
-			console.error('Error when recieving text for advice');
+			console.error("Error when recieving text for advice");
 			return;
 		}
 
@@ -53,7 +53,7 @@ const adviceGiveCommand = {
 
 		if (text.length < 3) {
 			return interaction.reply({
-				content: 'Wisdom must be at least 3 characters long.',
+				content: "Wisdom must be at least 3 characters long.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -61,12 +61,12 @@ const adviceGiveCommand = {
 		// Duplicate check (Case-insensitive)
 		const existingAdvice = await Advice.findOne({
 			content: text,
-		}).collation({locale: 'en', strength: 2});
+		}).collation({ locale: "en", strength: 2 });
 
 		if (existingAdvice) {
 			return interaction.reply({
 				content:
-					'This wisdom has already been propagated. Try something more original.',
+					"This wisdom has already been propagated. Try something more original.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -77,7 +77,7 @@ const adviceGiveCommand = {
 		});
 		await newAdvice.save();
 		await interaction.reply({
-			content: 'Your wisdom shall be propagated',
+			content: "Your wisdom shall be propagated",
 			flags: [MessageFlags.Ephemeral],
 		});
 	},

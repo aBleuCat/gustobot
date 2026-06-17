@@ -3,30 +3,30 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	InteractionContextType,
-} from 'discord.js';
+} from "discord.js";
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const {Guild} = InteractionContextType;
+const { Guild } = InteractionContextType;
 
 const impregnateCommand = {
 	data: new SlashCommandBuilder()
-		.setName('impregnate')
-		.setDescription('impregnate someone')
+		.setName("impregnate")
+		.setDescription("impregnate someone")
 		.addUserOption((option) =>
 			option
-				.setName('user')
-				.setDescription('user to impregnate')
+				.setName("user")
+				.setDescription("user to impregnate")
 				.setRequired(true),
 		)
 		.setContexts([Guild]),
 	async execute(interaction: ChatInputCommandInteraction) {
-		const user = interaction.options.getUser('user');
-		const roleId = '1473123914531213532';
+		const user = interaction.options.getUser("user");
+		const roleId = "1473123914531213532";
 
 		try {
 			if (!interaction.guild)
 				return interaction.reply({
-					content: 'You suck couldnt find ur guild holy L',
+					content: "You suck couldnt find ur guild holy L",
 				});
 			if (!user)
 				return interaction.reply({
@@ -38,7 +38,7 @@ const impregnateCommand = {
 				.catch(() => undefined);
 			if (!target)
 				return interaction.reply({
-					content: 'Member not found.',
+					content: "Member not found.",
 					flags: [MessageFlags.Ephemeral],
 				});
 
@@ -47,9 +47,9 @@ const impregnateCommand = {
 				`impregnated ${target.user.username}.`,
 			);
 		} catch (error) {
-			console.error('Impregnation command error:', error);
+			console.error("Impregnation command error:", error);
 			return interaction.reply({
-				content: 'Failed to impregnate',
+				content: "Failed to impregnate",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}

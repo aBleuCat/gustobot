@@ -5,30 +5,30 @@ import {
 	MessageFlags,
 	InteractionContextType,
 	ApplicationIntegrationType,
-} from 'discord.js';
-import {HorseConfig} from '../lib/models.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { HorseConfig } from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 /* eslint-disable @typescript-eslint/naming-convention */
-const {Guild} = InteractionContextType;
-const {GuildInstall} = ApplicationIntegrationType;
+const { Guild } = InteractionContextType;
+const { GuildInstall } = ApplicationIntegrationType;
 /* eslint-enable @typescript-eslint/naming-convention */
 
 const configureHorsesCommand = {
 	data: new SlashCommandBuilder()
-		.setName('confighorses')
-		.setDescription('Configure horse spawning settings')
+		.setName("confighorses")
+		.setDescription("Configure horse spawning settings")
 		.addBooleanOption((option) =>
 			option
-				.setName('enabled')
-				.setDescription('Enable or disable spawning')
+				.setName("enabled")
+				.setDescription("Enable or disable spawning")
 				.setRequired(true),
 		)
 		.addChannelOption((option) =>
 			option
-				.setName('channel')
+				.setName("channel")
 				.setDescription(
-					'The channel where horse spawns are announced',
+					"The channel where horse spawns are announced",
 				)
 				.setRequired(true),
 		)
@@ -50,21 +50,21 @@ const configureHorsesCommand = {
 			});
 		}
 
-		const enabled = interaction.options.getBoolean('enabled');
-		const channel = interaction.options.getChannel('channel');
+		const enabled = interaction.options.getBoolean("enabled");
+		const channel = interaction.options.getChannel("channel");
 		if (!channel)
 			return interaction.reply(
-				'Something went wrong when trying to get your inputs',
+				"Something went wrong when trying to get your inputs",
 			);
 
 		await HorseConfig.findOneAndUpdate(
-			{guildId: interaction.guildId},
-			{enabled, channelId: channel.id},
-			{upsert: true},
+			{ guildId: interaction.guildId },
+			{ enabled, channelId: channel.id },
+			{ upsert: true },
 		);
 
 		return interaction.reply({
-			content: `Horse spawning now **${enabled ? 'ON' : 'OFF'}** in <#${channel.id}>.`,
+			content: `Horse spawning now **${enabled ? "ON" : "OFF"}** in <#${channel.id}>.`,
 			ephemeral: false,
 		});
 	},

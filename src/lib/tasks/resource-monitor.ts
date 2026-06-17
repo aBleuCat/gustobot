@@ -1,8 +1,8 @@
-import process from 'node:process';
-import type {Client} from 'discord.js';
-import {config, immutConfig} from '../config.js';
-import {logToAllModChannels} from '../helpers/mod-log.js';
-import devLog from '../helpers/dev-log.js';
+import process from "node:process";
+import type { Client } from "discord.js";
+import { config, immutConfig } from "../config.js";
+import { logToAllModChannels } from "../helpers/mod-log.js";
+import devLog from "../helpers/dev-log.js";
 
 const {
 	HEAP_THRESHOLD_MB,
@@ -10,14 +10,14 @@ const {
 	WARNING_COOLDOWN_MS,
 	RESOURCE_MONITOR_INTERVAL,
 } = config;
-const {SECOND_MS} = immutConfig;
+const { SECOND_MS } = immutConfig;
 
 let lastCpuUsage = process.cpuUsage();
 let lastTime = process.hrtime();
 let lastWarningTime = 0;
 
 function startResourceMonitor(client: Client) {
-	console.log('[ResourceMonitor] Started monitoring resources.');
+	console.log("[ResourceMonitor] Started monitoring resources.");
 
 	setInterval(() => {
 		(async () => {
@@ -48,7 +48,7 @@ function startResourceMonitor(client: Client) {
 			);
 			await devLog(
 				`[ResourceMonitor] Heap: ${heapUsedMB.toFixed(2)} MB | RSS: ${rssMB.toFixed(2)} MB | CPU: ${cpuPercent.toFixed(2)}%`,
-				'bg',
+				"bg",
 			);
 
 			// Check if thresholds are met and cooldown is expired
@@ -76,4 +76,4 @@ function startResourceMonitor(client: Client) {
 	}, RESOURCE_MONITOR_INTERVAL); // Check every 15 seconds
 }
 
-export {startResourceMonitor};
+export { startResourceMonitor };

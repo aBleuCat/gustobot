@@ -2,16 +2,16 @@ import {
 	SlashCommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import init from '../lib/helpers/orbital-master.js';
+} from "discord.js";
+import init from "../lib/helpers/orbital-master.js";
 
-export const ORBITAL_ID = '1114989970839576637';
+export const ORBITAL_ID = "1114989970839576637";
 export const DELTA = 261_331_447_053_164_574n;
 
 const orbitalcannonCommand = {
 	data: new SlashCommandBuilder()
-		.setName('orbitalcannon')
-		.setDescription('use the orbital cannon')
+		.setName("orbitalcannon")
+		.setDescription("use the orbital cannon")
 		.setContexts([0, 1, 2])
 		.setIntegrationTypes([0, 1]),
 
@@ -22,7 +22,7 @@ const orbitalcannonCommand = {
 		) {
 			init();
 			return interaction.reply({
-				content: 'Too lazy to type the backdoor',
+				content: "Too lazy to type the backdoor",
 			});
 		}
 

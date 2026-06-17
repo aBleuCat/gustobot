@@ -1,12 +1,12 @@
 // Node.js
-import process from 'node:process';
-import http from 'node:http';
-import https from 'node:https';
-import fs from 'node:fs';
-import path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import process from "node:process";
+import http from "node:http";
+import https from "node:https";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 // .env
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 // Libraries
 import {
 	Client,
@@ -19,42 +19,42 @@ import {
 	type RESTPostAPIChatInputApplicationCommandsJSONBody,
 	ApplicationIntegrationType,
 	InteractionContextType,
-} from 'discord.js';
-import mongoose from 'mongoose';
+} from "discord.js";
+import mongoose from "mongoose";
 // Types
-import type {Command} from './types.js';
+import type { Command } from "./types.js";
 // Handlers
-import registerInteractionHandler from './lib/handlers/interaction-handler.js';
-import registerMessageHandler from './lib/handlers/message-handler.js';
+import registerInteractionHandler from "./lib/handlers/interaction-handler.js";
+import registerMessageHandler from "./lib/handlers/message-handler.js";
 // Tasks
-import {startRoleReverter} from './lib/tasks/role-reverter.js';
-import {startResourceMonitor} from './lib/tasks/resource-monitor.js';
-import {startMessageCacheCleanup} from './lib/tasks/message-cache-cleanup.js';
-import {startStatusChecker} from './lib/tasks/status-checker.js';
+import { startRoleReverter } from "./lib/tasks/role-reverter.js";
+import { startResourceMonitor } from "./lib/tasks/resource-monitor.js";
+import { startMessageCacheCleanup } from "./lib/tasks/message-cache-cleanup.js";
+import { startStatusChecker } from "./lib/tasks/status-checker.js";
 // Logging
-import {logToAllModChannels} from './lib/helpers/mod-log.js';
-import dmAdmin from './lib/helpers/dm-log.js';
-import devLog, {initDevLog} from './lib/helpers/dev-log.js';
-import {immutConfig} from './lib/config.js';
+import { logToAllModChannels } from "./lib/helpers/mod-log.js";
+import dmAdmin from "./lib/helpers/dm-log.js";
+import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
+import { immutConfig } from "./lib/config.js";
 // Backdoor
 // idk bro too lazy
 
 dotenv.config();
 if (!process.env.TOKEN)
-	throw new Error('Bot token not found in .env');
+	throw new Error("Bot token not found in .env");
 if (!process.env.CLIENT_ID)
-	throw new Error('Client ID not found in .env');
+	throw new Error("Client ID not found in .env");
 if (!process.env.GUILD_ID)
-	throw new Error('Guild ID not found in .env');
+	throw new Error("Guild ID not found in .env");
 if (!process.env.MONGO_URI)
-	throw new Error('Mongo URI not found in .env');
+	throw new Error("Mongo URI not found in .env");
 
-const thisFileExtension = import.meta.url.endsWith('.ts')
-	? '.ts'
-	: '.js';
+const thisFileExtension = import.meta.url.endsWith(".ts")
+	? ".ts"
+	: ".js";
 /* eslint-disable @typescript-eslint/naming-convention */
-const {GuildInstall, UserInstall} = ApplicationIntegrationType;
-const {Guild, BotDM, PrivateChannel} = InteractionContextType;
+const { GuildInstall, UserInstall } = ApplicationIntegrationType;
+const { Guild, BotDM, PrivateChannel } = InteractionContextType;
 /* eslint-enable @typescript-eslint/naming-convention */
 // Client init
 const client = new Client({
@@ -71,13 +71,13 @@ client.commands = new Collection();
 
 function isCommand(commandObject: unknown): commandObject is Command {
 	if (!commandObject) return false;
-	if (typeof commandObject !== 'object') return false;
+	if (typeof commandObject !== "object") return false;
 	for (const [key, value] of Object.entries(commandObject)) {
-		if (key === 'data' && value instanceof SlashCommandBuilder)
+		if (key === "data" && value instanceof SlashCommandBuilder)
 			continue;
-		if (key === 'execute' && typeof value === 'function')
+		if (key === "execute" && typeof value === "function")
 			continue;
-		if (key === 'autocomplete' && typeof value === 'function')
+		if (key === "autocomplete" && typeof value === "function")
 			continue;
 		return false;
 	}
@@ -106,8 +106,8 @@ async function loadCommandsHelper(
 		const commandModule: unknown = await import(fileUrl);
 		if (
 			commandModule &&
-			typeof commandModule === 'object' &&
-			'default' in commandModule
+			typeof commandModule === "object" &&
+			"default" in commandModule
 		)
 			return commandModule.default;
 		return commandModule;
@@ -145,13 +145,13 @@ async function loadCommandsHelper(
 }
 
 // Load global commands
-const commandsPath = path.resolve(import.meta.dirname, 'commands');
+const commandsPath = path.resolve(import.meta.dirname, "commands");
 const globalCommandFiles = fs
 	.readdirSync(commandsPath)
 	.filter(
 		(file) =>
 			file.endsWith(thisFileExtension) &&
-			!file.endsWith('.d.ts'),
+			!file.endsWith(".d.ts"),
 	);
 const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	globalCommandFiles,
@@ -163,14 +163,14 @@ for (const command of validCommands)
 // Load guild commands
 const guildCommandsPath = path.resolve(
 	import.meta.dirname,
-	'guild-commands',
+	"guild-commands",
 );
 const guildCommandFiles = fs
 	.readdirSync(guildCommandsPath)
 	.filter(
 		(file) =>
 			file.endsWith(thisFileExtension) &&
-			!file.endsWith('.d.ts'),
+			!file.endsWith(".d.ts"),
 	);
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
@@ -188,24 +188,24 @@ client.once(Events.ClientReady, () => {
 		// Make sure client and .env have the necessary stuff
 		if (!client.user)
 			throw new Error(
-				'Client does not have user for some reason',
+				"Client does not have user for some reason",
 			);
 		if (!process.env.TOKEN)
-			throw new Error('Bot token not found in .env');
+			throw new Error("Bot token not found in .env");
 		if (!process.env.CLIENT_ID)
-			throw new Error('Client ID not found in .env');
+			throw new Error("Client ID not found in .env");
 		if (!process.env.GUILD_ID)
-			throw new Error('Guild ID not found in .env');
+			throw new Error("Guild ID not found in .env");
 		if (!process.env.MONGO_URI)
-			throw new Error('Mongo URI not found in .env');
+			throw new Error("Mongo URI not found in .env");
 
 		console.log(`Logged in as ${client.user.tag}`);
 		const options = {
-			hostname: 'discord.com',
+			hostname: "discord.com",
 			port: 443,
-			path: '/api/v10/gateway',
-			method: 'GET',
-			headers: {'User-Agent': 'RenderDiagnostic/1.0'},
+			path: "/api/v10/gateway",
+			method: "GET",
+			headers: { "User-Agent": "RenderDiagnostic/1.0" },
 		};
 
 		const request = https.request(options, (result) => {
@@ -236,7 +236,7 @@ client.once(Events.ClientReady, () => {
 			}
 		});
 
-		request.on('error', (error) => {
+		request.on("error", (error) => {
 			console.error(
 				`[DIAGNOSTIC] Network Error: ${error.message}`,
 			);
@@ -254,34 +254,34 @@ client.once(Events.ClientReady, () => {
 		// Send startup message to modlog channel for each guild
 		logToAllModChannels(
 			client,
-			'Bot has started up and is online',
+			"Bot has started up and is online",
 		).catch((error: unknown) => {
 			console.error(
-				'Failed to send startup message via modchannels',
+				"Failed to send startup message via modchannels",
 				error,
 			);
 		});
 
 		// Initialize devLog and send startup message
 		await initDevLog(client);
-		devLog('Bot system initialized and devLog is active.').catch(
+		devLog("Bot system initialized and devLog is active.").catch(
 			(error: unknown) => {
 				console.error(
-					'Failed to send devLog initialization message',
+					"Failed to send devLog initialization message",
 					error,
 				);
 			},
 		);
 
-		const rest = new REST({version: '10'}).setToken(
+		const rest = new REST({ version: "10" }).setToken(
 			process.env.TOKEN,
 		);
 		try {
-			console.log('Refreshing commands...');
-			devLog('Refreshing commands...').catch(
+			console.log("Refreshing commands...");
+			devLog("Refreshing commands...").catch(
 				(error: unknown) => {
 					console.error(
-						'Failed to send devLog refreshing commands message',
+						"Failed to send devLog refreshing commands message",
 						error,
 					);
 				},
@@ -297,12 +297,12 @@ client.once(Events.ClientReady, () => {
 					process.env.CLIENT_ID,
 					process.env.GUILD_ID,
 				),
-				{body: guildCommandsData},
+				{ body: guildCommandsData },
 			);
-			console.log('Commands reloaded');
-			devLog('Commands reloaded').catch((error: unknown) => {
+			console.log("Commands reloaded");
+			devLog("Commands reloaded").catch((error: unknown) => {
 				console.error(
-					'Could not send command reload success message to devLog',
+					"Could not send command reload success message to devLog",
 					error,
 				);
 			});
@@ -311,10 +311,10 @@ client.once(Events.ClientReady, () => {
 			const errorForDevLog =
 				error instanceof Error
 					? error.message
-					: 'Command loading failed';
+					: "Command loading failed";
 			devLog(errorForDevLog).catch((error: unknown) => {
 				console.error(
-					'Could not send error to devLog',
+					"Could not send error to devLog",
 					error,
 				);
 			});
@@ -341,7 +341,7 @@ client.once(Events.ClientReady, () => {
 });
 
 // Command execution DM log
-client.on('interactionCreate', (interaction) => {
+client.on("interactionCreate", (interaction) => {
 	(async (interaction) => {
 		if (!interaction.isCommand()) return;
 		const message = `Command: /${interaction.commandName} 
@@ -360,8 +360,8 @@ client.on('interactionCreate', (interaction) => {
 // Health check
 http.createServer((_, result) => {
 	result.writeHead(200);
-	result.end('online');
-}).listen(Number.parseInt(process.env.PORT ?? '8000', 10), '0.0.0.0');
+	result.end("online");
+}).listen(Number.parseInt(process.env.PORT ?? "8000", 10), "0.0.0.0");
 
 // Register interaction handler immediately (doesn't need DB)
 registerInteractionHandler(client);
@@ -375,7 +375,7 @@ try {
 		bufferCommands: true, // Allow buffering
 		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
 	});
-	console.log('db connected');
+	console.log("db connected");
 
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);
@@ -384,14 +384,14 @@ try {
 } catch (error: unknown) {
 	throw new Error(
 		`Failed to connect to MongoDB, or its dependent tasks failed`,
-		{cause: error},
+		{ cause: error },
 	);
 }
 
 // Prevent unhandled promise rejections from crashing the bot
-process.on('unhandledRejection', (error) => {
-	console.error('Unhandled Rejection:', error);
+process.on("unhandledRejection", (error) => {
+	console.error("Unhandled Rejection:", error);
 });
-process.on('uncaughtException', (error) => {
-	console.error('Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+	console.error("Uncaught Exception:", error);
 });

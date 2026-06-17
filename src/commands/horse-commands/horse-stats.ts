@@ -6,19 +6,19 @@ import {
 	MessageFlags,
 	type ButtonInteraction,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
-import {horseName} from '../../lib/helpers/horse-funcs.js';
-import {UserHorses, type IUserHorses} from '../../lib/models.js';
-import {immutConfig} from '../../lib/config.js';
+} from "discord.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { UserHorses, type IUserHorses } from "../../lib/models.js";
+import { immutConfig } from "../../lib/config.js";
 
 const HORSES_PER_PAGE = 15;
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
 type HorseCountEntry = [string, number];
-type PlayerStats = {wealth: number; horses: number};
+type PlayerStats = { wealth: number; horses: number };
 
 type BreakdownStats = {
 	count: number;
@@ -42,11 +42,11 @@ function sliceStats(
 		wealthPct:
 			totalWealth > 0
 				? ((wealth / totalWealth) * 100).toFixed(1)
-				: '0.0',
+				: "0.0",
 		horsesPct:
 			totalHorses > 0
 				? ((horses / totalHorses) * 100).toFixed(1)
-				: '0.0',
+				: "0.0",
 	};
 }
 
@@ -123,19 +123,19 @@ function buildBreakdownPage(
 	);
 	const lines = [
 		`🐴 **Horse Breakdown** (page ${page + 1}/${totalPages})`,
-		'',
+		"",
 		...slice.map(
 			([slug, count]) => `* **${horseName(slug)}**: ${count}`,
 		),
 	];
-	return lines.join('\n');
+	return lines.join("\n");
 }
 
 function attachHorseStatsCollector(
 	response: {
-		createMessageComponentCollector(options: {time: number}): {
+		createMessageComponentCollector(options: { time: number }): {
 			on(
-				event: 'collect',
+				event: "collect",
 				listener: (i: ButtonInteraction) => void,
 			): void;
 		};
@@ -148,20 +148,20 @@ function attachHorseStatsCollector(
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on('collect', (i: ButtonInteraction) => {
+	collector.on("collect", (i: ButtonInteraction) => {
 		void (async () => {
 			if (i.user.id !== interaction.user.id) {
 				await i
 					.reply({
 						content:
-							'Only the command user can use these buttons.',
+							"Only the command user can use these buttons.",
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
 				return;
 			}
 
-			const pageString = i.customId.split('_')[2];
+			const pageString = i.customId.split("_")[2];
 			if (!pageString) return;
 
 			const requestedPage = Number.parseInt(pageString, 10);
@@ -186,20 +186,20 @@ function buildPageButtons(page: number, totalPages: number) {
 	return new ActionRowBuilder<ButtonBuilder>().addComponents(
 		new ButtonBuilder()
 			.setCustomId(`hstats_prev_${page}`)
-			.setLabel('◀')
+			.setLabel("◀")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page === 0),
 		new ButtonBuilder()
 			.setCustomId(`hstats_next_${page}`)
-			.setLabel('▶')
+			.setLabel("▶")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page >= totalPages - 1),
 	);
 }
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('stats')
-	.setDescription('View global horse economy statistics');
+	.setName("stats")
+	.setDescription("View global horse economy statistics");
 
 export async function execute(
 	interaction: ChatInputCommandInteraction,
@@ -208,7 +208,7 @@ export async function execute(
 	const allUsers = await UserHorses.find({});
 
 	if (allUsers.length === 0) {
-		return interaction.editReply('No horse data yet!');
+		return interaction.editReply("No horse data yet!");
 	}
 
 	const {
@@ -288,12 +288,12 @@ export async function execute(
 		`💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
 		`📈 **Avg. Wealth per Player**: $${avgWealth.toLocaleString()}`,
 		`🤑 **Richest Player**: $${richest.toLocaleString()}`,
-		`⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? '😬' : giniScore > 0.4 ? '😐' : '😌'}`,
+		`⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? "😬" : giniScore > 0.4 ? "😐" : "😌"}`,
 		``,
 		`📉 **Wealth Distribution**`,
-		`* 🥇 **Top 1%** (${top1Stats.count} player${top1Stats.count === 1 ? '' : 's'}): $${top1Stats.wealth.toLocaleString()} — **${top1Stats.wealthPct}%** of wealth · **${top1Stats.horsesPct}%** of horses (${top1Stats.horses})`,
-		`* 🏅 **Top 10%** (${top10Stats.count} player${top10Stats.count === 1 ? '' : 's'}): $${top10Stats.wealth.toLocaleString()} — **${top10Stats.wealthPct}%** of wealth · **${top10Stats.horsesPct}%** of horses (${top10Stats.horses})`,
-		`* 📊 **Bottom 50%** (${bottom50Stats.count} player${bottom50Stats.count === 1 ? '' : 's'}): $${bottom50Stats.wealth.toLocaleString()} — **${bottom50Stats.wealthPct}%** of wealth · **${bottom50Stats.horsesPct}%** of horses (${bottom50Stats.horses})`,
+		`* 🥇 **Top 1%** (${top1Stats.count} player${top1Stats.count === 1 ? "" : "s"}): $${top1Stats.wealth.toLocaleString()} — **${top1Stats.wealthPct}%** of wealth · **${top1Stats.horsesPct}%** of horses (${top1Stats.horses})`,
+		`* 🏅 **Top 10%** (${top10Stats.count} player${top10Stats.count === 1 ? "" : "s"}): $${top10Stats.wealth.toLocaleString()} — **${top10Stats.wealthPct}%** of wealth · **${top10Stats.horsesPct}%** of horses (${top10Stats.horses})`,
+		`* 📊 **Bottom 50%** (${bottom50Stats.count} player${bottom50Stats.count === 1 ? "" : "s"}): $${bottom50Stats.wealth.toLocaleString()} — **${bottom50Stats.wealthPct}%** of wealth · **${bottom50Stats.horsesPct}%** of horses (${bottom50Stats.horses})`,
 		``,
 		`🏆 **Most Common Horses**`,
 		...top5Common.map(
@@ -302,16 +302,16 @@ export async function execute(
 		``,
 		`💎 **Most Wealth in Circulation**`,
 		...top5ByValue.map(
-			({slug, count, totalValue}) =>
+			({ slug, count, totalValue }) =>
 				`* **${horseName(slug)}**: ${count}x ($${totalValue.toLocaleString()} total)`,
 		),
 		``,
 		rarest
 			? `🦄 **Rarest in Existance**: **${horseName(rarest[0])}** (only ${rarest[1]} exist)`
-			: '',
+			: "",
 	].filter((l): l is string => l !== undefined);
 
-	await interaction.editReply({content: statsLines.join('\n')});
+	await interaction.editReply({ content: statsLines.join("\n") });
 
 	const totalPages = Math.max(
 		1,

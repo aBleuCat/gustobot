@@ -3,9 +3,9 @@ import type {
 	TextBasedChannel,
 	PartialGroupDMChannel,
 	Message,
-} from 'discord.js';
-import {config} from '../config.js';
-import devLog from './dev-log.js';
+} from "discord.js";
+import { config } from "../config.js";
+import devLog from "./dev-log.js";
 
 type ReplyInfo = {
 	mention: boolean;
@@ -159,7 +159,7 @@ async function processChannelQueue(channelId: string): Promise<void> {
 			const sent = await item.channel.send({
 				content: item.content,
 				...(item.reply?.mention && {
-					reply: {messageReference: item.reply.message},
+					reply: { messageReference: item.reply.message },
 				}),
 			});
 
@@ -170,9 +170,9 @@ async function processChannelQueue(channelId: string): Promise<void> {
 			item.resolve(sent);
 		} catch (error: unknown) {
 			if (error instanceof Error) {
-				console.error('Queue send error:', error.message);
+				console.error("Queue send error:", error.message);
 			} else {
-				console.error('Queue send error:', error);
+				console.error("Queue send error:", error);
 			}
 
 			item.reject(error);

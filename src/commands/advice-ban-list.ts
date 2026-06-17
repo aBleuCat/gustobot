@@ -3,15 +3,15 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 	EmbedBuilder,
-} from 'discord.js';
-import mongoose from 'mongoose';
-import type {IAdviceBan} from '../lib/models.js';
+} from "discord.js";
+import mongoose from "mongoose";
+import type { IAdviceBan } from "../lib/models.js";
 
 const adviceBanListCommand = {
 	data: new SlashCommandBuilder()
-		.setName('advicebanlist')
+		.setName("advicebanlist")
 		.setDescription(
-			'Shows all users currently banned from giving advice.',
+			"Shows all users currently banned from giving advice.",
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		await interaction.deferReply({
@@ -19,23 +19,23 @@ const adviceBanListCommand = {
 		});
 		// eslint-disable-next-line @typescript-eslint/naming-convention
 		const AdviceBans = await mongoose
-			.model<IAdviceBan>('AdviceBan')
+			.model<IAdviceBan>("AdviceBan")
 			.find({});
 		if (!AdviceBans || AdviceBans.length === 0) {
 			await interaction.editReply({
-				content: 'There are no banned users as of now',
+				content: "There are no banned users as of now",
 			});
 		}
 
 		const formattedList = AdviceBans.map(
 			(user, index) => `${index + 1}. @<${user.userId}>`,
-		).join('\n');
+		).join("\n");
 		const listEmbed = new EmbedBuilder()
-			.setTitle('These poeples are very bad boys')
+			.setTitle("These poeples are very bad boys")
 			.setDescription(formattedList)
-			.setColor('#ff0000')
+			.setColor("#ff0000")
 			.setTimestamp();
-		await interaction.editReply({embeds: [listEmbed]});
+		await interaction.editReply({ embeds: [listEmbed] });
 	},
 };
 

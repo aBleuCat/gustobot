@@ -2,17 +2,17 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
-} from 'discord.js';
-import {SubcommandLoader} from './lib/subcommand-loader.js';
+} from "discord.js";
+import { SubcommandLoader } from "./lib/subcommand-loader.js";
 
 const mainCommand = new SlashCommandBuilder()
-	.setName('coins')
-	.setDescription('All horse-coin-related commands');
+	.setName("coins")
+	.setDescription("All horse-coin-related commands");
 
 const loader = new SubcommandLoader(
 	mainCommand,
 	import.meta.url,
-	'coin-commands',
+	"coin-commands",
 );
 
 await loader.load();

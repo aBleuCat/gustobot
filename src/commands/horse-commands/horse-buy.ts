@@ -1,23 +1,23 @@
 import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {config} from '../../lib/config.js';
-import devLog from '../../lib/helpers/dev-log.js';
-import {UserHorses} from '../../lib/models.js';
-import {horseName} from '../../lib/helpers/horse-funcs.js';
-import {handleCommandError} from '../../lib/helpers/error-handlers.js';
+} from "discord.js";
+import { config } from "../../lib/config.js";
+import devLog from "../../lib/helpers/dev-log.js";
+import { UserHorses } from "../../lib/models.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { handleCommandError } from "../../lib/helpers/error-handlers.js";
 
 const maxAmount = 10 ** 9;
-const COMMON_SLUG = 'common_horse';
+const COMMON_SLUG = "common_horse";
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('buy')
-	.setDescription('Buy common horses for Horse Coins')
+	.setName("buy")
+	.setDescription("Buy common horses for Horse Coins")
 	.addIntegerOption((option) =>
 		option
-			.setName('count')
-			.setDescription('How many to buy')
+			.setName("count")
+			.setDescription("How many to buy")
 			.setRequired(false)
 			.setMinValue(1)
 			.setMaxValue(maxAmount),
@@ -27,7 +27,7 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-	const count = interaction.options.getInteger('count') ?? 1;
+	const count = interaction.options.getInteger("count") ?? 1;
 	const totalCost = config.COMMON_BUY_PRICE * count;
 
 	let inventory = await UserHorses.findOne({
@@ -60,6 +60,6 @@ export async function execute(
 		void handleCommandError(error, interaction);
 	});
 	return interaction.editReply(
-		`You bought ${count > 1 ? `**${count}x** ` : 'a '}**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost === 1 ? '' : 's'}\nBalance: **${inventory.horseCoins}** 🪙`,
+		`You bought ${count > 1 ? `**${count}x** ` : "a "}**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost === 1 ? "" : "s"}\nBalance: **${inventory.horseCoins}** 🪙`,
 	);
 }

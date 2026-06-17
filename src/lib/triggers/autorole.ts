@@ -1,8 +1,8 @@
-import type {Message} from 'discord.js';
-import type {FlattenMaps} from 'mongoose';
-import {Rule, Timeout, type IRule} from '../models.js';
-import logToModChannel from '../helpers/mod-log.js';
-import {config} from '../config.js';
+import type { Message } from "discord.js";
+import type { FlattenMaps } from "mongoose";
+import { Rule, Timeout, type IRule } from "../models.js";
+import logToModChannel from "../helpers/mod-log.js";
+import { config } from "../config.js";
 
 type RuleCacheKey = `${string}:${string}`;
 type RuleCacheInstance = {
@@ -11,7 +11,7 @@ type RuleCacheInstance = {
 };
 
 const ruleCache = new Map<RuleCacheKey, RuleCacheInstance>();
-const {RULE_CACHE_TTL_MS} = config;
+const { RULE_CACHE_TTL_MS } = config;
 
 async function getRules(
 	userId: string,
@@ -120,7 +120,7 @@ async function handleAutorole(message: Message): Promise<void> {
 							);
 						}
 					} catch (error) {
-						console.error('Deep Scan Error:', error);
+						console.error("Deep Scan Error:", error);
 					}
 				})(),
 			);
@@ -133,7 +133,7 @@ async function handleAutorole(message: Message): Promise<void> {
 	if (matchesMessage.length > 0) {
 		await logToModChannel(
 			message.guild,
-			matchesMessage.join('\n'),
+			matchesMessage.join("\n"),
 		);
 	}
 }

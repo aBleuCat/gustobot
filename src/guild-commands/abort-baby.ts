@@ -3,23 +3,23 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	InteractionContextType,
-} from 'discord.js';
+} from "discord.js";
 
-const roleId = '1473123914531213532';
+const roleId = "1473123914531213532";
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const {Guild} = InteractionContextType;
+const { Guild } = InteractionContextType;
 
 const abortbabyCommand = {
 	data: new SlashCommandBuilder()
-		.setName('abortbaby')
-		.setDescription('Abortion is still legal here dw')
+		.setName("abortbaby")
+		.setDescription("Abortion is still legal here dw")
 		.setContexts([Guild]),
 	async execute(interaction: ChatInputCommandInteraction) {
 		try {
 			if (!interaction.guild || !interaction.user.id) {
 				return interaction.reply({
 					content:
-						'This command can only be used in a server.',
+						"This command can only be used in a server.",
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
@@ -31,13 +31,13 @@ const abortbabyCommand = {
 			if (!member) {
 				return interaction.reply({
 					content:
-						'Could not find your member data in this server.',
+						"Could not find your member data in this server.",
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
 			await member.roles.remove(roleId);
-			return interaction.reply({content: 'Baby aborted'});
+			return interaction.reply({ content: "Baby aborted" });
 		} catch {
 			return interaction.reply({
 				content: "I couldn't abort the baby for you",

@@ -2,12 +2,12 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
-} from 'discord.js';
-import {UserHorses} from '../lib/models.js';
-import rawHorseValues from '../data/horses.json' with {type: 'json'};
-import {horseName} from '../lib/helpers/horse-funcs.js';
-import {castAsHorseData} from '../type-utils.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { UserHorses } from "../lib/models.js";
+import rawHorseValues from "../data/horses.json" with { type: "json" };
+import { horseName } from "../lib/helpers/horse-funcs.js";
+import { castAsHorseData } from "../type-utils.js";
+import { immutConfig } from "../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
@@ -18,21 +18,21 @@ const horseChoices = Object.keys(HORSE_VALUES).map((slug) => ({
 
 const replaceHorsesCommand = {
 	data: new SlashCommandBuilder()
-		.setName('replacehorses')
+		.setName("replacehorses")
 		.setDescription(
 			"Replace everyone's horse of one type with another (owner only)",
 		)
 		.addStringOption((option) =>
 			option
-				.setName('horse')
-				.setDescription('The horse to replace')
+				.setName("horse")
+				.setDescription("The horse to replace")
 				.setRequired(true)
 				.addChoices(...horseChoices.slice(0, 25)),
 		)
 		.addStringOption((option) =>
 			option
-				.setName('replacement')
-				.setDescription('The horse to replace it with')
+				.setName("replacement")
+				.setDescription("The horse to replace it with")
 				.setRequired(true)
 				.addChoices(...horseChoices.slice(0, 25)),
 		),
@@ -40,19 +40,19 @@ const replaceHorsesCommand = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
-				content: 'no can do',
+				content: "no can do",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		const horseSlug = interaction.options.getString('horse');
+		const horseSlug = interaction.options.getString("horse");
 		const replacementSlug =
-			interaction.options.getString('replacement');
+			interaction.options.getString("replacement");
 
 		if (!horseSlug || !replacementSlug) {
 			return interaction.reply({
 				content:
-					'Something went wrong and we couldnt get ur response',
+					"Something went wrong and we couldnt get ur response",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
@@ -62,7 +62,7 @@ const replaceHorsesCommand = {
 		});
 
 		const targetUsers = await UserHorses.find({
-			[`horses.${horseSlug}`]: {$gt: 0},
+			[`horses.${horseSlug}`]: { $gt: 0 },
 		});
 
 		if (targetUsers.length === 0) {
@@ -77,7 +77,7 @@ const replaceHorsesCommand = {
 		}
 
 		await UserHorses.updateMany(
-			{[`horses.${horseSlug}`]: {$gt: 0}},
+			{ [`horses.${horseSlug}`]: { $gt: 0 } },
 			[
 				{
 					$set: {

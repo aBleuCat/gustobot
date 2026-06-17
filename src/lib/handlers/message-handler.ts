@@ -3,18 +3,18 @@ import {
 	type Message,
 	type Client,
 	type User,
-} from 'discord.js';
-import {config} from '../config.js';
-import devLog from '../helpers/dev-log.js';
-import handleRandomCat from '../triggers/random-cat.js';
-import handleSixSeven from '../triggers/six-seven.js';
-import handleLol from '../triggers/lol.js';
-import handleEveryone from '../triggers/everyone.js';
-import handleAutorole from '../triggers/autorole.js';
-import handleHorseSpawn from '../triggers/horse-spawner.js';
-import handleHaiku from '../triggers/haiku.js';
-import handleBotPing from '../triggers/ping-handler.js';
-import handleSayItWithMe from '../triggers/say-it-with-me.js';
+} from "discord.js";
+import { config } from "../config.js";
+import devLog from "../helpers/dev-log.js";
+import handleRandomCat from "../triggers/random-cat.js";
+import handleSixSeven from "../triggers/six-seven.js";
+import handleLol from "../triggers/lol.js";
+import handleEveryone from "../triggers/everyone.js";
+import handleAutorole from "../triggers/autorole.js";
+import handleHorseSpawn from "../triggers/horse-spawner.js";
+import handleHaiku from "../triggers/haiku.js";
+import handleBotPing from "../triggers/ping-handler.js";
+import handleSayItWithMe from "../triggers/say-it-with-me.js";
 
 // Checks if user is bot, user is in blacklist, and user is in whitelist
 // Whitelisted bots are allowed, otherwise bots are not allowed
@@ -33,7 +33,7 @@ function getTriggerPerms(author: User) {
 				authorId,
 			)) ||
 		config.lists.secondaryTrigWhitelist.includes(authorId);
-	return {canUsePrimary, canUseSecondary};
+	return { canUsePrimary, canUseSecondary };
 }
 
 async function executePrimaryHandlers(
@@ -49,9 +49,9 @@ async function executePrimaryHandlers(
 		await handleBotPing(message, client);
 		await handleSayItWithMe(message);
 	} catch (error) {
-		console.error('Primary trigger error', error);
+		console.error("Primary trigger error", error);
 		devLog(
-			`Primary trigger error: ${error instanceof Error ? error.message : 'unknown'}`,
+			`Primary trigger error: ${error instanceof Error ? error.message : "unknown"}`,
 		).catch(() => undefined);
 	}
 }
@@ -60,9 +60,9 @@ async function executeSecondaryHandlers(message: Message) {
 	try {
 		await handleHorseSpawn(message);
 	} catch (error) {
-		console.error('Secondary trigger error', error);
+		console.error("Secondary trigger error", error);
 		devLog(
-			`Secondary trigger error: ${error instanceof Error ? error.message : 'unknown'}`,
+			`Secondary trigger error: ${error instanceof Error ? error.message : "unknown"}`,
 		).catch(() => undefined);
 	}
 }
@@ -71,9 +71,8 @@ function registerMessageHandler(client: Client) {
 	client.on(Events.MessageCreate, (message: Message) => {
 		(async (message: Message) => {
 			if (!message.guild || !message.author) return; // ignores dms
-			const {canUsePrimary, canUseSecondary} = getTriggerPerms(
-				message.author,
-			);
+			const { canUsePrimary, canUseSecondary } =
+				getTriggerPerms(message.author);
 			if (canUsePrimary) {
 				await executePrimaryHandlers(message, client);
 			}
@@ -85,9 +84,9 @@ function registerMessageHandler(client: Client) {
 			try {
 				await handleAutorole(message); // Autorole works for everyone including bots
 			} catch (error) {
-				console.error('Autorole trigger error', error);
+				console.error("Autorole trigger error", error);
 				devLog(
-					`Autorole trigger error: ${error instanceof Error ? error.message : 'unknown'}`,
+					`Autorole trigger error: ${error instanceof Error ? error.message : "unknown"}`,
 				).catch(() => undefined);
 			}
 		})(message);

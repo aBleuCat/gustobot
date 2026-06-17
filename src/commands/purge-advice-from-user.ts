@@ -2,21 +2,21 @@ import {
 	SlashCommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {Advice} from '../lib/models.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { Advice } from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 const purgeCommand = {
 	data: new SlashCommandBuilder()
-		.setName('purgeadvicefromuser')
+		.setName("purgeadvicefromuser")
 		.setDescription(
-			'Deletes all advice entries submitted by a specific user (Owner Only)',
+			"Deletes all advice entries submitted by a specific user (Owner Only)",
 		)
 		.addUserOption((option) =>
 			option
-				.setName('target')
+				.setName("target")
 				.setDescription(
-					'The user whose advice you want to purge',
+					"The user whose advice you want to purge",
 				)
 				.setRequired(true),
 		),
@@ -25,16 +25,16 @@ const purgeCommand = {
 		if (!immutConfig.ADMINS.has(interaction.user.id)) {
 			return interaction.reply({
 				content:
-					'You do not have permission to use this command. This is an owner-only action.',
+					"You do not have permission to use this command. This is an owner-only action.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
-		const target = interaction.options.getUser('target');
+		const target = interaction.options.getUser("target");
 		if (!target)
 			return interaction.reply({
 				content:
-					'uhh something went wrong when receieving ur inputs, try again',
+					"uhh something went wrong when receieving ur inputs, try again",
 			});
 		const result = await Advice.deleteMany({
 			authorId: target.id,

@@ -1,6 +1,6 @@
-import type {Client, GuildTextBasedChannel} from 'discord.js';
-import {config} from '../config.js';
-import {castAsTextBased} from '../../type-utils.js';
+import type { Client, GuildTextBasedChannel } from "discord.js";
+import { config } from "../config.js";
+import { castAsTextBased } from "../../type-utils.js";
 
 type LogChannel = GuildTextBasedChannel | undefined;
 
@@ -9,12 +9,12 @@ let bgTasksChannel: LogChannel;
 let microChannel: LogChannel;
 let statusChannel: LogChannel;
 const filterExceptions = [
-	'error',
-	'failed',
-	'refreshing commands',
-	'commands reloaded',
-	'system initialized',
-	'warning',
+	"error",
+	"failed",
+	"refreshing commands",
+	"commands reloaded",
+	"system initialized",
+	"warning",
 ].map((v) => v.toLowerCase());
 
 export async function initDevLog(client: Client) {
@@ -48,28 +48,28 @@ export async function initDevLog(client: Client) {
 		);
 	} catch (error) {
 		if (error instanceof Error)
-			console.error('[devLog Init Error]:', error.message);
+			console.error("[devLog Init Error]:", error.message);
 	}
 }
 
-async function devLog(message: string, type = 'standard') {
+async function devLog(message: string, type = "standard") {
 	let targetChannel = null;
 	let secondaryChannel = null;
 
 	switch (type) {
-		case 'bg': {
+		case "bg": {
 			targetChannel = bgTasksChannel; // For background tasks
 
 			break;
 		}
 
-		case 'micro': {
+		case "micro": {
 			targetChannel = microChannel; // For extra-detailed logs
 
 			break;
 		}
 
-		case 'status': {
+		case "status": {
 			targetChannel = statusChannel; // For status updates
 
 			break;
@@ -89,18 +89,18 @@ async function devLog(message: string, type = 'standard') {
 
 	try {
 		// Status updates probably don't need the `[DEV LOG]` prefix
-		const prefix = type === 'status' ? '' : `\`[DEV LOG]\` `;
+		const prefix = type === "status" ? "" : `\`[DEV LOG]\` `;
 		const formattedMessage = `${prefix}${message}`;
 		const lowMessage = formattedMessage.toLowerCase();
 
 		// Temporary to prevent rate limiting from too many requests to discord
 		if (
-			type !== 'status' &&
+			type !== "status" &&
 			!filterExceptions.some((word) =>
 				lowMessage.includes(word),
 			)
 		) {
-			if (type !== 'bg') {
+			if (type !== "bg") {
 				console.log(formattedMessage);
 			}
 
@@ -114,7 +114,7 @@ async function devLog(message: string, type = 'standard') {
 		}
 	} catch (error) {
 		if (error instanceof Error)
-			console.error('[devLog Send Error]:', error.message);
+			console.error("[devLog Send Error]:", error.message);
 	}
 }
 

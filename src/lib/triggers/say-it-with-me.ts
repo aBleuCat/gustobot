@@ -1,7 +1,7 @@
-import type {Message} from 'discord.js';
-import {immutConfig} from '../config.js';
-import queueMessage from '../helpers/message-queue.js';
-import {returnAsTextBased} from '../../type-utils.js';
+import type { Message } from "discord.js";
+import { immutConfig } from "../config.js";
+import queueMessage from "../helpers/message-queue.js";
+import { returnAsTextBased } from "../../type-utils.js";
 
 const SAY_IT_WITH_ME_REGEX = /^say it with me[:\s]+(.+)$/iv;
 
@@ -22,21 +22,21 @@ async function handleSayItWithMe(message: Message) {
 	) {
 		queueMessage({
 			channel,
-			content: 'You need to be an admin to use this command.',
-			reply: {message, mention: true},
+			content: "You need to be an admin to use this command.",
+			reply: { message, mention: true },
 		}).catch((error: unknown) => {
 			console.error(
-				'QueueMessage Error in say-it-with-me command',
+				"QueueMessage Error in say-it-with-me command",
 				error,
 			);
 		});
 		return;
 	}
 
-	queueMessage({channel, content: phrase}).catch(
+	queueMessage({ channel, content: phrase }).catch(
 		(error: unknown) => {
 			console.error(
-				'QueueMessage Error in say-it-with-me command',
+				"QueueMessage Error in say-it-with-me command",
 				error,
 			);
 		},

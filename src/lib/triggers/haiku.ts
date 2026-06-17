@@ -1,5 +1,5 @@
-import type {Message} from 'discord.js';
-import queueMessage from '../helpers/message-queue.js';
+import type { Message } from "discord.js";
+import queueMessage from "../helpers/message-queue.js";
 
 type NonEmptyLines = [string, ...string[]];
 
@@ -12,15 +12,15 @@ function castAsNonEmptyLines(
 
 const syllableWords: Record<number, string[]> = {
 	5: [
-		'hippopotamus',
-		'refridgerator',
-		'sunnyside rail yard',
-		'me gusta tacos',
+		"hippopotamus",
+		"refridgerator",
+		"sunnyside rail yard",
+		"me gusta tacos",
 	],
-	4: ['orbitalstone', 'garfungledee'],
-	3: ['caleb lu', 'caleb paugh', 'stationdex', 'im hungry'],
-	2: ['john kim'],
-	1: ['yes', 'bruh', 'trust'],
+	4: ["orbitalstone", "garfungledee"],
+	3: ["caleb lu", "caleb paugh", "stationdex", "im hungry"],
+	2: ["john kim"],
+	1: ["yes", "bruh", "trust"],
 };
 const targets = [5, 7, 5];
 
@@ -30,15 +30,15 @@ function countSyllables(text: string) {
 	text = text.toLowerCase().trim();
 
 	// Remove punctuation for counting
-	text = text.replaceAll(/[^\w\s]/giv, '');
+	text = text.replaceAll(/[^\w\s]/giv, "");
 
 	// Basic syllable count: vowel groups
 	const vowels = text.match(/[aeiouy]+/giv);
 	let count = vowels ? vowels.length : 0;
 
 	// Adjust for evil silent e
-	if (text.endsWith('e')) count--;
-	if (text.endsWith('le') && text.length > 2) count++;
+	if (text.endsWith("e")) count--;
+	if (text.endsWith("le") && text.length > 2) count++;
 
 	return Math.max(1, count);
 }
@@ -71,7 +71,7 @@ function breakUp(lines: NonEmptyLines) {
 		lineNumber < 3 && wordIndex < words.length;
 		lineNumber++
 	) {
-		let currentLine = '';
+		let currentLine = "";
 		let currentSyllables = 0;
 		const targetSyllables = targets[lineNumber] ?? 5; // Too lazy to do smth better
 
@@ -84,9 +84,9 @@ function breakUp(lines: NonEmptyLines) {
 
 			if (
 				currentSyllables + wordSyllables <= targetSyllables ||
-				currentLine === ''
+				currentLine === ""
 			) {
-				currentLine += (currentLine ? ' ' : '') + word;
+				currentLine += (currentLine ? " " : "") + word;
 				currentSyllables += wordSyllables;
 				wordIndex++;
 			} else {
@@ -99,7 +99,7 @@ function breakUp(lines: NonEmptyLines) {
 
 	// Add remaining words to last line
 	if (wordIndex < words.length) {
-		newLines[2] += ' ' + words.slice(wordIndex).join(' ');
+		newLines[2] += " " + words.slice(wordIndex).join(" ");
 	}
 
 	return newLines;
@@ -107,7 +107,7 @@ function breakUp(lines: NonEmptyLines) {
 
 // Analyze and fix haiku structure
 function analyzeAndFixHaiku(text: string) {
-	let lines = text.split('\n').filter((line) => line.trim());
+	let lines = text.split("\n").filter((line) => line.trim());
 
 	if (lines.length === 0) return;
 	if (!castAsNonEmptyLines(lines)) return;
@@ -132,13 +132,13 @@ function analyzeAndFixHaiku(text: string) {
 	) {
 		return {
 			isValid: true,
-			content: lines.slice(0, 3).join('\n'),
+			content: lines.slice(0, 3).join("\n"),
 		};
 	}
 
 	// Ensure we have 3 lines
 	while (syllableCounts.length < 3) {
-		syllableCounts.push({line: '', count: 0});
+		syllableCounts.push({ line: "", count: 0 });
 	}
 
 	syllableCounts.length = 3;
@@ -176,7 +176,7 @@ function analyzeAndFixHaiku(text: string) {
 				}
 
 				if (word) {
-					fixedLine += ' ' + word;
+					fixedLine += " " + word;
 				}
 			}
 		}
@@ -185,8 +185,8 @@ function analyzeAndFixHaiku(text: string) {
 	});
 
 	return {
-		original: lines.slice(0, 3).join('\n'),
-		fixed: fixedLines.join('\n'),
+		original: lines.slice(0, 3).join("\n"),
+		fixed: fixedLines.join("\n"),
 		counts: syllableCounts.map((l, i) => ({
 			line: l.line,
 			original: l.count,
@@ -196,7 +196,7 @@ function analyzeAndFixHaiku(text: string) {
 }
 
 async function handleHaiku(message: Message) {
-	if (!message.content.includes('..haiku')) return;
+	if (!message.content.includes("..haiku")) return;
 	// Fetch recent messages
 	const messages = await message.channel.messages.fetch({
 		limit: 10,
@@ -208,23 +208,23 @@ async function handleHaiku(message: Message) {
 	for (const m of sortedMessages) {
 		if (
 			m.author.id === message.author.id &&
-			!m.content.includes('..haiku')
+			!m.content.includes("..haiku")
 		) {
 			targetMessage = m;
 			break;
 		}
 	}
 
-	if (!('send' in message.channel))
+	if (!("send" in message.channel))
 		throw new Error(`Expected sendable channel`);
-	const {channel} = message;
+	const { channel } = message;
 
 	if (!targetMessage) {
 		return queueMessage({
 			channel,
 			content:
 				"I couldn't find a recent message of yours to check",
-			reply: {message, mention: true},
+			reply: { message, mention: true },
 		});
 	}
 
@@ -235,7 +235,7 @@ async function handleHaiku(message: Message) {
 			channel,
 			content:
 				"I couldn't find a recent message of yours to check",
-			reply: {message, mention: true},
+			reply: { message, mention: true },
 		});
 	}
 
@@ -243,14 +243,14 @@ async function handleHaiku(message: Message) {
 		return queueMessage({
 			channel,
 			content: result.content,
-			reply: {message, mention: true},
+			reply: { message, mention: true },
 		});
 	}
 
 	return queueMessage({
 		channel: message.channel,
-		content: result.fixed ?? 'Haiku creation failed',
-		reply: {message, mention: true},
+		content: result.fixed ?? "Haiku creation failed",
+		reply: { message, mention: true },
 	});
 }
 

@@ -1,7 +1,7 @@
-import type {Message} from 'discord.js';
-import {config} from '../config.js';
-import queueMessage from '../helpers/message-queue.js';
-import {returnAsTextBased} from '../../type-utils.js';
+import type { Message } from "discord.js";
+import { config } from "../config.js";
+import queueMessage from "../helpers/message-queue.js";
+import { returnAsTextBased } from "../../type-utils.js";
 
 async function handleRandomCat(message: Message) {
 	const channel = returnAsTextBased(message.channel);
@@ -14,7 +14,7 @@ async function handleRandomCat(message: Message) {
 		queueMessage({
 			channel,
 			content:
-				'https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566',
+				"https://tenor.com/view/post-this-cat-ryujinr-grey-cat-gif-13471549557469691566",
 		}).catch((error: unknown) => {
 			console.error(error);
 		});

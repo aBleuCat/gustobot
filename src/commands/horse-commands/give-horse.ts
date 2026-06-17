@@ -3,32 +3,32 @@ import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
-} from 'discord.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
+} from "discord.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import {
 	conditionHorse,
 	horseName,
-} from '../../lib/helpers/horse-funcs.js';
-import {UserHorses} from '../../lib/models.js';
-import {castAsHorseData} from '../../type-utils.js';
-import logToModChannel from '../../lib/helpers/mod-log.js';
-import {handleCommandError} from '../../lib/helpers/error-handlers.js';
+} from "../../lib/helpers/horse-funcs.js";
+import { UserHorses } from "../../lib/models.js";
+import { castAsHorseData } from "../../type-utils.js";
+import logToModChannel from "../../lib/helpers/mod-log.js";
+import { handleCommandError } from "../../lib/helpers/error-handlers.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('give')
-	.setDescription('Give one of your horses to another user.')
+	.setName("give")
+	.setDescription("Give one of your horses to another user.")
 	.addUserOption((option) =>
 		option
-			.setName('target')
-			.setDescription('The user you want to give the horse to')
+			.setName("target")
+			.setDescription("The user you want to give the horse to")
 			.setRequired(true),
 	)
 	.addStringOption((option) =>
 		option
-			.setName('horse')
-			.setDescription('The horse you want to give')
+			.setName("horse")
+			.setDescription("The horse you want to give")
 			.setRequired(true)
 			.setAutocomplete(true),
 	);
@@ -63,16 +63,16 @@ export async function autocomplete(
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const targetUser = interaction.options.getUser('target');
-	const horseSlug = interaction.options.getString('horse');
+	const targetUser = interaction.options.getUser("target");
+	const horseSlug = interaction.options.getString("horse");
 	const botId = interaction.client.user.id;
 	if (!targetUser || !horseSlug)
 		return interaction.reply(
-			'try again, something went wrong when trying to recieve your inputs',
+			"try again, something went wrong when trying to recieve your inputs",
 		);
 	if (!interaction.guild)
 		return interaction.reply(
-			'lo siento something went wrong when finding your server',
+			"lo siento something went wrong when finding your server",
 		);
 
 	if (targetUser.id === interaction.user.id) {
@@ -123,7 +123,7 @@ export async function execute(
 		targetUser.id === botId
 			? `You offered a **${horseDisplay}** to me! Nom nom nom.`
 			: `You gave your **${horseDisplay}** to <@${targetUser.id}>!`;
-	await interaction.reply({content: message});
+	await interaction.reply({ content: message });
 
 	logToModChannel(
 		interaction.guild,
@@ -132,5 +132,5 @@ export async function execute(
 		handleCommandError(error, interaction),
 	);
 
-	await conditionHorse(receiverInv, {interaction});
+	await conditionHorse(receiverInv, { interaction });
 }

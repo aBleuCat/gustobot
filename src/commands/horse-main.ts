@@ -2,17 +2,17 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
-} from 'discord.js';
-import {SubcommandLoader} from './lib/subcommand-loader.js';
+} from "discord.js";
+import { SubcommandLoader } from "./lib/subcommand-loader.js";
 
 const mainCommand = new SlashCommandBuilder()
-	.setName('horses')
-	.setDescription('All horse-related commands');
+	.setName("horses")
+	.setDescription("All horse-related commands");
 
 const loader = new SubcommandLoader(
 	mainCommand,
 	import.meta.url,
-	'horse-commands',
+	"horse-commands",
 );
 
 await loader.load();

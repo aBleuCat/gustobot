@@ -1,8 +1,8 @@
 import {
 	MessageFlags,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import devLog from './dev-log.js';
+} from "discord.js";
+import devLog from "./dev-log.js";
 // Error logging func for commands
 export async function handleCommandError(
 	error: unknown,
@@ -11,7 +11,7 @@ export async function handleCommandError(
 	const errorMessage =
 		error instanceof Error
 			? error.message
-			: 'error message could not be found';
+			: "error message could not be found";
 
 	console.error(error);
 

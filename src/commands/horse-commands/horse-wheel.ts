@@ -3,10 +3,10 @@ import {
 	type ChatInputCommandInteraction,
 	MessageFlags,
 	EmbedBuilder,
-} from 'discord.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
-import {config} from '../../lib/config.js';
+} from "discord.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
+import { config } from "../../lib/config.js";
 
 const calculateChance = (value: number) => {
 	const denominator =
@@ -17,8 +17,8 @@ const calculateChance = (value: number) => {
 const horsesData = castAsHorseData(rawHorseValues);
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('wheel')
-	.setDescription('Spin the horse wheel');
+	.setName("wheel")
+	.setDescription("Spin the horse wheel");
 
 export async function execute(
 	interaction: ChatInputCommandInteraction,
@@ -29,7 +29,7 @@ export async function execute(
 
 	if (spawnableHorseEntries.length === 0) {
 		return interaction.reply({
-			content: 'No horses are currently set to spawn!',
+			content: "No horses are currently set to spawn!",
 			flags: MessageFlags.Ephemeral,
 		});
 	}
@@ -60,26 +60,26 @@ export async function execute(
 		.setTitle(`Woah the wheel landed on...`)
 		.setColor(
 			selectedHorse.value > config.FLAIR_THRESHOLD_VALUE
-				? '#FFD700'
-				: '#6463FA',
+				? "#FFD700"
+				: "#6463FA",
 		)
 		.setDescription(`You rolled: **${selectedHorse.name}**`)
 		.addFields(
 			{
-				name: 'Value',
+				name: "Value",
 				value: `${selectedHorse.value}`,
 				inline: true,
 			},
 			{
-				name: 'Rarity',
+				name: "Rarity",
 				value: `1 in ${Math.round(1 / chance).toLocaleString()} msgs`,
 				inline: true,
 			},
 		);
 
-	if (selectedHorse.link?.startsWith('http')) {
+	if (selectedHorse.link?.startsWith("http")) {
 		embed.setImage(selectedHorse.link);
 	}
 
-	await interaction.reply({embeds: [embed]});
+	await interaction.reply({ embeds: [embed] });
 }

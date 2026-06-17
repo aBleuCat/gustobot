@@ -1,43 +1,43 @@
 // Only visible to user 853658523786412063 hmmm
 
-import path from 'node:path';
-import fs from 'node:fs';
-import {fileURLToPath} from 'node:url';
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	type User,
 	MessageFlags,
-} from 'discord.js';
+} from "discord.js";
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __filename = fileURLToPath(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = path.dirname(__filename);
 
-const ADMIN_ID = '853658523786412063';
-const TOGGLE_FILE = path.join(__dirname, '../.dmlogtoggle');
+const ADMIN_ID = "853658523786412063";
+const TOGGLE_FILE = path.join(__dirname, "../.dmlogtoggle");
 
 const dmLogToggleCommand = {
 	data: new SlashCommandBuilder()
-		.setName('dmlogtoggle')
-		.setDescription('Toggle DM debug logs (admin only)'),
+		.setName("dmlogtoggle")
+		.setDescription("Toggle DM debug logs (admin only)"),
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (interaction.user.id !== ADMIN_ID) {
 			return interaction.reply({
 				content:
-					'You do not have permission to use this command.',
+					"You do not have permission to use this command.",
 				flags: [MessageFlags.Ephemeral],
 			});
 		}
 
 		let enabled = false;
 		enabled = fs.existsSync(TOGGLE_FILE)
-			? !fs.readFileSync(TOGGLE_FILE, 'utf8').includes('on')
+			? !fs.readFileSync(TOGGLE_FILE, "utf8").includes("on")
 			: true;
-		fs.writeFileSync(TOGGLE_FILE, enabled ? 'on' : 'off');
+		fs.writeFileSync(TOGGLE_FILE, enabled ? "on" : "off");
 		await interaction.reply({
-			content: `DM debug logs are now **${enabled ? 'ENABLED' : 'DISABLED'}**.`,
+			content: `DM debug logs are now **${enabled ? "ENABLED" : "DISABLED"}**.`,
 			flags: [MessageFlags.Ephemeral],
 		});
 	},

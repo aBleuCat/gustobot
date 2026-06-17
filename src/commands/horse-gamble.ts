@@ -1,23 +1,31 @@
 /* eslint-disable unicorn/no-abusive-eslint-disable */
 /* eslint-disable */
 // @ts-nocheck
-import fs from 'node:fs';
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
-import {SlashCommandBuilder, MessageFlags, type ChatInputCommandInteraction, type AutocompleteInteraction} from 'discord.js';
-import mongoose from 'mongoose';
-import rawHorseValues from '../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../type-utils.js';
-import {config, immutConfig} from '../lib/config.js';
-import devLog from '../lib/helpers/dev-log.js';
-import {conditionHorse, horseName} from '../lib/helpers/horse-funcs.js';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+	SlashCommandBuilder,
+	MessageFlags,
+	type ChatInputCommandInteraction,
+	type AutocompleteInteraction,
+} from "discord.js";
+import mongoose from "mongoose";
+import rawHorseValues from "../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../type-utils.js";
+import { config, immutConfig } from "../lib/config.js";
+import devLog from "../lib/helpers/dev-log.js";
+import {
+	conditionHorse,
+	horseName,
+} from "../lib/helpers/horse-funcs.js";
 // NOTE TO SELF: DEFER REPLY EARLY
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
-const HOUSE_USER_ID = '1469509600561729710';
-const COMMON_HORSE = 'common_horse';
+const HOUSE_USER_ID = "1469509600561729710";
+const COMMON_HORSE = "common_horse";
 const ADMIN_IDS = immutConfig.ADMINS;
-const STREAK_HORSE = 'gamble_streak';
+const STREAK_HORSE = "gamble_streak";
 const STREAK_REQUIRED = 6;
 /* eslint-disable @typescript-eslint/naming-convention */
 const __filename = fileURLToPath(import.meta.url);
@@ -25,7 +33,7 @@ const __dirname = path.dirname(__filename);
 /* eslint-enable @typescript-eslint/naming-convention */
 const STREAKS_PATH = path.join(
 	__dirname,
-	'../runtime_jsons/gamble_streaks.json',
+	"../runtime_jsons/gamble_streaks.json",
 );
 const safeLength = 1800;
 const minRoll = config.MIN_ROLL;
@@ -36,7 +44,7 @@ const MIN_GAMBLE_COIN_COUNT = -5;
 // Gamble streak helpers
 function loadStreaks() {
 	try {
-		return JSON.parse(fs.readFileSync(STREAKS_PATH, 'utf8'));
+		return JSON.parse(fs.readFileSync(STREAKS_PATH, "utf8"));
 	} catch {
 		return {};
 	}
@@ -47,10 +55,10 @@ function saveStreaks(streaks) {
 		fs.writeFileSync(
 			STREAKS_PATH,
 			JSON.stringify(streaks, null, 2),
-			'utf8',
+			"utf8",
 		);
 	} catch (error) {
-		console.error('Failed to save gamble_streaks.json:', error);
+		console.error("Failed to save gamble_streaks.json:", error);
 	}
 }
 
@@ -64,7 +72,7 @@ function updateStreak(userId, isNetWin) {
 	if (!isNetWin) {
 		streaks[userId] = 0;
 		saveStreaks(streaks);
-		return {newStreak: 0, awarded: false};
+		return { newStreak: 0, awarded: false };
 	}
 
 	streaks[userId] = (streaks[userId] || 0) + 1;
@@ -76,7 +84,7 @@ function updateStreak(userId, isNetWin) {
 	}
 
 	saveStreaks(streaks);
-	return {newStreak, awarded};
+	return { newStreak, awarded };
 }
 
 function getClosestHorse(targetValue) {
@@ -118,17 +126,17 @@ function normalizeHorseMap(inventory) {
 	if (!inventory) return inventory;
 	if (inventory.horses instanceof Map) return inventory;
 	const source =
-		inventory.horses && typeof inventory.horses === 'object'
+		inventory.horses && typeof inventory.horses === "object"
 			? inventory.horses
 			: {};
 	inventory.horses = new Map(Object.entries(source));
-	if (typeof inventory.markModified === 'function')
-		inventory.markModified('horses');
+	if (typeof inventory.markModified === "function")
+		inventory.markModified("horses");
 	return inventory;
 }
 
 async function getOrCreateInventory(UserHorses, userId) {
-	let inv = await UserHorses.findOne({userId});
+	let inv = await UserHorses.findOne({ userId });
 	inv ||= new UserHorses({
 		userId,
 		horses: new Map(),
@@ -138,16 +146,20 @@ async function getOrCreateInventory(UserHorses, userId) {
 }
 
 // Returns [{slug, value, count}] sorted by value — does NOT expand by count to avoid OOM
-function getSortedHorseList(inventory, sortDir = 'asc') {
+function getSortedHorseList(inventory, sortDir = "asc") {
 	const list = [];
 	for (const [slug, count] of inventory.horses.entries()) {
 		if (count > 0 && HORSE_VALUES[slug]) {
-			list.push({slug, value: HORSE_VALUES[slug].value, count});
+			list.push({
+				slug,
+				value: HORSE_VALUES[slug].value,
+				count,
+			});
 		}
 	}
 
 	list.sort((a, b) =>
-		sortDir === 'asc' ? a.value - b.value : b.value - a.value,
+		sortDir === "asc" ? a.value - b.value : b.value - a.value,
 	);
 	return list;
 }
@@ -276,14 +288,14 @@ function formatCycleLog(
 			? Math.round(netValueChange / totalGambled)
 			: 0;
 
-	let gainedLines = '';
+	let gainedLines = "";
 	for (const [slug, cnt] of [...gained.entries()].sort(
 		(a, b) => b[1] - a[1],
 	)) {
 		gainedLines += `\n+${cnt} ${horseName(slug)} ($${HORSE_VALUES[slug]?.value})`;
 	}
 
-	let bankedLines = '';
+	let bankedLines = "";
 	if (bankedThisCycle.length > 0) {
 		const bankedMap = new Map();
 		for (const slug of bankedThisCycle)
@@ -295,30 +307,30 @@ function formatCycleLog(
 
 	return (
 		`**Cycle #${cycleNumber}**\n` +
-		'```patch\n' +
+		"```patch\n" +
 		`- Gambled: ${totalGambled} ${horseLabel}\n` +
 		`+ Wins:    ${wins}\n` +
 		`- Losses:  ${losses}\n` +
 		`- Complete Losses: ${completeLosses}\n` +
 		`= No Change: ${noChange}\n` +
-		`= Net:      ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)\n` +
+		`= Net:      ${netValueChange >= 0 ? "+" : ""}$${netValueChange} (${avgChange >= 0 ? "+" : ""}$${avgChange}/horse)\n` +
 		`- Coins Spent: ${coinsSpent}\n` +
 		`+ Coins Left:  ${coinsAfter}\n` +
-		'```' +
-		(gainedLines ? '\n**Gained:**' + gainedLines : '') +
-		(bankedLines ? '\n' + bankedLines : '')
+		"```" +
+		(gainedLines ? "\n**Gained:**" + gainedLines : "") +
+		(bankedLines ? "\n" + bankedLines : "")
 	);
 }
 
 const gambleCommand = {
 	data: new SlashCommandBuilder()
-		.setName('horsegamble')
+		.setName("horsegamble")
 		.setDescription(
-			'Gamble horses; minimum coin requirement scales with your coin balance',
+			"Gamble horses; minimum coin requirement scales with your coin balance",
 		)
 		.addStringOption((option) =>
 			option
-				.setName('horse')
+				.setName("horse")
 				.setDescription(
 					'The horse to gamble, "Horse Coin", "top", or "bottom".',
 				)
@@ -327,9 +339,9 @@ const gambleCommand = {
 		)
 		.addIntegerOption((option) =>
 			option
-				.setName('count')
+				.setName("count")
 				.setDescription(
-					'Number of gamblings (1-100, or 0 for all). For top/bottom: 0 = gamble all.',
+					"Number of gamblings (1-100, or 0 for all). For top/bottom: 0 = gamble all.",
 				)
 				.setRequired(false)
 				.setMinValue(0)
@@ -337,9 +349,9 @@ const gambleCommand = {
 		)
 		.addIntegerOption((option) =>
 			option
-				.setName('cycles')
+				.setName("cycles")
 				.setDescription(
-					'Number of times to re-gamble the resulting horses (2-20).',
+					"Number of times to re-gamble the resulting horses (2-20).",
 				)
 				.setRequired(false)
 				.setMinValue(2)
@@ -347,25 +359,25 @@ const gambleCommand = {
 		)
 		.addIntegerOption((option) =>
 			option
-				.setName('bankhorses')
+				.setName("bankhorses")
 				.setDescription(
-					'Protect horses valued above this amount. -0.3 coins banked.',
+					"Protect horses valued above this amount. -0.3 coins banked.",
 				)
 				.setRequired(false)
 				.setMinValue(0),
 		)
 		.addBooleanOption((option) =>
 			option
-				.setName('test')
+				.setName("test")
 				.setDescription(
-					'(Admin only) Simulate gambles without spending horses.',
+					"(Admin only) Simulate gambles without spending horses.",
 				)
 				.setRequired(false),
 		),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
 		try {
-			const UserHorses = mongoose.model('UserHorses');
+			const UserHorses = mongoose.model("UserHorses");
 			const focused = interaction.options
 				.getFocused()
 				.toLowerCase();
@@ -377,19 +389,19 @@ const gambleCommand = {
 
 			const choices = [
 				{
-					name: '📈 top — gamble most valuable horses',
-					value: 'top',
+					name: "📈 top — gamble most valuable horses",
+					value: "top",
 				},
 				{
-					name: '📉 bottom — gamble least valuable horses',
-					value: 'bottom',
+					name: "📉 bottom — gamble least valuable horses",
+					value: "bottom",
 				},
 			];
 
 			if ((inventory?.horseCoins || 0) >= 2) {
 				choices.push({
-					name: '🪙 Horse Coin',
-					value: 'horse_coin',
+					name: "🪙 Horse Coin",
+					value: "horse_coin",
 				});
 			}
 
@@ -413,7 +425,7 @@ const gambleCommand = {
 
 			await interaction.respond(filtered);
 		} catch (error) {
-			console.error('horsegamble autocomplete error:', error);
+			console.error("horsegamble autocomplete error:", error);
 			try {
 				await interaction.respond([]);
 			} catch {}
@@ -421,25 +433,25 @@ const gambleCommand = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const UserHorses = mongoose.model('UserHorses');
+		const UserHorses = mongoose.model("UserHorses");
 		const horseSlug = interaction.options
-			.getString('horse')
+			.getString("horse")
 			.trim()
 			.toLowerCase();
-		const count = interaction.options.getInteger('count') ?? 1;
+		const count = interaction.options.getInteger("count") ?? 1;
 		const cycles =
-			interaction.options.getInteger('cycles') ?? null;
+			interaction.options.getInteger("cycles") ?? null;
 		const bankAbove =
-			interaction.options.getInteger('bankhorses') ?? null;
+			interaction.options.getInteger("bankhorses") ?? null;
 		const isTest =
-			interaction.options.getBoolean('test') ?? false;
+			interaction.options.getBoolean("test") ?? false;
 
 		devLog(
 			`/horsegamble: User ${interaction.user.id} initiated gamble | horse=${horseSlug} count=${count} cycles=${cycles} bankAbove=${bankAbove} test=${isTest}`,
 		);
-		const isHorseCoin = horseSlug === 'horse_coin';
-		const isTop = horseSlug === 'top';
-		const isBottom = horseSlug === 'bottom';
+		const isHorseCoin = horseSlug === "horse_coin";
+		const isTop = horseSlug === "top";
+		const isBottom = horseSlug === "bottom";
 		const isTopBottom = isTop || isBottom;
 		const isAdmin = ADMIN_IDS.has(interaction.user.id);
 		const isCycleMode = cycles !== null && cycles >= 2;
@@ -479,7 +491,7 @@ const gambleCommand = {
 			);
 			const suggestion = match
 				? ` Did you mean **${horseName(match)}**?`
-				: '';
+				: "";
 			return interaction.editReply({
 				content: `**${horseSlug}** isn't a valid horse.${suggestion}`,
 			});
@@ -494,14 +506,14 @@ const gambleCommand = {
 				);
 		devLog(
 			`/horsegamble: Loaded inventory for user ${interaction.user.id} | coins=${inventory?.horseCoins || 0}`,
-			'micro',
+			"micro",
 		);
 
 		if (!isTest) {
 			if (!inventory) {
 				devLog(
 					`/horsegamble: Creating new inventory for user ${interaction.user.id}`,
-					'micro',
+					"micro",
 				);
 				inventory = new UserHorses({
 					userId: interaction.user.id,
@@ -514,7 +526,7 @@ const gambleCommand = {
 			if ((inventory.horseCoins || 0) < MIN_GAMBLE_COIN_COUNT) {
 				devLog(
 					`/horsegamble: User ${interaction.user.id} has debt of ${inventory.horseCoins}, gamble denied`,
-					'micro',
+					"micro",
 				);
 				return interaction.editReply({
 					content: `You are in coin debt (**${inventory.horseCoins}**). You cannot gamble until you break even.`,
@@ -537,7 +549,7 @@ const gambleCommand = {
 		// Horse coin gamble
 		if (isHorseCoin) {
 			devLog(
-				`/horsegamble: Starting horse coin gamble for user ${interaction.user.id} | available=${isTest ? 'test' : inventory.horseCoins}`,
+				`/horsegamble: Starting horse coin gamble for user ${interaction.user.id} | available=${isTest ? "test" : inventory.horseCoins}`,
 			);
 			const available = isTest
 				? Infinity
@@ -562,7 +574,7 @@ const gambleCommand = {
 				const winAmount = Math.floor(Math.random() * 5);
 				devLog(
 					`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - 2}`,
-					'micro',
+					"micro",
 				);
 				if (!isTest) {
 					inventory.horseCoins =
@@ -570,19 +582,19 @@ const gambleCommand = {
 					await inventory.save();
 					devLog(
 						`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`,
-						'micro',
+						"micro",
 					);
 				}
 
 				const testTag = isTest
-					? ' *(test — no coins spent)*'
-					: '';
+					? " *(test — no coins spent)*"
+					: "";
 				return interaction.editReply({
 					content:
 						`**Horse Coin Gamble**\n\n` +
-						'```patch\n' +
+						"```patch\n" +
 						`- 2 🪙 → +${winAmount} 🪙${testTag}\n` +
-						'```',
+						"```",
 				});
 			}
 
@@ -609,17 +621,17 @@ const gambleCommand = {
 			}
 
 			const testTag = isTest
-				? '\n(test mode — no coins spent)'
-				: '';
+				? "\n(test mode — no coins spent)"
+				: "";
 			return interaction.editReply({
 				content:
 					`**Horse Coin Gamble**\n\n` +
-					'```patch\n' +
+					"```patch\n" +
 					`- Gambled: ${gamblesCount} 🪙\n` +
 					`+ Wins:    ${wins}\n` +
 					`- Losses:  ${losses}\n` +
-					`= Net:     ${coinsDelta >= 0 ? '+' : ''}${coinsDelta} 🪙\n` +
-					'```' +
+					`= Net:     ${coinsDelta >= 0 ? "+" : ""}${coinsDelta} 🪙\n` +
+					"```" +
 					testTag,
 			});
 		}
@@ -628,7 +640,7 @@ const gambleCommand = {
 		let initialHorsesToGamble = [];
 		devLog(
 			`/horsegamble: Building horse list for user ${interaction.user.id} | isTopBottom=${isTopBottom}`,
-			'micro',
+			"micro",
 		);
 
 		if (isTopBottom) {
@@ -639,7 +651,7 @@ const gambleCommand = {
 				});
 			}
 
-			const sortDir = isTop ? 'desc' : 'asc';
+			const sortDir = isTop ? "desc" : "asc";
 			const sorted = getSortedHorseList(inventory, sortDir);
 			if (sorted.length === 0) {
 				return interaction.editReply({
@@ -650,7 +662,7 @@ const gambleCommand = {
 
 			// Build slug list from count-aware entries without expanding billions of entries
 			let remaining = count === 0 ? Infinity : count;
-			for (const {slug, count: slugCount} of sorted) {
+			for (const { slug, count: slugCount } of sorted) {
 				if (remaining <= 0) break;
 				const take = Math.min(slugCount, remaining);
 				for (let i = 0; i < Math.min(take, 100_000); i++)
@@ -664,7 +676,7 @@ const gambleCommand = {
 			if (!isTest && available === 0) {
 				devLog(
 					`/horsegamble: User ${interaction.user.id} has no ${horseSlug} to gamble`,
-					'micro',
+					"micro",
 				);
 				return interaction.editReply({
 					content: `You don't have any **${horseName(horseSlug)}**!`,
@@ -677,12 +689,12 @@ const gambleCommand = {
 				100_000,
 			);
 			initialHorsesToGamble = Array.from(
-				{length: take},
+				{ length: take },
 				() => horseSlug,
 			);
 			devLog(
 				`/horsegamble: Building list for user ${interaction.user.id} | slug=${horseSlug} available=${available} taking=${take}`,
-				'micro',
+				"micro",
 			);
 		}
 
@@ -697,7 +709,7 @@ const gambleCommand = {
 		if (isCycleMode) {
 			devLog(
 				`/horsegamble: Starting cycle mode for user ${interaction.user.id} | cycles=${cycles} bankAbove=${bankAbove}`,
-				'micro',
+				"micro",
 			);
 
 			// VirtualInv.horses: ACTIVE (non-banked) horses only, the gamble pool.
@@ -750,12 +762,12 @@ const gambleCommand = {
 			let cycleHorses = [...initialHorsesToGamble];
 			const cycleLogBlocks = [];
 			let haltedEarly = false;
-			let haltReason = '';
+			let haltReason = "";
 
 			for (let c = 1; c <= cycles; c++) {
 				devLog(
 					`/horsegamble: Cycle mode - user ${interaction.user.id} - starting cycle ${c}/${cycles} | horses=${cycleHorses.length} coins=${virtualInv.horseCoins}`,
-					'micro',
+					"micro",
 				);
 
 				// Recalculate cost per horse since coins have changed
@@ -772,7 +784,7 @@ const gambleCommand = {
 					haltReason = `Halted before cycle ${c}: coins (${virtualInv.horseCoins}) fell below MIN_CYCLE_COIN_COUNT (${config.MIN_CYCLE_COIN_COUNT ?? 0}).`;
 					devLog(
 						`/horsegamble: Cycle halted due to low coins: ${haltReason}`,
-						'micro',
+						"micro",
 					);
 					break;
 				}
@@ -782,7 +794,7 @@ const gambleCommand = {
 					haltReason = `Halted before cycle ${c}: no horses left to gamble.`;
 					devLog(
 						`/horsegamble: Cycle halted due to no horses`,
-						'micro',
+						"micro",
 					);
 					break;
 				}
@@ -837,7 +849,7 @@ const gambleCommand = {
 				// Gamble pass
 				devLog(
 					`/horsegamble: Cycle ${c} - executing gamble pass for user ${interaction.user.id} | count=${cycleHorses.length}`,
-					'micro',
+					"micro",
 				);
 				const result = simulateBulkPass(
 					cycleHorses,
@@ -846,7 +858,7 @@ const gambleCommand = {
 				);
 				devLog(
 					`/horsegamble: Cycle ${c} results: wins=${result.wins} losses=${result.losses} completeLosses=${result.completeLosses} netChange=${result.netValueChange}`,
-					'micro',
+					"micro",
 				);
 				const uniqueHorseTypes = [...new Set(cycleHorses)];
 				let horseLabel;
@@ -942,7 +954,7 @@ const gambleCommand = {
 			if (!isTest) {
 				devLog(
 					`/horsegamble: Cycle mode finalized for user ${interaction.user.id} | totalNetChange=${totalNetChange} finalCoins=${virtualInv.horseCoins}`,
-					'micro',
+					"micro",
 				);
 				// Write full inventory: unaffected horses + cycled horses + banked horses.
 				inventory.horses = new Map(staticInventory);
@@ -967,7 +979,7 @@ const gambleCommand = {
 				inventory.lastGamble = Date.now();
 				devLog(
 					`/horsegamble: Saving cycle mode inventory for user ${interaction.user.id}`,
-					'micro',
+					"micro",
 				);
 
 				const houseInv = await getOrCreateInventory(
@@ -995,12 +1007,12 @@ const gambleCommand = {
 				await inventory.save();
 				devLog(
 					`/horsegamble: Cycle mode inventory saved and conditioned for user ${interaction.user.id}`,
-					'micro',
+					"micro",
 				);
 			}
 
 			// Streak tracking: cycle counts as one outcome based on total net change
-			let cycleStreakMessage = '';
+			let cycleStreakMessage = "";
 			if (!isTest) {
 				const {
 					newStreak: cycleStreak,
@@ -1026,18 +1038,18 @@ const gambleCommand = {
 
 			// Final summary
 			const initialHorseLabel = isTop
-				? 'top horses'
+				? "top horses"
 				: isBottom
-					? 'bottom horses'
+					? "bottom horses"
 					: horseName(horseSlug);
 			const finalLines = [
-				`🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length === 1 ? '' : 's'}**`,
+				`🎲 **Final Gambling Results after ${cycleLogBlocks.length} Cycle${cycleLogBlocks.length === 1 ? "" : "s"}**`,
 				`Gambled ${totalGambledCount} horses (started as ${initialHorsesToGamble.length} ${initialHorseLabel})`,
 				`Starting Value: $${originalValue}`,
 				`Final Active Value: $${finalActiveValue}`,
 				`Banked Value: $${bankedValue}`,
 				`Total Value (active + banked): $${finalValue}`,
-				`Net Change (active + banked): $${totalNetChange >= 0 ? '+' : ''}${totalNetChange} ($${totalAvgChange >= 0 ? '+' : ''}${totalAvgChange} avg. per horse)`,
+				`Net Change (active + banked): $${totalNetChange >= 0 ? "+" : ""}${totalNetChange} ($${totalAvgChange >= 0 ? "+" : ""}${totalAvgChange} avg. per horse)`,
 				`Final Horses:`,
 			];
 
@@ -1068,14 +1080,14 @@ const gambleCommand = {
 				);
 				for (const [s, cnt] of bankedSorted) {
 					finalLines.push(
-						`Horses Banked: ${cnt} ${horseName(s)} (-${totalCoinsSpentOnBanking} Horse Coin${totalCoinsSpentOnBanking === 1 ? '' : 's'})`,
+						`Horses Banked: ${cnt} ${horseName(s)} (-${totalCoinsSpentOnBanking} Horse Coin${totalCoinsSpentOnBanking === 1 ? "" : "s"})`,
 					);
 				}
 			}
 
 			finalLines.push(
-				`Horse Coins Spent: ${isTest ? '(test)' : totalCoinsSpent}`,
-				`Horse Coins Remaining: ${isTest ? '(test)' : virtualInv.horseCoins}`,
+				`Horse Coins Spent: ${isTest ? "(test)" : totalCoinsSpent}`,
+				`Horse Coins Remaining: ${isTest ? "(test)" : virtualInv.horseCoins}`,
 			);
 			if (haltedEarly) finalLines.push(`⚠️ ${haltReason}`);
 			if (isTest)
@@ -1088,35 +1100,35 @@ const gambleCommand = {
 			// Attach cycle logs + final summary in one file
 			const fileContent = [
 				`// gamblelog.js generated at ${new Date().toISOString()}`,
-				'',
+				"",
 				...cycleLogBlocks,
-				'',
-				'=== FINAL SUMMARY ===',
-				finalLines.join('\n'),
-			].join('\n\n');
+				"",
+				"=== FINAL SUMMARY ===",
+				finalLines.join("\n"),
+			].join("\n\n");
 
 			// In case of humongous outputs (cough cough nathan)
-			const finalText = finalLines.join('\n');
+			const finalText = finalLines.join("\n");
 			const trueFinalLines =
 				finalText.length > safeLength
 					? [
 							...finalLines.slice(0, 10),
-							'... (full in attached file)',
+							"... (full in attached file)",
 						].concat(finalLines.slice(-10))
 					: finalLines;
 			await interaction.editReply({
-				content: trueFinalLines.join('\n'),
+				content: trueFinalLines.join("\n"),
 				files: [
 					{
-						attachment: Buffer.from(fileContent, 'utf8'),
-						name: 'gamblelog.js',
+						attachment: Buffer.from(fileContent, "utf8"),
+						name: "gamblelog.js",
 					},
 				],
 			});
 			if (!isTest)
-				conditionHorse(inventory, {interaction}).catch(
+				conditionHorse(inventory, { interaction }).catch(
 					(error) =>
-						console.error('conditionHorse error:', error),
+						console.error("conditionHorse error:", error),
 				);
 			return;
 		}
@@ -1162,7 +1174,7 @@ const gambleCommand = {
 
 			const now = Date.now();
 			const lastGamble = isTest ? 0 : inventory.lastGamble || 0;
-			let frenzyMessage = '';
+			let frenzyMessage = "";
 
 			if (
 				!isTest &&
@@ -1240,7 +1252,7 @@ const gambleCommand = {
 			if (change < effectivelossthresh) {
 				devLog(
 					`/horsegamble: Single gamble loss for user ${interaction.user.id} | horse=${slug} startValue=${startValue} change=${change}`,
-					'micro',
+					"micro",
 				);
 				if (!isTest) {
 					inventory.horses.set(
@@ -1259,14 +1271,15 @@ const gambleCommand = {
 					await inventory.save();
 				}
 
-				const testTag = isTest ? ' *(test)*' : '';
+				const testTag = isTest ? " *(test)*" : "";
 				if (!isTest) updateStreak(interaction.user.id, false);
 				if (!isTest)
-					conditionHorse(
-						inventory,
-						{interaction},
-					).catch((error) =>
-						console.error('conditionHorse error:', error),
+					conditionHorse(inventory, { interaction }).catch(
+						(error) =>
+							console.error(
+								"conditionHorse error:",
+								error,
+							),
 					);
 				return interaction.editReply(
 					`I told you gambling is bad! You lost your **${horseName(slug)}**!${frenzyMessage}${testTag}`,
@@ -1278,7 +1291,7 @@ const gambleCommand = {
 			const actualDiff = endValue - startValue;
 			devLog(
 				`/horsegamble: Single gamble win for user ${interaction.user.id} | from=${slug}(${startValue}) to=${closestSlug}(${endValue}) diff=${actualDiff}`,
-				'micro',
+				"micro",
 			);
 
 			if (!isTest) {
@@ -1307,7 +1320,7 @@ const gambleCommand = {
 						);
 						devLog(
 							`/horsegamble: House gained ${commonTransfer} common horses from user ${interaction.user.id}`,
-							'micro',
+							"micro",
 						);
 					} else if (actualDiff > 0) {
 						const houseCurrentCommon =
@@ -1321,7 +1334,7 @@ const gambleCommand = {
 						);
 						devLog(
 							`/horsegamble: House lost ${commonTransfer} common horses to user ${interaction.user.id}`,
-							'micro',
+							"micro",
 						);
 					}
 
@@ -1332,7 +1345,7 @@ const gambleCommand = {
 				await inventory.save();
 			}
 
-			let outcomeMessage = '';
+			let outcomeMessage = "";
 			if (closestSlug === slug) {
 				outcomeMessage = `The gamble resulted in no change ($0). You kept your **${horseName(slug)}**.`;
 			} else {
@@ -1343,13 +1356,13 @@ const gambleCommand = {
 				outcomeMessage = `You gambled your **${horseName(slug)}** (${startValue}) and ${resultText}. You got a **${horseName(closestSlug)}** (${endValue})!`;
 			}
 
-			if (isTest) outcomeMessage += ' *(test)*';
+			if (isTest) outcomeMessage += " *(test)*";
 
 			// Streak: a net value gain counts as a win
-			let singleStreakMessage = '';
+			let singleStreakMessage = "";
 			if (!isTest) {
 				const isNetWin = actualDiff > 0;
-				const {newStreak, awarded} = updateStreak(
+				const { newStreak, awarded } = updateStreak(
 					interaction.user.id,
 					isNetWin,
 				);
@@ -1369,9 +1382,9 @@ const gambleCommand = {
 			}
 
 			if (!isTest)
-				conditionHorse(inventory, {interaction}).catch(
+				conditionHorse(inventory, { interaction }).catch(
 					(error) =>
-						console.error('conditionHorse error:', error),
+						console.error("conditionHorse error:", error),
 				);
 			return interaction.editReply(
 				outcomeMessage + frenzyMessage + singleStreakMessage,
@@ -1381,7 +1394,7 @@ const gambleCommand = {
 		// Bulk gamble logic (cycle=1, count>1)
 		devLog(
 			`/horsegamble: Starting bulk gamble for user ${interaction.user.id} | count=${initialHorsesToGamble.length}`,
-			'micro',
+			"micro",
 		);
 		let totalWins = 0;
 		let totalLosses = 0;
@@ -1514,15 +1527,15 @@ const gambleCommand = {
 			}
 		}
 
-		let bulkStreakMessage = '';
+		let bulkStreakMessage = "";
 		if (!isTest) {
 			devLog(
 				`/horsegamble: Bulk gamble completed for user ${interaction.user.id} | wins=${totalWins} losses=${totalLosses} completeLosses=${totalCompleteLosses} netChange=${netValueChange}`,
-				'micro',
+				"micro",
 			);
 			inventory.lastGamble = now;
 			// Streak: bulk counts as one outcome based on net value
-			const {newStreak, awarded} = updateStreak(
+			const { newStreak, awarded } = updateStreak(
 				interaction.user.id,
 				netValueChange > 0,
 			);
@@ -1543,7 +1556,7 @@ const gambleCommand = {
 			await inventory.save();
 			devLog(
 				`/horsegamble: Bulk gamble inventory saved for user ${interaction.user.id}`,
-				'micro',
+				"micro",
 			);
 		}
 
@@ -1557,10 +1570,10 @@ const gambleCommand = {
 				? Math.round(netValueChange / totalGambled)
 				: 0;
 		const coinsRemaining = isTest
-			? '(test)'
+			? "(test)"
 			: inventory.horseCoins || 0;
 
-		const gainedLines = '';
+		const gainedLines = "";
 
 		// Compute all horse changes (gained and lost)
 		const horseChangeMap = new Map();
@@ -1601,7 +1614,7 @@ const gambleCommand = {
 			if (diff !== 0) horseChangeMap.set(slug, diff);
 		}
 
-		let changeLines = '';
+		let changeLines = "";
 		for (const [slug, diff] of [...horseChangeMap.entries()].sort(
 			(a, b) => {
 				// Sort by absolute value of change, then by value desc
@@ -1616,49 +1629,49 @@ const gambleCommand = {
 			const value = HORSE_VALUES[slug]?.value || 0;
 			const before = initialHorseCounts.get(slug) || 0;
 			const after = finalHorseCounts.get(slug) || 0;
-			let prefix = '';
+			let prefix = "";
 			if (diff > 0) {
-				prefix = before === 0 ? '!' : '+';
+				prefix = before === 0 ? "!" : "+";
 			} else if (diff < 0) {
-				prefix = '-';
+				prefix = "-";
 			}
 
 			const total = value * diff;
-			const totalSign = total > 0 ? '+' : '';
+			const totalSign = total > 0 ? "+" : "";
 			changeLines += `\n${prefix}${Math.abs(diff)} ${horseName(slug)} ($${value} * ${prefix}${Math.abs(diff)} = ${totalSign}$${total}) (${before} -> ${after})`;
 		}
 
 		const remainingLine =
 			!isTopBottom && !isTest
 				? `, remaining: ${inventory.horses.get(initialHorsesToGamble[0]) || 0}`
-				: '';
+				: "";
 
 		const horseLabel = isTop
-			? 'top horses'
+			? "top horses"
 			: isBottom
-				? 'bottom horses'
+				? "bottom horses"
 				: horseName(initialHorsesToGamble[0]);
 		const testTag = isTest
-			? '\n*(test mode — no horses or coins spent)*'
-			: '';
+			? "\n*(test mode — no horses or coins spent)*"
+			: "";
 
 		const summary = [
 			`**Horse Gamble Results**`,
-			'```patch',
+			"```patch",
 			`- Gambled: ${totalGambled} ${horseLabel}`,
 			`+ Wins:    ${totalWins}`,
 			`- Losses:  ${totalLosses}`,
 			`- Complete Losses: ${totalCompleteLosses}`,
 			`= No Change: ${totalNoChange}${remainingLine}`,
-			`${netValueChange >= 0 ? '+' : '-'} Net Value: ${netValueChange >= 0 ? '+' : ''}$${netValueChange} (${avgChange >= 0 ? '+' : ''}$${avgChange}/horse)`,
+			`${netValueChange >= 0 ? "+" : "-"} Net Value: ${netValueChange >= 0 ? "+" : ""}$${netValueChange} (${avgChange >= 0 ? "+" : ""}$${avgChange}/horse)`,
 			`- Coins Spent: ${coinsSpent}`,
 			`+ Coins Left:  ${coinsRemaining}`,
-			changeLines.trim() ? changeLines : '',
-			'```',
-			testTag || '',
+			changeLines.trim() ? changeLines : "",
+			"```",
+			testTag || "",
 		]
 			.filter(Boolean)
-			.join('\n');
+			.join("\n");
 
 		if (summary.length > safeLength) {
 			await interaction.editReply({
@@ -1667,8 +1680,8 @@ const gambleCommand = {
 					bulkStreakMessage,
 				files: [
 					{
-						attachment: Buffer.from(summary, 'utf8'),
-						name: 'gamble.txt',
+						attachment: Buffer.from(summary, "utf8"),
+						name: "gamble.txt",
 					},
 				],
 			});
@@ -1679,9 +1692,9 @@ const gambleCommand = {
 		}
 
 		if (!isTest)
-			conditionHorse(inventory, {interaction}).catch(
+			conditionHorse(inventory, { interaction }).catch(
 				(error) =>
-					console.error('conditionHorse error:', error),
+					console.error("conditionHorse error:", error),
 			);
 	},
 };

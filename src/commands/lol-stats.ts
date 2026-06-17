@@ -2,21 +2,21 @@ import {
 	SlashCommandBuilder,
 	EmbedBuilder,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {immutConfig} from '../lib/config.js';
-import {LolStats} from '../lib/models.js';
+} from "discord.js";
+import { immutConfig } from "../lib/config.js";
+import { LolStats } from "../lib/models.js";
 
 const lolStatsCommand = {
 	data: new SlashCommandBuilder()
-		.setName('lolstats')
-		.setDescription('Shows how many times the bot has said lol'),
+		.setName("lolstats")
+		.setDescription("Shows how many times the bot has said lol"),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const stats = await LolStats.findOne({id: 'global_stats'});
+		const stats = await LolStats.findOne({ id: "global_stats" });
 
 		if (!stats?.lastTimestamp) {
 			return interaction.reply(
-				'No lols have been recorded in the database yet!',
+				"No lols have been recorded in the database yet!",
 			);
 		}
 
@@ -28,32 +28,32 @@ const lolStatsCommand = {
 		const relativeTime = `<t:${unixSeconds}:R>`; // Relative, e.g., 5 minutes ago
 
 		const embed = new EmbedBuilder()
-			.setColor('#ffea00') // Cheese
-			.setTitle('lol Counter')
+			.setColor("#ffea00") // Cheese
+			.setTitle("lol Counter")
 			.addFields(
 				{
-					name: 'Today',
+					name: "Today",
 					value: `${stats.daily}`,
 					inline: true,
 				},
 				{
-					name: 'This Week',
+					name: "This Week",
 					value: `${stats.weekly}`,
 					inline: true,
 				},
 				{
-					name: 'All Time',
+					name: "All Time",
 					value: `${stats.allTime}`,
 					inline: true,
 				},
 				{
-					name: 'Last Lol',
+					name: "Last Lol",
 					value: `${discordTime} (${relativeTime})`,
 					inline: false,
 				},
 			);
 
-		await interaction.reply({embeds: [embed]});
+		await interaction.reply({ embeds: [embed] });
 	},
 };
 

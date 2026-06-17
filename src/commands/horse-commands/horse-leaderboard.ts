@@ -8,13 +8,13 @@ import {
 	type ChatInputCommandInteraction,
 	type ButtonInteraction,
 	type User,
-} from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../../lib/models.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
-import {immutConfig} from '../../lib/config.js';
-import {fetchWithTimeout} from '../../lib/helpers/timeout-helpers.js';
+} from "discord.js";
+import mongoose from "mongoose";
+import type { IUserHorses } from "../../lib/models.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
+import { immutConfig } from "../../lib/config.js";
+import { fetchWithTimeout } from "../../lib/helpers/timeout-helpers.js";
 
 type SortList = Array<{
 	userId: string;
@@ -26,12 +26,12 @@ type SortList = Array<{
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const PAGE_SIZE = 10;
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('horseleaderboard')
-	.setDescription('View the richest horse collectors')
+	.setName("horseleaderboard")
+	.setDescription("View the richest horse collectors")
 	.addIntegerOption((option) =>
 		option
-			.setName('page')
-			.setDescription('Page number to view (starts at 1)')
+			.setName("page")
+			.setDescription("Page number to view (starts at 1)")
 			.setMinValue(1),
 	);
 export async function execute(
@@ -40,8 +40,8 @@ export async function execute(
 	await interaction.deferReply();
 	// Fetch only needed fields for speed
 	const allUsers = await mongoose
-		.model<IUserHorses>('UserHorses')
-		.find({}, {userId: 1, horses: 1, horseCoins: 1});
+		.model<IUserHorses>("UserHorses")
+		.find({}, { userId: 1, horses: 1, horseCoins: 1 });
 	const totalPossibleItems = Object.values(HORSE_VALUES).filter(
 		(v) => v.comp !== false,
 	).length;
@@ -85,7 +85,7 @@ export async function execute(
 	);
 	// Get page from option, default to 1
 	let currentPage =
-		(interaction.options.getInteger('page') ?? 1) - 1;
+		(interaction.options.getInteger("page") ?? 1) - 1;
 	if (currentPage < 0) currentPage = 0;
 	if (currentPage >= totalPages) currentPage = totalPages - 1;
 
@@ -109,12 +109,12 @@ export async function execute(
 					const name =
 						user?.displayName ??
 						user?.username ??
-						'Unknown User';
+						"Unknown User";
 					userCache.set(userId, name);
 					return name;
 				} catch {
-					userCache.set(userId, 'Unknown User');
-					return 'Unknown User';
+					userCache.set(userId, "Unknown User");
+					return "Unknown User";
 				}
 			}),
 		);
@@ -124,7 +124,7 @@ export async function execute(
 	// Build leaderboard string for a given list and page
 	async function buildList(
 		list: SortList,
-		type: 'worth' | 'comp' | 'coins',
+		type: "worth" | "comp" | "coins",
 		page: number,
 	) {
 		const start = page * PAGE_SIZE;
@@ -133,23 +133,23 @@ export async function execute(
 		try {
 			names = await getUserNamesForPage(list, page);
 		} catch {
-			names = current.map(() => 'Unknown User');
+			names = current.map(() => "Unknown User");
 		}
 
-		let listString = '';
+		let listString = "";
 		for (const [i, item] of current.entries()) {
-			const name = names[i] ?? 'Unknown User';
+			const name = names[i] ?? "Unknown User";
 			const rank = start + i + 1;
 			const value =
-				type === 'worth'
+				type === "worth"
 					? `$${item.worth.toLocaleString()}`
-					: type === 'coins'
+					: type === "coins"
 						? `${item.horseCoins.toLocaleString()} 🪙`
 						: `${item.completion}%`;
 			listString += `**${rank}.** ${name}: ${value}\n`;
 		}
 
-		return listString || 'No data.';
+		return listString || "No data.";
 	}
 
 	async function buildEmbed(page: number) {
@@ -157,21 +157,21 @@ export async function execute(
 			.setTitle(
 				`🐎 Horse Collector Leaderboards (Page ${page + 1}/${totalPages})`,
 			)
-			.setColor('#f1c40f')
+			.setColor("#f1c40f")
 			.addFields(
 				{
-					name: '💰 Horse Net Worth',
-					value: await buildList(worthSort, 'worth', page),
+					name: "💰 Horse Net Worth",
+					value: await buildList(worthSort, "worth", page),
 					inline: true,
 				},
 				{
-					name: '🏆 Completion',
-					value: await buildList(compSort, 'comp', page),
+					name: "🏆 Completion",
+					value: await buildList(compSort, "comp", page),
 					inline: true,
 				},
 				{
-					name: '🪙 Horse Coins',
-					value: await buildList(coinSort, 'coins', page),
+					name: "🪙 Horse Coins",
+					value: await buildList(coinSort, "coins", page),
 					inline: true,
 				},
 			);
@@ -183,12 +183,12 @@ export async function execute(
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
 				.setCustomId(`hlb_prev_${page}`)
-				.setLabel('⬅️')
+				.setLabel("⬅️")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page === 0),
 			new ButtonBuilder()
 				.setCustomId(`hlb_next_${page}`)
-				.setLabel('➡️')
+				.setLabel("➡️")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= totalPages - 1),
 		);
@@ -204,24 +204,24 @@ export async function execute(
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on('collect', (i: ButtonInteraction) => {
+	collector.on("collect", (i: ButtonInteraction) => {
 		void (async () => {
 			if (i.user.id !== interaction.user.id) {
 				await i
 					.reply({
 						content:
-							'Only the command user can use these buttons.',
+							"Only the command user can use these buttons.",
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
 				return;
 			}
 
-			const [, direction, page] = i.customId.split('_');
+			const [, direction, page] = i.customId.split("_");
 			let parsedPage = Number(page);
 			if (Number.isNaN(parsedPage)) parsedPage = 0;
 			currentPage =
-				direction === 'next'
+				direction === "next"
 					? parsedPage + 1
 					: parsedPage - 1;
 			if (currentPage < 0) currentPage = 0;
@@ -235,7 +235,7 @@ export async function execute(
 			} catch {
 				await i
 					.reply({
-						content: 'Failed to update leaderboard page.',
+						content: "Failed to update leaderboard page.",
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch(() => undefined);
@@ -243,7 +243,7 @@ export async function execute(
 		})().catch(() => undefined);
 	});
 
-	collector.on('end', () => {
+	collector.on("end", () => {
 		void (async () => {
 			const embed = await buildEmbed(currentPage);
 			await interaction

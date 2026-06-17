@@ -2,29 +2,33 @@ import {
 	SlashCommandSubcommandBuilder,
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
-} from 'discord.js';
-import {UserHorses, type IUserHorses} from '../../lib/models.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
-import {config} from '../../lib/config.js';
-import devLog from '../../lib/helpers/dev-log.js';
-import {horseName} from '../../lib/helpers/horse-funcs.js';
-import {handleCommandError} from '../../lib/helpers/error-handlers.js';
+} from "discord.js";
+import { UserHorses, type IUserHorses } from "../../lib/models.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
+import { config } from "../../lib/config.js";
+import devLog from "../../lib/helpers/dev-log.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { handleCommandError } from "../../lib/helpers/error-handlers.js";
 
 const SELL_PRICE = config.COMMON_SELL_PRICE;
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
 // Returns [{slug, value, count}] sorted by value; does not expand by count to avoid OOM
-function getSortedHorseList(inventory: IUserHorses, sortDir = 'asc') {
+function getSortedHorseList(inventory: IUserHorses, sortDir = "asc") {
 	const list = [];
 	for (const [slug, count] of inventory.horses.entries()) {
 		if (count > 0 && HORSE_VALUES[slug]) {
-			list.push({slug, value: HORSE_VALUES[slug].value, count});
+			list.push({
+				slug,
+				value: HORSE_VALUES[slug].value,
+				count,
+			});
 		}
 	}
 
 	list.sort((a, b) =>
-		sortDir === 'asc' ? a.value - b.value : b.value - a.value,
+		sortDir === "asc" ? a.value - b.value : b.value - a.value,
 	);
 	return list;
 }
@@ -37,20 +41,20 @@ function coinValueForSlug(slug: string) {
 }
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('sell')
-	.setDescription('Sell a horse for horse coin')
+	.setName("sell")
+	.setDescription("Sell a horse for horse coin")
 	.addStringOption((option) =>
 		option
-			.setName('horse')
+			.setName("horse")
 			.setDescription('The horse to sell, "top", or "bottom"')
 			.setRequired(true)
 			.setAutocomplete(true),
 	)
 	.addIntegerOption((option) =>
 		option
-			.setName('amount')
+			.setName("amount")
 			.setDescription(
-				'How many to sell (0 = all of that horse, or all top/bottom)',
+				"How many to sell (0 = all of that horse, or all top/bottom)",
 			)
 			.setRequired(false)
 			.setMinValue(0),
@@ -69,12 +73,12 @@ export async function autocomplete(
 
 		const choices = [
 			{
-				name: '📈 top — sell most valuable horses',
-				value: 'top',
+				name: "📈 top — sell most valuable horses",
+				value: "top",
 			},
 			{
-				name: '📉 bottom — sell least valuable horses',
-				value: 'bottom',
+				name: "📉 bottom — sell least valuable horses",
+				value: "bottom",
 			},
 		];
 		if (inventory?.horses) {
@@ -94,7 +98,7 @@ export async function autocomplete(
 				.slice(0, 25),
 		);
 	} catch (error) {
-		console.error('horsesell autocomplete error:', error);
+		console.error("horsesell autocomplete error:", error);
 		try {
 			await interaction.respond([]);
 		} catch {
@@ -111,7 +115,7 @@ async function topOrBottomBulkSell(
 ) {
 	const sorted = getSortedHorseList(
 		inventory,
-		isTop ? 'desc' : 'asc',
+		isTop ? "desc" : "asc",
 	);
 	if (sorted.length === 0) {
 		return interaction.editReply({
@@ -122,7 +126,7 @@ async function topOrBottomBulkSell(
 	// Walk sorted slugs, taking up to 'amount' total horses across slugs
 	const sellMap = new Map<string, number>();
 	let remaining = amount === 0 ? Infinity : amount;
-	for (const {slug, count} of sorted) {
+	for (const { slug, count } of sorted) {
 		if (remaining <= 0) break;
 		const take =
 			amount === 0 ? count : Math.min(count, remaining);
@@ -144,10 +148,10 @@ async function topOrBottomBulkSell(
 	}
 
 	inventory.horseCoins = (inventory.horseCoins ?? 0) + totalCoins;
-	inventory.markModified('horses');
+	inventory.markModified("horses");
 	await inventory.save();
 
-	const label = isTop ? 'most valuable' : 'least valuable';
+	const label = isTop ? "most valuable" : "least valuable";
 	const lines = [...sellMap.entries()]
 		.toSorted(
 			(a, b) =>
@@ -158,7 +162,7 @@ async function topOrBottomBulkSell(
 			([slug, cnt]) =>
 				`* ${cnt}x **${horseName(slug)}** → ${(coinValueForSlug(slug) ?? 0) * cnt} 🪙`,
 		)
-		.join('\n');
+		.join("\n");
 
 	devLog(
 		`/horsesell: ${interaction.user.tag} sold ${totalTaken} ${label} horses for ${totalCoins} coins.`,
@@ -166,7 +170,7 @@ async function topOrBottomBulkSell(
 		handleCommandError(error, interaction),
 	);
 	return interaction.editReply(
-		`Sold **${totalTaken}** ${label} horse${totalTaken === 1 ? '' : 's'} for **${totalCoins}** 🪙 total!\n${lines}`,
+		`Sold **${totalTaken}** ${label} horse${totalTaken === 1 ? "" : "s"} for **${totalCoins}** 🪙 total!\n${lines}`,
 	);
 }
 
@@ -181,7 +185,7 @@ async function standardHorseSell(
 
 	if (owned < sellAmount || sellAmount <= 0) {
 		return interaction.editReply({
-			content: `You don't have ${sellAmount > 1 ? `**${sellAmount}x** ` : 'a '}**${horseName(horseSlug)}**!`,
+			content: `You don't have ${sellAmount > 1 ? `**${sellAmount}x** ` : "a "}**${horseName(horseSlug)}**!`,
 		});
 	}
 
@@ -197,7 +201,7 @@ async function standardHorseSell(
 		handleCommandError(error, interaction),
 	);
 	return interaction.editReply(
-		`You sold ${sellAmount > 1 ? `**${sellAmount}x** ` : 'your '}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned === 1 ? '' : 's'}!`,
+		`You sold ${sellAmount > 1 ? `**${sellAmount}x** ` : "your "}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned === 1 ? "" : "s"}!`,
 	);
 }
 
@@ -205,10 +209,10 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-	const horseSlug = interaction.options.getString('horse');
-	const amount = interaction.options.getInteger('amount') ?? 1;
-	const isTop = horseSlug === 'top';
-	const isBottom = horseSlug === 'bottom';
+	const horseSlug = interaction.options.getString("horse");
+	const amount = interaction.options.getInteger("amount") ?? 1;
+	const isTop = horseSlug === "top";
+	const isBottom = horseSlug === "bottom";
 	const isTopBottom = isTop || isBottom;
 
 	const inventory = await UserHorses.findOne({

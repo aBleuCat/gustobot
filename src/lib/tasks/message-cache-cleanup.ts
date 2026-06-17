@@ -1,6 +1,6 @@
-import {MessageCache} from '../models.js';
-import {config} from '../config.js';
-import devLog from '../helpers/dev-log.js';
+import { MessageCache } from "../models.js";
+import { config } from "../config.js";
+import devLog from "../helpers/dev-log.js";
 
 let messageCacheCleanupInterval: NodeJS.Timeout | undefined;
 
@@ -14,7 +14,7 @@ export function startMessageCacheCleanup() {
 					Date.now() - config.MESSAGE_CACHE_CLEANUP_MS;
 
 				const result = await MessageCache.deleteMany({
-					lastMessageTime: {$lt: cleanupThreshold},
+					lastMessageTime: { $lt: cleanupThreshold },
 				});
 
 				if (result.deletedCount > 0) {
@@ -23,17 +23,17 @@ export function startMessageCacheCleanup() {
 					);
 					await devLog(
 						`[MessageCacheCleanup] Removed ${result.deletedCount} old message cache entries`,
-						'bg',
+						"bg",
 					);
 				}
 			} catch (error) {
 				console.error(
-					'[MessageCacheCleanup] Error cleaning message cache:',
+					"[MessageCacheCleanup] Error cleaning message cache:",
 					error,
 				);
 				await devLog(
-					`[MessageCacheCleanup] Error cleaning message cache: ${error instanceof Error ? error.message : 'unknown'}`,
-					'bg',
+					`[MessageCacheCleanup] Error cleaning message cache: ${error instanceof Error ? error.message : "unknown"}`,
+					"bg",
 				);
 			}
 		})();

@@ -3,23 +3,23 @@ export default {
 	space: false,
 	semicolon: true,
 	rules: {
-		'@typescript-eslint/naming-convention': [
-			'error',
+		"@typescript-eslint/naming-convention": [
+			"error",
 			{
-				selector: 'variable',
-				format: ['camelCase', 'UPPER_CASE'],
-				leadingUnderscore: 'allow',
+				selector: "variable",
+				format: ["camelCase", "UPPER_CASE"],
+				leadingUnderscore: "allow",
 			},
 			{
-				selector: 'parameter',
-				format: ['camelCase'],
-				leadingUnderscore: 'allow',
+				selector: "parameter",
+				format: ["camelCase"],
+				leadingUnderscore: "allow",
 			},
 			{
-				selector: 'typeLike',
-				format: ['PascalCase'],
+				selector: "typeLike",
+				format: ["PascalCase"],
 			},
 		],
-		'no-unused-vars': ['error', {varsIgnorePattern: '^_'}],
+		"no-unused-vars": ["error", { varsIgnorePattern: "^_" }],
 	},
 };

@@ -2,24 +2,24 @@ import {
 	SlashCommandBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
-} from 'discord.js';
-import {ActionResponse} from '../lib/models.js';
-import {immutConfig} from '../lib/config.js';
+} from "discord.js";
+import { ActionResponse } from "../lib/models.js";
+import { immutConfig } from "../lib/config.js";
 
 const actionConfigCommand = {
 	data: new SlashCommandBuilder()
-		.setName('howtoact')
-		.setDescription('Teach the bot how to respond to an action')
+		.setName("howtoact")
+		.setDescription("Teach the bot how to respond to an action")
 		.addStringOption((option) =>
 			option
-				.setName('trigger')
-				.setDescription('The word to look for')
+				.setName("trigger")
+				.setDescription("The word to look for")
 				.setRequired(true),
 		)
 		.addStringOption((option) =>
 			option
-				.setName('response')
-				.setDescription('The bot response')
+				.setName("response")
+				.setDescription("The bot response")
 				.setRequired(true),
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
@@ -30,8 +30,8 @@ const actionConfigCommand = {
 			});
 		}
 
-		const trigger = interaction.options.getString('trigger');
-		const response = interaction.options.getString('response');
+		const trigger = interaction.options.getString("trigger");
+		const response = interaction.options.getString("response");
 		if (!trigger || !response)
 			return interaction.reply({
 				content:
@@ -39,9 +39,9 @@ const actionConfigCommand = {
 			});
 
 		await ActionResponse.findOneAndUpdate(
-			{trigger: trigger.toLowerCase()},
-			{response},
-			{upsert: true},
+			{ trigger: trigger.toLowerCase() },
+			{ response },
+			{ upsert: true },
 		);
 
 		return interaction.reply({

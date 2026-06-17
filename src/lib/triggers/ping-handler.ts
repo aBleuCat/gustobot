@@ -1,7 +1,7 @@
-import type {Client, Message} from 'discord.js';
-import {PingResponse} from '../models.js';
-import queueMessage from '../helpers/message-queue.js';
-import {returnAsTextBased} from '../../type-utils.js';
+import type { Client, Message } from "discord.js";
+import { PingResponse } from "../models.js";
+import queueMessage from "../helpers/message-queue.js";
+import { returnAsTextBased } from "../../type-utils.js";
 
 async function handleBotPing(message: Message, client: Client) {
 	const channel = returnAsTextBased(message.channel);
@@ -21,14 +21,14 @@ async function handleBotPing(message: Message, client: Client) {
 		if (!triggerText) return false;
 
 		if (
-			entry.trigger.type === 'contains' &&
+			entry.trigger.type === "contains" &&
 			content.includes(triggerText)
 		)
 			return true;
-		if (entry.trigger.type === 'exact' && content === triggerText)
+		if (entry.trigger.type === "exact" && content === triggerText)
 			return true;
 		if (
-			entry.trigger.type === 'author' &&
+			entry.trigger.type === "author" &&
 			message.author.id === entry.trigger.text
 		)
 			return true;
@@ -59,10 +59,10 @@ async function handleBotPing(message: Message, client: Client) {
 		queueMessage({
 			channel,
 			content: pick.message,
-			reply: {message, mention: true},
+			reply: { message, mention: true },
 		}).catch((error: unknown) => {
 			console.error(
-				'QueueMessage Error in ping handler',
+				"QueueMessage Error in ping handler",
 				error,
 			);
 		});

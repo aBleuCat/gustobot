@@ -1,6 +1,6 @@
-import process from 'node:process';
-import horsesData from '../src/data/horses.json';
-import {config} from '../src/lib/config.js';
+import process from "node:process";
+import horsesData from "../src/data/horses.json";
+import { config } from "../src/lib/config.js";
 
 const horseKeys = Object.keys(horsesData);
 
@@ -12,7 +12,7 @@ function calculateChance(value) {
 }
 
 function getStats() {
-	console.log('--- Horse Spawn Probabilities (Per Message) ---');
+	console.log("--- Horse Spawn Probabilities (Per Message) ---");
 	console.log(
 		`Config: Coeff=${config.SPAWN_COEFFICIENT}, Anti-Inflator=${config.ANTIINFLATOR.toFixed(4)}\n`,
 	);
@@ -26,7 +26,7 @@ function getStats() {
 		return {
 			name: horse.name,
 			value: horse.value,
-			prob: (chance * 100).toFixed(6) + '%',
+			prob: (chance * 100).toFixed(6) + "%",
 			oneInX: Math.round(1 / chance).toLocaleString(),
 		};
 	});
@@ -44,7 +44,7 @@ function getStats() {
 }
 
 function spinWheel() {
-	console.log('--- Rolling for Horse... ---');
+	console.log("--- Rolling for Horse... ---");
 
 	const pool = horseKeys.map((key) => ({
 		key,
@@ -68,10 +68,10 @@ function spinWheel() {
 }
 
 const mode = process.argv[2];
-if (mode === 'stats') {
+if (mode === "stats") {
 	getStats();
-} else if (mode === 'wheel') {
+} else if (mode === "wheel") {
 	spinWheel();
 } else {
-	console.log('Usage: node horsechance.js [stats|wheel]');
+	console.log("Usage: node horsechance.js [stats|wheel]");
 }

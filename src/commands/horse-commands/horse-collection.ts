@@ -2,34 +2,34 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
-} from 'discord.js';
-import mongoose from 'mongoose';
-import type {IUserHorses} from '../../lib/models.js';
-import rawHorseValues from '../../data/horses.json' with {type: 'json'};
-import {castAsHorseData} from '../../type-utils.js';
+} from "discord.js";
+import mongoose from "mongoose";
+import type { IUserHorses } from "../../lib/models.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
 import {
 	horseName,
 	conditionHorse,
-} from '../../lib/helpers/horse-funcs.js';
+} from "../../lib/helpers/horse-funcs.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
 export const data = new SlashCommandSubcommandBuilder()
-	.setName('collection')
-	.setDescription('View a collection of horses')
+	.setName("collection")
+	.setDescription("View a collection of horses")
 	.addUserOption((option) =>
 		option
-			.setName('user')
+			.setName("user")
 			.setDescription(
-				'The user whose collection you want to view',
+				"The user whose collection you want to view",
 			)
 			.setRequired(false),
 	)
 	.addBooleanOption((option) =>
 		option
-			.setName('ephemeral')
+			.setName("ephemeral")
 			.setDescription(
-				'Whether to show the collection ephemeral or publicly in the channel (defaults to ephemeral)',
+				"Whether to show the collection ephemeral or publicly in the channel (defaults to ephemeral)",
 			),
 	);
 
@@ -44,7 +44,7 @@ function leaderboardStats(
 				worth += (HORSE_VALUES[slug]?.value ?? 0) * count;
 			}
 
-			return {userId: u.userId, worth};
+			return { userId: u.userId, worth };
 		})
 		.toSorted((a, b) => b.worth - a.worth);
 
@@ -54,12 +54,12 @@ function leaderboardStats(
 		leaderboard.find((u) => u.userId === targetUserId)?.worth ??
 		0;
 
-	return {rank, userWorth};
+	return { rank, userWorth };
 }
 
 function buildHorseInvList(inventory: IUserHorses) {
-	let compHorseText = '';
-	let nonCompHorseText = '';
+	let compHorseText = "";
+	let nonCompHorseText = "";
 	let ownedUniqueCount = 0;
 	const ownedSlugs = new Set<string>();
 
@@ -68,15 +68,15 @@ function buildHorseInvList(inventory: IUserHorses) {
 			continue;
 		}
 
-		const {value} = HORSE_VALUES[slug];
+		const { value } = HORSE_VALUES[slug];
 		const display = horseName(slug);
 		const isComp = HORSE_VALUES[slug].comp !== false;
 		const prefix =
-			slug === 'dung_beetle'
-				? '🪲'
-				: slug.includes('providence')
-					? '✨'
-					: '🐎';
+			slug === "dung_beetle"
+				? "🪲"
+				: slug.includes("providence")
+					? "✨"
+					: "🐎";
 
 		if (isComp) {
 			compHorseText += `* ${prefix} **${display}**: \`x${count}\` — ($${value.toLocaleString()})\n`;
@@ -92,9 +92,9 @@ function buildHorseInvList(inventory: IUserHorses) {
 		compHorseText +
 		(nonCompHorseText
 			? `\n### 👻 Specials and Secrets\n${nonCompHorseText}`
-			: '');
+			: "");
 
-	return {horseListText, ownedUniqueCount, ownedSlugs};
+	return { horseListText, ownedUniqueCount, ownedSlugs };
 }
 
 function buildMissingList(
@@ -107,7 +107,7 @@ function buildMissingList(
 		(slug) => !ownedSlugs.has(slug),
 	);
 	const missingHeader = isSelf
-		? '### Missing Thingamabobs'
+		? "### Missing Thingamabobs"
 		: `### Missing from ${username}'s Stable`;
 	let missingText: string;
 	if (missing.length > 0) {
@@ -118,10 +118,10 @@ function buildMissingList(
 					const mValue = HORSE_VALUES[slug]?.value ?? 0;
 					return `* *${horseName(slug)}* ($${mValue.toLocaleString()})`;
 				})
-				.join('\n');
+				.join("\n");
 	} else {
 		missingText = isSelf
-			? '\n### ✨ You have mastered the gustovian stables! ✨'
+			? "\n### ✨ You have mastered the gustovian stables! ✨"
 			: `\n### ✨ ${username} has mastered the stables! ✨`;
 	}
 
@@ -132,16 +132,16 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const ephemeral =
-		interaction.options.getBoolean('ephemeral') ?? true;
+		interaction.options.getBoolean("ephemeral") ?? true;
 	await interaction.deferReply({
 		flags: ephemeral ? [MessageFlags.Ephemeral] : [],
 	});
 	const targetUser =
-		interaction.options.getUser('user') ?? interaction.user;
+		interaction.options.getUser("user") ?? interaction.user;
 	const isSelf = targetUser.id === interaction.user.id;
 
 	const allUsers = await mongoose
-		.model<IUserHorses>('UserHorses')
+		.model<IUserHorses>("UserHorses")
 		.find();
 	const inventory = allUsers.find(
 		(u) => u.userId === targetUser.id,
@@ -156,16 +156,16 @@ export async function execute(
 	) {
 		return interaction.editReply({
 			content: isSelf
-				? 'Your stables are empty. Keep talking to find some horses!'
+				? "Your stables are empty. Keep talking to find some horses!"
 				: `${targetUser.username}'s stables are empty.`,
 		});
 	}
 
-	const {rank, userWorth} = leaderboardStats(
+	const { rank, userWorth } = leaderboardStats(
 		allUsers,
 		targetUser.id,
 	);
-	const {horseListText, ownedUniqueCount, ownedSlugs} =
+	const { horseListText, ownedUniqueCount, ownedSlugs } =
 		buildHorseInvList(inventory);
 	const completionPercentage = Math.round(
 		(ownedUniqueCount / allPossibleSlugs.length) * 100,
@@ -178,15 +178,15 @@ export async function execute(
 	);
 
 	const title = isSelf
-		? '## 🐎 Your Collection 🐎'
+		? "## 🐎 Your Collection 🐎"
 		: `## 🐎 ${targetUser.username}'s Collection 🐎`;
 	const message = `${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n${horseListText}${missingText}`;
 	await interaction.editReply(message);
 
 	// Run after reply so it never blocks the interaction response
-	conditionHorse(inventory, {interaction}).catch(
+	conditionHorse(inventory, { interaction }).catch(
 		(error: unknown) => {
-			console.error('conditionHorse error:', error);
+			console.error("conditionHorse error:", error);
 		},
 	);
 }
