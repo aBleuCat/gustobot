@@ -1,20 +1,6 @@
-const fs = require('node:fs');
-const path = require('node:path');
-
-const horsesPath = path.join(__dirname, '../data/horses.json');
-const configPath = path.join(__dirname, '../lib/config.js');
-
-let horsesData;
-let config;
-
-try {
-	horsesData = JSON.parse(fs.readFileSync(horsesPath));
-	// Require the config object specifically
-	config = require(configPath).config;
-} catch (error) {
-	console.error('Error loading files:', error.message);
-	process.exit(1);
-}
+import process from 'node:process';
+import horsesData from '../src/data/horses.json';
+import {config} from '../src/lib/config.js';
 
 const horseKeys = Object.keys(horsesData);
 

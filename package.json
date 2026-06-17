@@ -34,30 +34,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "xo": "^2.0.2"
-  },
-  "xo": {
-    "prettier": true,
-    "space": false,
-    "semicolon": true,
-    "rules": {
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          "selector": "variable",
-          "format": ["camelCase", "UPPER_CASE"],
-          "leadingUnderscore": "allow"
-        },
-        {
-          "selector": "parameter",
-          "format": ["camelCase"],
-          "leadingUnderscore": "allow"
-        },
-        {
-          "selector": "typeLike",
-          "format": ["PascalCase"]
-        }
-      ],
-      "no-unused-vars": ["error", { "varsIgnorePattern": "^_" }]
-    }
   }
 }

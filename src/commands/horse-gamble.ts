@@ -1,21 +1,27 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const {SlashCommandBuilder, MessageFlags} = require('discord.js');
-const mongoose = require('mongoose');
-const HORSE_VALUES = require('../data/horses.json');
-const {config} = require('../lib/config');
-const {conditionHorse} = require('../lib/helpers/horseFuncs');
-const {devLog} = require('../lib/helpers/devLog');
+/* eslint-disable */
+// @ts-nocheck
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {SlashCommandBuilder, MessageFlags, type ChatInputCommandInteraction, type AutocompleteInteraction} from 'discord.js';
+import mongoose from 'mongoose';
+import rawHorseValues from '../data/horses.json' with {type: 'json'};
+import {castAsHorseData} from '../type-utils.js';
+import {config, immutConfig} from '../lib/config.js';
+import {devLog} from '../lib/helpers/dev-log.js';
+import {conditionHorse, horseName} from '../lib/helpers/horse-funcs.js';
 // NOTE TO SELF: DEFER REPLY EARLY
 
+const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const HOUSE_USER_ID = '1469509600561729710';
 const COMMON_HORSE = 'common_horse';
-const ADMIN_IDS = new Set([
-	'934290747623096381',
-	'853658523786412063',
-]);
+const ADMIN_IDS = immutConfig.ADMINS;
 const STREAK_HORSE = 'gamble_streak';
 const STREAK_REQUIRED = 6;
+/* eslint-disable @typescript-eslint/naming-convention */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+/* eslint-enable @typescript-eslint/naming-convention */
 const STREAKS_PATH = path.join(
 	__dirname,
 	'../runtime_jsons/gamble_streaks.json',
@@ -72,13 +78,9 @@ function updateStreak(userId, isNetWin) {
 	return {newStreak, awarded};
 }
 
-function horseName(slug) {
-	return HORSE_VALUES[slug]?.name ?? slug;
-}
-
 function getClosestHorse(targetValue) {
 	let minDiff = Infinity;
-	let candidates = [];
+	let candidates: string[] = [];
 	for (const [slug, data] of Object.entries(HORSE_VALUES)) {
 		if (data.comp === false) continue;
 		if (data.getByGamble === false) continue;
@@ -307,7 +309,7 @@ function formatCycleLog(
 	);
 }
 
-module.exports = {
+const gambleCommand = {
 	data: new SlashCommandBuilder()
 		.setName('horsegamble')
 		.setDescription(
@@ -360,7 +362,7 @@ module.exports = {
 				.setRequired(false),
 		),
 
-	async autocomplete(interaction) {
+	async autocomplete(interaction: AutocompleteInteraction) {
 		try {
 			const UserHorses = mongoose.model('UserHorses');
 			const focused = interaction.options
@@ -417,7 +419,7 @@ module.exports = {
 		}
 	},
 
-	async execute(interaction) {
+	async execute(interaction: ChatInputCommandInteraction) {
 		const UserHorses = mongoose.model('UserHorses');
 		const horseSlug = interaction.options
 			.getString('horse')
@@ -1111,7 +1113,7 @@ module.exports = {
 				],
 			});
 			if (!isTest)
-				conditionHorse(inventory, interaction.channel).catch(
+				conditionHorse(inventory, {interaction}).catch(
 					(error) =>
 						console.error('conditionHorse error:', error),
 				);
@@ -1261,7 +1263,7 @@ module.exports = {
 				if (!isTest)
 					conditionHorse(
 						inventory,
-						interaction.channel,
+						{interaction},
 					).catch((error) =>
 						console.error('conditionHorse error:', error),
 					);
@@ -1366,7 +1368,7 @@ module.exports = {
 			}
 
 			if (!isTest)
-				conditionHorse(inventory, interaction.channel).catch(
+				conditionHorse(inventory, {interaction}).catch(
 					(error) =>
 						console.error('conditionHorse error:', error),
 				);
@@ -1676,9 +1678,11 @@ module.exports = {
 		}
 
 		if (!isTest)
-			conditionHorse(inventory, interaction.channel).catch(
+			conditionHorse(inventory, {interaction}).catch(
 				(error) =>
 					console.error('conditionHorse error:', error),
 			);
 	},
 };
+
+export default gambleCommand;

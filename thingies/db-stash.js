@@ -1,28 +1,19 @@
+/* eslint-disable */
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import {fileURLToPath} from 'node:url';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import * as Models from './lib/models.js';
+import * as Models from '../src/lib/models.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({path: path.join(__dirname, '.env')});
-const ModelsMap = Models as unknown as ModelMap;
+const ModelsMap = Models;
 
 const {MONGO_URI} = process.env;
 
-type ModelMap = Record<string, any>;
-
-type CompareResult = {
-	fileContent: any;
-	modelName: string;
-	nameMatch: boolean;
-	fieldsMatch: boolean;
-	primaryKey?: string | undefined;
-};
-
-async function connectDB(): Promise<void> {
+async function connectDB() {
 	if (!MONGO_URI) {
 		console.error('Error: MONGO_URI not found in .env file.');
 		process.exit(1);
@@ -33,29 +24,20 @@ async function connectDB(): Promise<void> {
 	}
 }
 
-async function askQuestion(query: string): Promise<string> {
+async function askQuestion(query) {
 	const rl = readline.createInterface({
 		input: process.stdin,
 		output: process.stdout,
 	});
-	return new Promise<string>((resolve) => {
-		rl.question(query, (ans: string) => {
+	return new Promise((resolve) => {
+		rl.question(query, (ans) => {
 			rl.close();
 			resolve(ans);
 		});
 	});
 }
 
-type ResolveArgsResult = {
-	Model: any;
-	modelName: string;
-	fileName: string;
-};
-
-function resolveArgs(
-	modelArg: string,
-	fileArg: string,
-): ResolveArgsResult {
+function resolveArgs(modelArg, fileArg) {
 	const modelName = modelArg === 'd' ? 'UserHorses' : modelArg;
 	const fileName =
 		fileArg === 'd' ? '../backups/dbbackup.json' : fileArg;
@@ -70,10 +52,7 @@ function resolveArgs(
 	return {Model, modelName, fileName};
 }
 
-async function pull(
-	modelArg: string,
-	fileArg: string,
-): Promise<void> {
+async function pull(modelArg, fileArg) {
 	const {Model, modelName, fileName} = resolveArgs(
 		modelArg,
 		fileArg,
@@ -86,19 +65,16 @@ async function pull(
 		modelName,
 		timestamp: Date.now(),
 		fields: Object.keys(Model.schema.paths).filter(
-			(p: string) => p !== '__v' && p !== '_id',
+			(p) => p !== '__v' && p !== '_id',
 		),
-		data: docs.map(({_id, __v, ...rest}: any) => rest),
+		data: docs.map(({_id, __v, ...rest}) => rest),
 	};
 
 	fs.writeFileSync(fileName, JSON.stringify(output, null, 2));
 	console.log(`Success: Saved ${docs.length} records.`);
 }
 
-async function compare(
-	modelArg: string,
-	fileArg: string,
-): Promise<CompareResult> {
+async function compare(modelArg, fileArg) {
 	const {Model, modelName, fileName} = resolveArgs(
 		modelArg,
 		fileArg,
@@ -113,7 +89,7 @@ async function compare(
 
 	const dbData = await Model.find({}).lean();
 	const dbFields = Object.keys(Model.schema.paths)
-		.filter((p: string) => p !== '__v' && p !== '_id')
+		.filter((p) => p !== '__v' && p !== '_id')
 		.sort();
 	const fileFields = (fileContent.fields || []).sort();
 
@@ -130,19 +106,19 @@ async function compare(
 		`Counts:       File(${fileContent.data.length}) vs DB(${dbData.length})`,
 	);
 
-	const primaryKey = dbFields.find((f: string) =>
+	const primaryKey = dbFields.find((f) =>
 		['userId', 'ruleId', 'guildId', 'id', 'channelId'].includes(
 			f,
 		),
 	);
 	const fileMap = new Map(
-		fileContent.data.map((item: any, idx: number) => [
+		fileContent.data.map((item, idx) => [
 			primaryKey ? String(item[primaryKey]) : idx,
 			item,
 		]),
 	);
 	const dbMap = new Map(
-		dbData.map((item: any, idx: number) => [
+		dbData.map((item, idx) => [
 			primaryKey ? String(item[primaryKey]) : idx,
 			item,
 		]),
@@ -157,11 +133,11 @@ async function compare(
 		}
 
 		const fileItem = fileMap.get(key);
-		const changes: string[] = [];
+		const changes = [];
 
-		dbFields.forEach((field: string) => {
-			const fileItemValue = (fileItem as any)?.[field];
-			const dbItemValue = (dbItem as any)?.[field];
+		for (const field of dbFields) {
+			const fileItemValue = fileItem?.[field];
+			const dbItemValue = dbItem?.[field];
 			if (
 				fileItemValue !== undefined &&
 				JSON.stringify(dbItemValue) !==
@@ -171,7 +147,7 @@ async function compare(
 					`${field}: (DB) ${JSON.stringify(dbItemValue)} != (File) ${JSON.stringify(fileItemValue)}`,
 				);
 			}
-		});
+		}
 
 		if (changes.length > 0) {
 			console.log(`[MODIFIED] Key: ${key}`);
@@ -193,11 +169,7 @@ async function compare(
 	};
 }
 
-async function push(
-	modelArg: string,
-	fileArg: string,
-	optionArg?: string,
-): Promise<void> {
+async function push(modelArg, fileArg, optionArg) {
 	const {
 		fileContent,
 		modelName,
@@ -236,11 +208,11 @@ async function push(
 				process.exit(1);
 			}
 
-			const ops = fileContent.data.map((item: any) => ({
+			const ops = fileContent.data.map((item) => ({
 				updateOne: {
 					filter: {[primaryKey]: item[primaryKey]},
 					update: {$set: item},
-					upsert: true, // Creates the user if they exist in file but not in DB
+					upsert: true,
 				},
 			}));
 			await Model.bulkWrite(ops);
@@ -268,26 +240,15 @@ if (!command || !model || !file) {
 	process.exit(1);
 }
 
-type ActionFunction = (
-	modelArg: string,
-	fileArg: string,
-	optionArg?: string,
-) => Promise<any>;
-type Actions = {
-	pull: ActionFunction;
-	push: ActionFunction;
-	compare: ActionFunction;
-};
+const actions = {pull, push, compare};
 
-const actions: Actions = {pull, push, compare};
-
-if (actions[command as keyof Actions]) {
-	actions[command as keyof Actions](model, file, option)
+if (actions[command]) {
+	actions[command](model, file, option)
 		.then(() => {
 			mongoose.connection.close();
 			process.exit(0);
 		})
-		.catch((error: Error) => {
+		.catch((error) => {
 			console.error(error);
 			process.exit(1);
 		});
