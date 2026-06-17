@@ -6,6 +6,8 @@ import {
 	type AutocompleteInteraction,
 	type ChatInputCommandInteraction,
 } from 'discord.js';
+import {spawn} from 'node:child_process';
+import process from 'node:process';
 import {config, immutConfig, descriptions} from '../lib/config.js';
 
 type ConfigKey = keyof typeof config;
@@ -93,6 +95,11 @@ const hacksCommand = {
 		)
 		.addSubcommand((sub) =>
 			sub
+				.setName('restartbot')
+				.setDescription('Restart the bot'),
+		)
+		.addSubcommand((sub) =>
+			sub
 				.setName('lists')
 				.setDescription('Manage whitelists and blacklists')
 				.addStringOption((option) =>
@@ -169,6 +176,21 @@ const hacksCommand = {
 		if (sub === 'killbot') {
 			await interaction.reply({
 				content: 'Shutting down...',
+				flags: [MessageFlags.Ephemeral],
+			});
+			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
+			process.exit(0);
+		}
+
+		if (sub === 'restartbot') {
+			spawn(process.execPath, process.argv.slice(1), {
+				detached: true,
+				stdio: 'ignore',
+				windowsHide: true,
+			}).unref();
+
+			await interaction.reply({
+				content: 'Restarting...',
 				flags: [MessageFlags.Ephemeral],
 			});
 			// eslint-disable-next-line unicorn/no-process-exit,n/prefer-global/process
