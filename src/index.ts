@@ -17,6 +17,8 @@ import {
 	Routes,
 	SlashCommandBuilder,
 	type RESTPostAPIChatInputApplicationCommandsJSONBody,
+	ApplicationIntegrationType,
+	InteractionContextType,
 } from 'discord.js';
 import mongoose from 'mongoose';
 // Types
@@ -46,9 +48,13 @@ if (!process.env.GUILD_ID)
 if (!process.env.MONGO_URI)
 	throw new Error('Mongo URI not found in .env');
 
-/* NOTE TO SELF: MAKE IT SO THAT COMMANDS BY DEFAULT HAVE ALL INTEGRATION AND CONTEXT TYPES ENABLED,
-BECAUSE IM LAZY */
-
+const thisFileExtension = import.meta.url.endsWith('.ts')
+	? '.ts'
+	: '.js';
+/* eslint-disable @typescript-eslint/naming-convention */
+const {GuildInstall, UserInstall} = ApplicationIntegrationType;
+const {Guild, BotDM, PrivateChannel} = InteractionContextType;
+/* eslint-enable @typescript-eslint/naming-convention */
 // Client init
 const client = new Client({
 	intents: [
@@ -118,6 +124,18 @@ async function loadCommandsHelper(
 			continue;
 		}
 
+		// Only apply defaults if integrationTypes & contextTypes haven't been manually set in the file
+		if (!command.data.integration_types) {
+			command.data.setIntegrationTypes([
+				GuildInstall,
+				UserInstall,
+			]);
+		}
+
+		if (!command.data.contexts) {
+			command.data.setContexts([Guild, BotDM, PrivateChannel]);
+		}
+
 		commandsData.push(command.data.toJSON());
 		validCommands.push(command);
 	}
@@ -129,7 +147,11 @@ async function loadCommandsHelper(
 const commandsPath = path.resolve(import.meta.dirname, 'commands');
 const globalCommandFiles = fs
 	.readdirSync(commandsPath)
-	.filter((file) => file.endsWith('.ts') || file.endsWith('.js'));
+	.filter(
+		(file) =>
+			file.endsWith(thisFileExtension) &&
+			!file.endsWith('.d.ts'),
+	);
 const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	globalCommandFiles,
 	commandsPath,
@@ -144,7 +166,11 @@ const guildCommandsPath = path.resolve(
 );
 const guildCommandFiles = fs
 	.readdirSync(guildCommandsPath)
-	.filter((file) => file.endsWith('.ts') || file.endsWith('.js'));
+	.filter(
+		(file) =>
+			file.endsWith(thisFileExtension) &&
+			!file.endsWith('.d.ts'),
+	);
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
 for (const command of validGuildCommands)
