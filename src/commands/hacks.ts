@@ -239,7 +239,7 @@ const hacksCommand = {
 				// Send each chunk as a separate embed
 				for (let i = 0; i < chunks.length; i++) {
 					const embed = new EmbedBuilder()
-						.setColor("#00_99_ff")
+						.setColor("#0099ff")
 						.setTitle(
 							`Runtime Config (${i + 1}/${chunks.length})`,
 						)
