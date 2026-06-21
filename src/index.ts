@@ -49,6 +49,14 @@ if (!process.env.GUILD_ID)
 if (!process.env.MONGO_URI)
 	throw new Error("Mongo URI not found in .env");
 
+const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
+http.createServer((_, result) => {
+	result.writeHead(200, { "Content-Type": "text/plain" });
+	result.end("online");
+}).listen(PORT, "0.0.0.0", () => {
+	console.log(`Web server routing active on port ${PORT}`);
+});
+
 const thisFileExtension = import.meta.url.endsWith(".ts")
 	? ".ts"
 	: ".js";
@@ -356,12 +364,6 @@ client.on("interactionCreate", (interaction) => {
 		});
 	})(interaction);
 });
-
-// Health check
-http.createServer((_, result) => {
-	result.writeHead(200);
-	result.end("online");
-}).listen(Number.parseInt(process.env.PORT ?? "8000", 10), "0.0.0.0");
 
 // Register interaction handler immediately (doesn't need DB)
 registerInteractionHandler(client);
