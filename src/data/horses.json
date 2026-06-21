@@ -1,0 +1,156 @@
+{
+	"john_kim": {
+		"name": "John Kim",
+		"value": 4000,
+		"link": "https://i.imgur.com/wE9RoNz.png",
+		"comp": false
+	},
+	"unicorn": {
+		"name": "Unicorn",
+		"value": 500,
+		"link": "https://tenor.com/view/cat-kitten-unicorn-rainbow-yeah-gif-27324049"
+	},
+	"trojan_horse": {
+		"name": "Trojan Horse",
+		"value": 300,
+		"link": "https://tenor.com/view/trojan-horse-gif-15858391086454759725"
+	},
+	"brightness_prosperity": {
+		"name": "Horse of Brightness and Prosperity",
+		"value": 250,
+		"link": "https://tenor.com/view/car-seat-headrest-csh-the-scholars-devereaux-lyrics-gif-5644307067264554009"
+	},
+	"darkness_despair": {
+		"name": "Horse of Darkness and Despair",
+		"value": 250,
+		"link": "https://tenor.com/view/jingol-virtuous-indie-horse-what-a-surprise-quit-horsing-around-gif-3916818714798710882"
+	},
+	"omniscience": {
+		"name": "Horse of Omniscience and All Knowing",
+		"value": 200,
+		"link": "https://tenor.com/view/nasa-horsehead-nebula-outer-space-gif-9363091"
+	},
+	"equality_parallelism": {
+		"name": "Horse of Equality and Parallelism",
+		"value": 200,
+		"link": "yes",
+		"spawn": false,
+		"getByGamble": false
+	},
+	"jokery_confusion": {
+		"name": "Horse of Jokery and Confusion",
+		"value": 200,
+		"link": "muy confusado",
+		"spawn": false,
+		"getByGamble": false,
+		"comp": false
+	},
+	"strength_energy": {
+		"name": "Horse of Strength and Energy",
+		"value": 175,
+		"link": "https://i.imgur.com/xMey98N.png"
+	},
+	"bloated_chonky": {
+		"name": "Horse of Bloatedness and Chonkyness",
+		"value": 175,
+		"link": "https://i.imgur.com/Hku8yKf.png"
+	},
+	"curses_slurs": {
+		"name": "Horse of Curses and Slurs",
+		"value": 175,
+		"link": "https://i.imgur.com/amxDr5U.png"
+	},
+	"suicide_stuyvesant": {
+		"name": "Horse of Suicide and Stuyvesant",
+		"value": 175,
+		"link": "https://tenor.com/view/tired-exhausted-sleepy-gif-12798975"
+	},
+	"dung_beetle": {
+		"name": "Dung Beetle",
+		"value": 150,
+		"link": "https://tenor.com/view/cockroach-spin-dancing-cockroach-gif-17373945"
+	},
+	"horseplay_tomfoolery": {
+		"name": "Horse of Horseplay and Tomfoolery",
+		"value": 150,
+		"link": "https://tenor.com/view/horse-horse-smile-horse-teeth-gif-15651902"
+	},
+	"illusion_trickery": {
+		"name": "Horse of Illusion and Trickery",
+		"value": 150,
+		"link": "‎"
+	},
+	"gymnastics_acrobatics": {
+		"name": "Horse of Gymnastics and Acrobatics",
+		"value": 125,
+		"link": "https://tenor.com/view/xd-horses-gif-19635108"
+	},
+	"logic_reason": {
+		"name": "Horse of Logic and Reason",
+		"value": 125,
+		"link": "https://tenor.com/view/smart-horse-genius-beautiful-gif-3961863791999148625"
+	},
+	"gamble_streak": {
+		"name": "Horse of Gambling and Money",
+		"value": 100,
+		"link": "moola",
+		"spawn": false,
+		"getByGamble": false,
+		"comp": false
+	},
+	"coding_hacking": {
+		"name": "Horse of Coding and Hacking",
+		"value": 100,
+		"link": "https://static.wikia.nocookie.net/theamazingworldofgumball/images/9/94/S5E07_The_Code_19.png/revision/latest?cb=20161021005239"
+	},
+	"ballsacks_testicles": {
+		"name": "Horse of Ballsacks and Testicular Cancer",
+		"value": 100,
+		"link": "https://i.imgur.com/L5BNjJA.jpeg"
+	},
+	"truth_affirmation": {
+		"name": "Horse of Truth and Affirmation",
+		"value": 50,
+		"link": "https://tenor.com/view/horse-of-truth-horse-of-agreement-horse-horse-agree-agree-gif-12047072666965428527"
+	},
+	"patience_wisdom": {
+		"name": "Horse of Patience and Wisdom",
+		"value": 50,
+		"link": "https://cdn.discordapp.com/attachments/1470957269330956439/1476908219086409884/IMG_1693.jpg"
+	},
+	"comfort_relaxation": {
+		"name": "Horse of Comfort and Relaxation",
+		"value": 50,
+		"link": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png"
+	},
+	"lies_deceit": {
+		"name": "Horse of Lies and Deceit",
+		"value": 50,
+		"link": "https://tenor.com/view/horse-humble-nefarious-horse-reaction-yes-gif-9282847705724326063"
+	},
+	"despair_agony": {
+		"name": "Horse of Despair and Agony",
+		"value": 50,
+		"link": "https://giphy.com/gifs/scary-horse-cursed-FBJ1F2Zh9sTYFC9Hcf"
+	},
+	"suspicion_distrust": {
+		"name": "Horse of Suspicion and Distrust",
+		"value": 50,
+		"link": "https://tenor.com/view/the-horse-of-suspicion-and-distrust-gif-12657911522319693236"
+	},
+	"stupidity_ignorance": {
+		"name": "Horse of Stupidity and Ignorance",
+		"value": 50,
+		"link": "https://cdn.discordapp.com/attachments/1448897193736933498/1485409393259446422/image.png?ex=69c1c2cc&is=69c0714c&hm=1d61f9a8af6174ba817c653c36127d96922645a42d668a08493c1f29c0fc2157&animated=true"
+	},
+	"common_horse": {
+		"name": "Horse of Commonosity and Normaltude",
+		"value": 25,
+		"link": "https://tenor.com/view/smileyhorse-gif-6197588072543216690"
+	},
+	"peasantry_beggary": {
+		"name": "Horse of Peasantry and Beggary",
+		"value": 25,
+		"link": "https://tenor.com/view/megoshthat%C3%B3-horse-raining-downpour-gif-13970826"
+	}
+}
