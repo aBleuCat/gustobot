@@ -73,6 +73,11 @@ export type IOrbitalScript = {
 	name: string;
 	code: string;
 } & mongoose.Document;
+export type ITrainedHorses = {
+	ownerId: string;
+	name: string;
+	speedStat: number;
+} & mongoose.Document;
 
 const ruleSchema = new mongoose.Schema<IRule>({
 	ruleId: String,
@@ -219,6 +224,18 @@ export const OrbitalScript = mongoose.model(
 	}),
 );
 
+const trainedHorsesSchema = new mongoose.Schema<ITrainedHorses>({
+	ownerId: String,
+	name: String,
+	speedStat: Number,
+});
+trainedHorsesSchema.index({ ownerId: 1 });
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const TrainedHorses = mongoose.model(
+	"TrainedHorses",
+	trainedHorsesSchema,
+);
+
 // Ensure indexes are created in MongoDB
 try {
 	await Promise.all([
@@ -228,6 +245,7 @@ try {
 		Timeout.collection.createIndex({ revertAt: 1 }),
 		ModChannel.collection.createIndex({ guildId: 1 }),
 		UserHorses.collection.createIndex({ userId: 1 }),
+		TrainedHorses.collection.createIndex({ ownerId: 1 }),
 	]);
 } catch (error: unknown) {
 	console.error("Index creation error:", error);
