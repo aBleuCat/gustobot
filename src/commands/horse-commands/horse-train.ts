@@ -107,8 +107,8 @@ export async function execute(
 			content: `You do not have enough moneys to pay for the cost of training this horse\nIt costs ${price}, but you only have ${userCoins}`,
 			flags: [MessageFlags.Ephemeral],
 		});
-	const speedStat = Number((Math.random() - 0.5).toFixed(2));
-	const totalSpeed = speed + (speed / 5) * speedStat;
+	const speedStat = Number((Math.random() * 0.4 - 0.2).toFixed(2)); // Generate number betwen 0.2 and -0.2
+	const totalSpeed = speed + speed * speedStat;
 
 	const payForTrainingButtonRow =
 		new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -122,7 +122,7 @@ export async function execute(
 				.setStyle(ButtonStyle.Danger),
 		);
 	const response = await interaction.reply({
-		content: `This will cost ${price} horse coin${price === 1 ? "" : "s"}. You have ${userCoins}. Click button to confirm`,
+		content: `This will cost ${price} horse coin${price === 1 ? "" : "s"}. You have ${userCoins}. The horse's speed will be around ${speed}. Click button to confirm`,
 		components: [payForTrainingButtonRow],
 	});
 	const collector = response.createMessageComponentCollector({
@@ -150,6 +150,16 @@ export async function execute(
 						content: `What are you trynna do? Only <@${interaction.user.id}> can confirm this`,
 						flags: [MessageFlags.Ephemeral],
 					});
+				if (
+					buttonInteraction.customId === "train_pay_reject"
+				) {
+					collector.stop("cancelled");
+					return buttonInteraction.update({
+						content: "Training cancelled :(",
+						components: [],
+					});
+				}
+
 				collector.stop("accepted");
 				/* Deduct because trained horses are not normal horses,
 				and normal actions should not be applicable to trained horses
@@ -184,7 +194,7 @@ export async function execute(
 				await TrainedHorses.create({
 					ownerId: interaction.user.id,
 					name,
-					speedStat: totalSpeed,
+					speedStat,
 				});
 				await buttonInteraction.update({
 					embeds: [embed],
