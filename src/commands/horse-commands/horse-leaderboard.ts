@@ -9,8 +9,7 @@ import {
 	type ButtonInteraction,
 	type User,
 } from "discord.js";
-import mongoose from "mongoose";
-import type { IUserHorses } from "../../lib/models.js";
+import { UserHorses } from "../../lib/models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 import { immutConfig } from "../../lib/config.js";
@@ -26,7 +25,7 @@ type SortList = Array<{
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const PAGE_SIZE = 10;
 export const data = new SlashCommandSubcommandBuilder()
-	.setName("horseleaderboard")
+	.setName("leaderboard")
 	.setDescription("View the richest horse collectors")
 	.addIntegerOption((option) =>
 		option
@@ -39,9 +38,10 @@ export async function execute(
 ) {
 	await interaction.deferReply();
 	// Fetch only needed fields for speed
-	const allUsers = await mongoose
-		.model<IUserHorses>("UserHorses")
-		.find({}, { userId: 1, horses: 1, horseCoins: 1 });
+	const allUsers = await UserHorses.find(
+		{},
+		{ userId: 1, horses: 1, horseCoins: 1 },
+	);
 	const totalPossibleItems = Object.values(HORSE_VALUES).filter(
 		(v) => v.comp !== false,
 	).length;

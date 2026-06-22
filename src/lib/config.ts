@@ -92,6 +92,9 @@ export const config = {
 	// For status-checker.ts
 	STATUS_CHECKER_INTERVAL: 2 * MINUTE_MS,
 
+	// For race commands
+	RACE_CHALLENGE_DURATION: 10 * MINUTE_MS,
+
 	// Changeable with /hacks lists
 	lists: {
 		// Triggers for message-handler.ts
@@ -168,4 +171,6 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How frequently the bot checks to revert autoroles (in ms)",
 	STATUS_CHECKER_INTERVAL:
 		"How frequently the bot checks the status of the database connection (in ms)",
+	RACE_CHALLENGE_DURATION:
+		"How long a horse race challenge can be open before it expires",
 };

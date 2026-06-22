@@ -12,7 +12,7 @@
 	"[javascriptjavascript]": {
 		"editor.defaultFormatter": "samverschueren.linter-xo"
 	},
-	"js/ts.preferences.quoteStyle": "single",
-	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
+	"js/ts.preferences.quoteStyle": "double",
+	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
 	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false
 }
