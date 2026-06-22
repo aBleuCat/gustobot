@@ -67,13 +67,17 @@ export async function execute(
 	const horseSlug = interaction.options.getString("horse");
 	const botId = interaction.client.user.id;
 	if (!targetUser || !horseSlug)
-		return interaction.reply(
-			"try again, something went wrong when trying to recieve your inputs",
-		);
+		return interaction.reply({
+			content:
+				"try again, something went wrong when trying to recieve your inputs",
+			flags: [MessageFlags.Ephemeral],
+		});
 	if (!interaction.guild)
-		return interaction.reply(
-			"lo siento something went wrong when finding your server",
-		);
+		return interaction.reply({
+			content:
+				"lo siento something went wrong when finding your server",
+			flags: [MessageFlags.Ephemeral],
+		});
 
 	if (targetUser.id === interaction.user.id) {
 		return interaction.reply({

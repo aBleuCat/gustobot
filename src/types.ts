@@ -24,6 +24,7 @@ export type SlashCommandModule = SlashCommandConfig & {
 export type Horse = {
 	name: string;
 	value: number;
+	speed: number;
 	link: string;
 	comp?: boolean;
 	spawn?: boolean;
