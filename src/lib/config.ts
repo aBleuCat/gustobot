@@ -96,7 +96,7 @@ export const config = {
 	RACE_CHALLENGE_DURATION: 10 * MINUTE_MS,
 
 	// For horse-train.ts
-	TRAINING_PRICE_CONSTANT: 5,
+	TRAINING_PRICE_CONSTANT: 2,
 	TRAINING_PRICE_DIVISOR: 30,
 
 	// Changeable with /hacks lists
