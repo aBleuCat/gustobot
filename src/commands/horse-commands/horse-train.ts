@@ -97,6 +97,18 @@ export async function execute(
 			flags: [MessageFlags.Ephemeral],
 		});
 
+	const existingHorse = await TrainedHorses.findOne({
+		ownerId: interaction.user.id,
+		name: { $regex: new RegExp(`^${name}$`, "iv") },
+	});
+
+	if (existingHorse) {
+		return interaction.reply({
+			content: `You already have a trained horse named **${name}**. Please choose a unique name!`,
+			flags: [MessageFlags.Ephemeral],
+		});
+	}
+
 	const { value, speed } = horseObject;
 
 	const price =
@@ -156,6 +168,23 @@ export async function execute(
 					collector.stop("cancelled");
 					return buttonInteraction.update({
 						content: "Training cancelled :(",
+						components: [],
+					});
+				}
+
+				const secondNameDupeCheck =
+					await TrainedHorses.findOne({
+						ownerId: interaction.user.id,
+						name: {
+							$regex: new RegExp(`^${name}$`, "iv"),
+						},
+					});
+
+				if (secondNameDupeCheck) {
+					collector.stop("rejected_duplicate_name");
+
+					return buttonInteraction.update({
+						content: `Transaction failed. You managed to create a horse named **${name}** while this prompt was open.`,
 						components: [],
 					});
 				}
