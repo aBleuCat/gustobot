@@ -94,6 +94,7 @@ export const config = {
 
 	// For race commands
 	RACE_CHALLENGE_DURATION: 10 * MINUTE_MS,
+	RACE_WAITING_DURATION: 5 * MINUTE_MS,
 
 	// For horse-train.ts
 	TRAINING_PRICE_CONSTANT: 2,
@@ -177,6 +178,8 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How frequently the bot checks the status of the database connection (in ms)",
 	RACE_CHALLENGE_DURATION:
 		"How long a horse race challenge can be open before it expires",
+	RACE_WAITING_DURATION:
+		"After both players accept the challenge, how long to wait for the contestants to choose the horse before it expires",
 	TRAINING_PRICE_CONSTANT:
 		"The constant in the equation that determines the cost of training a horse: floor(value / divisor) + constant",
 	TRAINING_PRICE_DIVISOR:

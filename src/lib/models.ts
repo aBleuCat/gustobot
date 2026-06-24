@@ -73,11 +73,12 @@ export type IOrbitalScript = {
 	name: string;
 	code: string;
 } & mongoose.Document;
-export type ITrainedHorses = {
+export type ITrainedHorsesProps = {
 	ownerId: string;
 	name: string;
 	speedStat: number;
-} & mongoose.Document;
+};
+export type ITrainedHorses = ITrainedHorsesProps & mongoose.Document;
 
 const ruleSchema = new mongoose.Schema<IRule>({
 	ruleId: String,
