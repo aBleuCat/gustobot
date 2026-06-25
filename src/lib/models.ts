@@ -76,6 +76,7 @@ export type IOrbitalScript = {
 export type ITrainedHorsesProps = {
 	ownerId: string;
 	name: string;
+	breed: string;
 	speedStat: number;
 };
 export type ITrainedHorses = ITrainedHorsesProps & mongoose.Document;

@@ -9,7 +9,11 @@ import {
 	MessageFlags,
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { UserHorses, TrainedHorses } from "../../lib/models.js";
+import {
+	UserHorses,
+	TrainedHorses,
+	type ITrainedHorsesProps,
+} from "../../lib/models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
@@ -220,11 +224,14 @@ export async function execute(
 					});
 				}
 
-				await TrainedHorses.create({
+				const trainedHorse: ITrainedHorsesProps = {
 					ownerId: interaction.user.id,
 					name,
+					breed: horseSlug,
 					speedStat,
-				});
+				};
+
+				await TrainedHorses.create(trainedHorse);
 				await buttonInteraction.update({
 					embeds: [embed],
 					components: [],

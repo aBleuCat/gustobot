@@ -4,6 +4,7 @@ import {
 	type AutocompleteInteraction,
 	InteractionContextType,
 	ApplicationIntegrationType,
+	EmbedBuilder,
 } from "discord.js";
 import { config } from "../lib/config.js";
 import type { ITrainedHorsesProps } from "../lib/models.js";
@@ -13,6 +14,11 @@ import { SubcommandLoader } from "./lib/subcommand-loader.js";
 const { RACE_WAITING_DURATION } = config;
 
 type Color = "red" | "blue";
+
+type UpdateAction = (
+	update: EmbedBuilder,
+	rawUpdate: Array<ITrainedHorsesProps | undefined>,
+) => void;
 
 export type ReadyRaceChallenge = {
 	readonly red: {
@@ -42,7 +48,11 @@ export class UnreadyRaceChallenge {
 		horse?: ITrainedHorsesProps | undefined;
 	};
 
-	constructor(redId: string, blueId: string) {
+	constructor(
+		redId: string,
+		blueId: string,
+		private readonly updateAction?: UpdateAction,
+	) {
 		this.red = { id: redId };
 		this.blue = { id: blueId };
 
@@ -72,6 +82,8 @@ export class UnreadyRaceChallenge {
 
 		if (!this[color].horse || force) {
 			this[color].horse = horse;
+			if (this.updateAction)
+				this.updateAction(this.horsesEmbed, this.horses);
 			return;
 		}
 
@@ -82,6 +94,8 @@ export class UnreadyRaceChallenge {
 		this.checkStatus();
 
 		this[color].horse = undefined;
+		if (this.updateAction)
+			this.updateAction(this.horsesEmbed, this.horses);
 	}
 
 	public toReady(): ReadyRaceChallenge {
@@ -105,6 +119,28 @@ export class UnreadyRaceChallenge {
 		return Boolean(this.red.horse && this.blue.horse);
 	}
 
+	public get horsesEmbed() {
+		const fields = this.horses.map((horse) => {
+			if (!horse) return undefined;
+			return `${horse.name}, a ${horse.breed}`;
+		});
+		const [redHorseField = "none", blueHorseField = "none"] =
+			fields;
+		return new EmbedBuilder()
+			.setColor("#954535")
+			.setTitle("Selected Horses")
+			.addFields(
+				{
+					name: "Red",
+					value: redHorseField,
+				},
+				{
+					name: "Blue",
+					value: blueHorseField,
+				},
+			);
+	}
+
 	private checkStatus(): void {
 		if (this.resolveStatus === "expired")
 			throw new Error("This challenge has already expired");
@@ -117,12 +153,21 @@ export class UnreadyRaceChallenge {
 // eslint-disable-next-line unicorn/prevent-abbreviations -- yo chill whats the problemo with calling my thing a texan horse master
 export const raceMaster = {
 	raceMap: new Map<string, UnreadyRaceChallenge>(),
-	new(channelId: string, redId: string, blueId: string) {
+	new(
+		channelId: string,
+		redId: string,
+		blueId: string,
+		updateAction: UpdateAction,
+	) {
 		if (this.exists(channelId))
 			throw new Error(
 				`A race challenge is already active in channel ${channelId}`,
 			);
-		const race = new UnreadyRaceChallenge(redId, blueId);
+		const race = new UnreadyRaceChallenge(
+			redId,
+			blueId,
+			updateAction,
+		);
 		this.raceMap.set(channelId, race);
 
 		void race.promise.finally(() => {
