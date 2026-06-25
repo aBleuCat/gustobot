@@ -38,21 +38,19 @@ export class UnreadyRaceChallenge {
 	private resolveStatus: "waiting" | "ready" | "expired" =
 		"waiting";
 
+	private updateAction?: UpdateAction;
+
 	private readonly red: {
 		id: string;
 		horse?: ITrainedHorsesProps | undefined;
 	};
 
 	private readonly blue: {
-		id: string;
+		readonly id: string;
 		horse?: ITrainedHorsesProps | undefined;
 	};
 
-	constructor(
-		redId: string,
-		blueId: string,
-		private readonly updateAction?: UpdateAction,
-	) {
+	constructor(redId: string, blueId: string) {
 		this.red = { id: redId };
 		this.blue = { id: blueId };
 
@@ -73,6 +71,10 @@ export class UnreadyRaceChallenge {
 		});
 	}
 
+	public onUpdate(updateAction: UpdateAction) {
+		this.updateAction = updateAction;
+	}
+
 	public addHorse(
 		color: Color,
 		horse: ITrainedHorsesProps,
@@ -90,12 +92,18 @@ export class UnreadyRaceChallenge {
 		throw new Error("There is already a horse");
 	}
 
-	public removeHorse(color: Color): void {
+	public removeHorse(
+		color: Color,
+	): ITrainedHorsesProps | undefined {
 		this.checkStatus();
+		const { horse } = this[color];
+		const horseCopy = horse ? { ...horse } : undefined;
 
 		this[color].horse = undefined;
 		if (this.updateAction)
 			this.updateAction(this.horsesEmbed, this.horses);
+
+		return horseCopy;
 	}
 
 	public toReady(): ReadyRaceChallenge {
@@ -111,8 +119,21 @@ export class UnreadyRaceChallenge {
 		return finalRaceChallenge;
 	}
 
+	public getColor(id: string) {
+		if (id === this.red.id) return "red";
+		if (id === this.blue.id) return "blue";
+		return undefined;
+	}
+
 	public get horses(): Array<ITrainedHorsesProps | undefined> {
 		return [this.red.horse, this.blue.horse];
+	}
+
+	public get ids(): Record<string, string> {
+		return {
+			red: this.red.id,
+			blue: this.blue.id,
+		};
 	}
 
 	public get isReady(): boolean {
@@ -153,21 +174,12 @@ export class UnreadyRaceChallenge {
 // eslint-disable-next-line unicorn/prevent-abbreviations -- yo chill whats the problemo with calling my thing a texan horse master
 export const raceMaster = {
 	raceMap: new Map<string, UnreadyRaceChallenge>(),
-	new(
-		channelId: string,
-		redId: string,
-		blueId: string,
-		updateAction: UpdateAction,
-	) {
+	new(channelId: string, redId: string, blueId: string) {
 		if (this.exists(channelId))
 			throw new Error(
 				`A race challenge is already active in channel ${channelId}`,
 			);
-		const race = new UnreadyRaceChallenge(
-			redId,
-			blueId,
-			updateAction,
-		);
+		const race = new UnreadyRaceChallenge(redId, blueId);
 		this.raceMap.set(channelId, race);
 
 		void race.promise.finally(() => {
