@@ -1,8 +1,9 @@
-// Message queue for multi-layer rate-limited sending
 import type {
 	TextBasedChannel,
 	PartialGroupDMChannel,
 	Message,
+	EmbedBuilder,
+	APIEmbed,
 } from "discord.js";
 import { config } from "../config.js";
 import devLog from "./dev-log.js";
@@ -15,6 +16,7 @@ type ReplyInfo = {
 type QueueItem = {
 	channel: SendableChannel;
 	content: string;
+	embeds: Array<EmbedBuilder | APIEmbed> | undefined;
 	reply: ReplyInfo | undefined;
 	priority: number;
 	resolve: (value: Message) => void;
@@ -58,11 +60,13 @@ function getChannelState(channelId: string): ChannelState {
 async function queueMessage({
 	channel,
 	content,
+	embeds,
 	reply,
 	priority = 1,
 }: {
 	channel: SendableChannel;
 	content: string;
+	embeds?: Array<EmbedBuilder | APIEmbed>;
 	reply?: ReplyInfo;
 	priority?: number;
 }): Promise<Message> {
@@ -78,6 +82,7 @@ async function queueMessage({
 	const item: QueueItem = {
 		channel,
 		content,
+		embeds,
 		reply,
 		priority,
 		resolve,
@@ -158,6 +163,7 @@ async function processChannelQueue(channelId: string): Promise<void> {
 		try {
 			const sent = await item.channel.send({
 				content: item.content,
+				...(item.embeds && { embeds: item.embeds }),
 				...(item.reply?.mention && {
 					reply: { messageReference: item.reply.message },
 				}),

@@ -92,6 +92,9 @@ export const config = {
 	// For status-checker.ts
 	STATUS_CHECKER_INTERVAL: 2 * MINUTE_MS,
 
+	// For quiz-helper.ts
+	QUIZ_START_DELAY: 5 * SECOND_MS,
+
 	// Changeable with /hacks lists
 	lists: {
 		// Triggers for message-handler.ts
@@ -168,4 +171,6 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How frequently the bot checks to revert autoroles (in ms)",
 	STATUS_CHECKER_INTERVAL:
 		"How frequently the bot checks the status of the database connection (in ms)",
+	QUIZ_START_DELAY:
+		"The length of the delay after a quiz is created before it starts (ms)",
 };
