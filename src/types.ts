@@ -54,9 +54,10 @@ export type PoolQuestion = {
 	answer: RegExp;
 	answerTxt: string;
 };
-/** * The data type to input into newQuiz() */
+/** The data type to input into newQuiz() */
 export type PreQuiz = {
 	title: string;
+	/** In seconds, not milliseconds */
 	delay: number;
 	/**
 	 * If you wish to pull from multiple pools, put the pools in an array.
@@ -65,6 +66,7 @@ export type PreQuiz = {
 	 */
 	pool: string | string[];
 	rounds: number;
+	/** In seconds, not milliseconds */
 	ansWindow: number;
 	/** @todo Haven't added prize capibilities yet */
 	prize?: string;
@@ -98,7 +100,9 @@ export type ActiveQuiz = {
 } & PreQuiz;
 export type Pool = {
 	metadata?: {
-		/** * Runs on any incoming message before testing against the answer regex.
+		/**
+		 * Runs on any incoming message before testing against the answer regex.
+		 * @example normalizer: (response) => response.replaceAll(/\s?the\s?/giv, "");
 		 */
 		normalizer?: (value: string) => string;
 	};

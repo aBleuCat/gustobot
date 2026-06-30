@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"dev": "tsx src/index.ts",
+		"dev": "tsx src/index.ts dev",
 		"build": "tsc",
 		"start": "node dist/index.js",
 		"prod": "pnpm build && pnpm start",

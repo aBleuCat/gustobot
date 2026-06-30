@@ -1,7 +1,7 @@
 import type { Pool } from "../types.js";
 
 const pools: Record<string, Pool> = {
-	/** * **Placeholder** - The pool mathTest is a placeholder for testing */
+	/** **Placeholder** - The pool "mathTest" is a placeholder for testing */
 	mathTest: {
 		pool: [
 			{
@@ -44,7 +44,7 @@ const pools: Record<string, Pool> = {
 			normalizer: (string) => string.replaceAll(",", ""),
 		},
 	},
-	/** * **Placeholder** - The pool test is a placeholder for testing */
+	/** **Placeholder** - The pool "test" is a placeholder for testing */
 	test: {
 		pool: [
 			{
