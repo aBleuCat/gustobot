@@ -126,7 +126,8 @@ function endQuiz(channel: GuildTextBasedChannel) {
 		);
 	const scores = Object.fromEntries(
 		Object.entries(quiz.scores).map(([name, score]) => [
-			`<@${name}>`,
+			channel.guild?.members.cache.get(name)?.displayName ??
+				`User ${name}`,
 			score,
 		]),
 	);
