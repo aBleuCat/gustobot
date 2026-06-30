@@ -23,45 +23,53 @@ function isRepeatType(
 
 const testQuizCommand = {
 	data: new SlashCommandBuilder()
-		.setName("test quiz")
-		.setDescription("Beta: Test new quiz feature")
+		.setName("testquiz")
+		.setDescription("Beta - Test new quiz feature")
 		.addStringOption((option) =>
 			option
 				.setName("title")
-				.setDescription("Title of the quiz"),
+				.setDescription("Title of the quiz")
+				.setRequired(true),
 		)
 		.addStringOption((option) =>
 			option
 				.setName("pool")
 				.setDescription("Which pool to select questions from")
-				.setChoices(poolOptions),
+				.setChoices(poolOptions)
+				.setRequired(true),
 		)
 		.addNumberOption((option) =>
 			option
 				.setName("rounds")
 				.setDescription(
 					"The number of rounds the quiz should last",
-				),
+				)
+				.setRequired(true),
 		)
 		.addNumberOption((option) =>
 			option
 				.setName("answer-window")
 				.setDescription(
 					"The amount of time available to answer",
-				),
+				)
+				.setRequired(true),
 		)
 		.addStringOption((option) =>
-			option.setName("repeat-type").addChoices(
-				{
-					name: "All, questions and images",
-					value: "all",
-				},
-				{
-					name: "Questions, but not images",
-					value: "questions",
-				},
-				{ name: "None", value: "none" },
-			),
+			option
+				.setName("repeat-type")
+				.setDescription("the repeat type, duh")
+				.addChoices(
+					{
+						name: "All, questions and images",
+						value: "all",
+					},
+					{
+						name: "Questions, but not images",
+						value: "questions",
+					},
+					{ name: "None", value: "none" },
+				)
+				.setRequired(true),
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!interaction.channel)
@@ -103,7 +111,10 @@ const testQuizCommand = {
 			repeat,
 		};
 		const result = await newQuiz(channel, quiz);
-		return interaction.reply(result);
+		return interaction.reply({
+			content: result,
+			flags: [MessageFlags.Ephemeral],
+		});
 	},
 };
 

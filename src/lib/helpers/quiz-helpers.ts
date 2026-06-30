@@ -124,7 +124,13 @@ function endQuiz(channel: GuildTextBasedChannel) {
 		throw new Error(
 			`Error: No quiz ${channel.id} in channel ${channel.name} found`,
 		);
-	const embed: EmbedBuilder = dictToEmbed("Scores", quiz.scores);
+	const scores = Object.fromEntries(
+		Object.entries(quiz.scores).map(([name, score]) => [
+			`<@${name}>`,
+			score,
+		]),
+	);
+	const embed: EmbedBuilder = dictToEmbed("Scores", scores);
 
 	queueMessage({
 		channel,
