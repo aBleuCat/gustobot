@@ -259,7 +259,7 @@ export async function progressQuiz(channel: GuildTextBasedChannel) {
 	);
 	await queueMessage({
 		channel,
-		content: `You must answer in <t:${unixTimestamp}:R>`,
+		content: `You must answer <t:${unixTimestamp}:R>`,
 		priority: 2,
 	});
 }

@@ -64,7 +64,7 @@ async function handleQuiz(message: Message) {
 			);
 			await queueMessage({
 				channel,
-				content: `Next question in <t:${unixTimestamp}:R>`,
+				content: `Next question <t:${unixTimestamp}:R>`,
 				priority: 2,
 			}); // Convert to timestamp when porting to discord
 		}
