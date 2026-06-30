@@ -65,7 +65,6 @@ const configureHorsesCommand = {
 
 		return interaction.reply({
 			content: `Horse spawning now **${enabled ? "ON" : "OFF"}** in <#${channel.id}>.`,
-			ephemeral: false,
 		});
 	},
 };

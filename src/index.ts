@@ -40,14 +40,45 @@ import { immutConfig } from "./lib/config.js";
 // idk bro too lazy
 
 dotenv.config();
-if (!process.env.TOKEN)
-	throw new Error("Bot token not found in .env");
-if (!process.env.CLIENT_ID)
-	throw new Error("Client ID not found in .env");
-if (!process.env.GUILD_ID)
-	throw new Error("Guild ID not found in .env");
-if (!process.env.MONGO_URI)
-	throw new Error("Mongo URI not found in .env");
+
+const isDev = process.argv[2] === "dev";
+
+if (isDev) {
+	if (!process.env.BETA_TOKEN)
+		throw new Error("BETA_TOKEN not found in .env");
+	if (!process.env.BETA_CLIENT_ID)
+		throw new Error("BETA_CLIENT_ID not found in .env");
+	if (!process.env.BETA_GUILD_ID)
+		throw new Error("BETA_GUILD_ID not found in .env");
+	if (!process.env.BETA_MONGO_URI)
+		throw new Error("BETA_MONGO_URI not found in .env");
+} else {
+	if (!process.env.TOKEN)
+		throw new Error("Bot token not found in .env");
+	if (!process.env.CLIENT_ID)
+		throw new Error("Client ID not found in .env");
+	if (!process.env.GUILD_ID)
+		throw new Error("Guild ID not found in .env");
+	if (!process.env.MONGO_URI)
+		throw new Error("Mongo URI not found in .env");
+}
+
+const envToken = isDev ? process.env.BETA_TOKEN : process.env.TOKEN;
+const envClientId = isDev
+	? process.env.BETA_CLIENT_ID
+	: process.env.CLIENT_ID;
+const envGuildId = isDev
+	? process.env.BETA_GUILD_ID
+	: process.env.GUILD_ID;
+const envMongoUri = isDev
+	? process.env.BETA_MONGO_URI
+	: process.env.MONGO_URI;
+
+// Narrow from string | undefined — guaranteed by the throws above
+if (!envToken || !envClientId || !envGuildId || !envMongoUri)
+	throw new Error(
+		"Required env vars missing after validation (should be unreachable)",
+	);
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
 http.createServer((_, result) => {
@@ -193,19 +224,14 @@ console.log(
 // Ready event
 client.once(Events.ClientReady, () => {
 	(async () => {
-		// Make sure client and .env have the necessary stuff
+		// Make sure client has user
 		if (!client.user)
 			throw new Error(
 				"Client does not have user for some reason",
 			);
-		if (!process.env.TOKEN)
-			throw new Error("Bot token not found in .env");
-		if (!process.env.CLIENT_ID)
-			throw new Error("Client ID not found in .env");
-		if (!process.env.GUILD_ID)
-			throw new Error("Guild ID not found in .env");
-		if (!process.env.MONGO_URI)
-			throw new Error("Mongo URI not found in .env");
+
+		if (isDev)
+			console.log("[DEV MODE] Running with beta credentials");
 
 		console.log(`Logged in as ${client.user.tag}`);
 		const options = {
@@ -281,9 +307,7 @@ client.once(Events.ClientReady, () => {
 			},
 		);
 
-		const rest = new REST({ version: "10" }).setToken(
-			process.env.TOKEN,
-		);
+		const rest = new REST({ version: "10" }).setToken(envToken);
 		try {
 			console.log("Refreshing commands...");
 			devLog("Refreshing commands...").catch(
@@ -294,19 +318,34 @@ client.once(Events.ClientReady, () => {
 					);
 				},
 			);
-			await rest.put(
-				Routes.applicationCommands(process.env.CLIENT_ID),
-				{
-					body: globalCommandsData,
-				},
-			);
-			await rest.put(
-				Routes.applicationGuildCommands(
-					process.env.CLIENT_ID,
-					process.env.GUILD_ID,
-				),
-				{ body: guildCommandsData },
-			);
+			if (isDev) {
+				// Dev: all commands go to the beta guild only
+				await rest.put(
+					Routes.applicationGuildCommands(
+						envClientId,
+						envGuildId,
+					),
+					{
+						body: [
+							...globalCommandsData,
+							...guildCommandsData,
+						],
+					},
+				);
+			} else {
+				await rest.put(
+					Routes.applicationCommands(envClientId),
+					{ body: globalCommandsData },
+				);
+				await rest.put(
+					Routes.applicationGuildCommands(
+						envClientId,
+						envGuildId,
+					),
+					{ body: guildCommandsData },
+				);
+			}
+
 			console.log("Commands reloaded");
 			devLog("Commands reloaded").catch((error: unknown) => {
 				console.error(
@@ -373,7 +412,7 @@ startStatusChecker();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 try {
-	await mongoose.connect(process.env.MONGO_URI, {
+	await mongoose.connect(envMongoUri, {
 		bufferCommands: true, // Allow buffering
 		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
 	});
@@ -382,7 +421,7 @@ try {
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);
 	startRoleReverter(client);
-	await client.login(process.env.TOKEN);
+	await client.login(envToken);
 } catch (error: unknown) {
 	throw new Error(
 		`Failed to connect to MongoDB, or its dependent tasks failed`,
