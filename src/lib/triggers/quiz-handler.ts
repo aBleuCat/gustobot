@@ -43,7 +43,7 @@ async function handleQuiz(message: Message) {
 
 	quiz.currentQuestion.status = "closed";
 
-	let responseMessage = `Correct, Mr. ${author.displayName}! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
+	let responseMessage = `Correct, ${author.displayName}! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
 	if (quiz.startTime) {
 		const stopwatchTime = (Date.now() - quiz.startTime) / 1000;
 		responseMessage += `\n${author.displayName} answered in ${stopwatchTime.toFixed(2)}s`;
