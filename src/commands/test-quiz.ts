@@ -44,7 +44,7 @@ const testQuizCommand = {
 				.setDescription(
 					"The number of rounds the quiz should last",
 				)
-				.setRequired(true),
+				.setRequired(false),
 		)
 		.addNumberOption((option) =>
 			option
@@ -52,7 +52,7 @@ const testQuizCommand = {
 				.setDescription(
 					"The amount of time available to answer",
 				)
-				.setRequired(true),
+				.setRequired(false),
 		)
 		.addStringOption((option) =>
 			option
@@ -69,7 +69,7 @@ const testQuizCommand = {
 					},
 					{ name: "None", value: "none" },
 				)
-				.setRequired(true),
+				.setRequired(false),
 		),
 	async execute(interaction: ChatInputCommandInteraction) {
 		if (!interaction.channel)
@@ -83,14 +83,13 @@ const testQuizCommand = {
 				content: "uhh asdfasdf",
 				flags: [MessageFlags.Ephemeral],
 			});
-		const [title, pool, repeat] = [
-			"title",
-			"pool",
-			"repeat-type",
-		].map((option) => interaction.options.getString(option));
-		const rounds = interaction.options.getNumber("rounds");
+		const title = interaction.options.getString("title");
+		const pool = interaction.options.getString("pool");
+		const repeat =
+			interaction.options.getString("repeat-type") ?? "none";
+		const rounds = interaction.options.getNumber("rounds") ?? 5;
 		const ansWindow =
-			interaction.options.getNumber("answer-window");
+			interaction.options.getNumber("answer-window") ?? 10;
 		if (!title || !pool || !repeat || !rounds || !ansWindow)
 			return interaction.reply({
 				content: "Failed to get some of your inputs",
