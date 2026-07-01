@@ -44,7 +44,7 @@ const { QUIZ_START_DELAY } = config;
 
 export const quizzes = new Map<string, ActiveQuiz>();
 
-/** Waits for quiz.ansWindow time before expiring */
+/** Waits for ansWindow time before expiring */
 function activateAnsWindow(
 	channel: GuildTextBasedChannel,
 	ansWindow: number,

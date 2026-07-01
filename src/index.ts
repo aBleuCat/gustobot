@@ -36,6 +36,8 @@ import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
+// Initialize
+import { initPools } from "./data/quiz-pools.js";
 // Backdoor
 // idk bro too lazy
 
@@ -404,11 +406,12 @@ client.on("interactionCreate", (interaction) => {
 	})(interaction);
 });
 
-// Register interaction handler immediately (doesn't need DB)
+// Register handlers not dependent on db
 registerInteractionHandler(client);
 startResourceMonitor(client);
 startMessageCacheCleanup();
 startStatusChecker();
+await initPools();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 try {
