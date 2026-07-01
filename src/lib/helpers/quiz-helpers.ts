@@ -11,12 +11,6 @@ import devLog from "./dev-log.js";
 import queueMessage from "./message-queue.js";
 import shuffle from "./shuffle-helper.js";
 import dictToEmbed from "./embed-helpers.js";
-/* TODO: make it accept in images file names, file directories,
-and database entries if you append the image value with "database:",
-for example: image: "database:stations/passageways/40th_st/"
-in progress quiz, make it so that for normal and repeat all, 
-make it choose a random image from the folder right before sending image,
-and for repeat questions not images, make it expand the directory string into an array */
 
 /**
  * @param failedAction Should be a reduced adverbial clause, using -ing
