@@ -34,56 +34,52 @@ async function handleQuiz(message: Message) {
 		normalizedMessage = content;
 	}
 
-	if (quiz.currentQuestion.answer.test(normalizedMessage)) {
-		if (quiz.timer) {
-			clearTimeout(quiz.timer);
-			quiz.timer = undefined;
-		}
+	if (!quiz.currentQuestion.answer.test(normalizedMessage)) return;
 
-		quiz.currentQuestion.status = "closed";
+	if (quiz.timer) {
+		clearTimeout(quiz.timer);
+		quiz.timer = undefined;
+	}
+
+	quiz.currentQuestion.status = "closed";
+
+	let responseMessage = `Correct, Mr. ${author.displayName}! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
+	if (quiz.startTime) {
+		const stopwatchTime = (Date.now() - quiz.startTime) / 1000;
+		responseMessage += `\n${author.displayName} answered in ${stopwatchTime.toFixed(2)}s`;
+	}
+
+	await queueMessage({
+		channel,
+		content: responseMessage,
+		priority: 3,
+	});
+
+	quiz.scores[author.id] = (quiz.scores[author.id] ?? 0) + 1;
+	// Make sure the quiz will continue after this question before saying when is next question
+	if (quiz.rounds > 0 && quiz.remainingPool.length > 0) {
+		const unixTimestamp = Math.floor(
+			(Date.now() + quiz.delay * 1000) / 1000,
+		);
 		await queueMessage({
 			channel,
-			content: `Correct, Mr. ${author.displayName}! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`,
-			priority: 3,
-		});
-		if (quiz.startTime) {
-			const stopwatchTime =
-				(Date.now() - quiz.startTime) / 1000;
-			await queueMessage({
-				channel,
-				content: `${author.displayName} answered in ${stopwatchTime.toFixed(2)}s`,
-				priority: 2,
-			});
-		}
-
-		quiz.scores[author.id] = (quiz.scores[author.id] ?? 0) + 1;
-		// Make sure the quiz will continue after this question before saying when is next question
-		if (quiz.rounds > 0 && quiz.remainingPool.length > 0) {
-			const unixTimestamp = Math.floor(
-				(Date.now() + quiz.delay * 1000) / 1000,
-			);
-			await queueMessage({
-				channel,
-				content: `Next question <t:${unixTimestamp}:R>`,
-				priority: 2,
-			}); // Convert to timestamp when porting to discord
-		}
-
-		await sleep(quiz.delay * 1000);
-		progressQuiz(channel).catch((error: unknown) => {
-			console.log(error);
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "Unknown error";
-			void devLog(errorMessage);
-			void queueMessage({
-				channel,
-				content: `Error: ${errorMessage}`,
-				priority: 4,
-			});
-		});
+			content: `Next question <t:${unixTimestamp}:R>`,
+			priority: 2,
+		}); // Convert to timestamp when porting to discord
 	}
+
+	await sleep(quiz.delay * 1000);
+	progressQuiz(channel).catch((error: unknown) => {
+		console.log(error);
+		const errorMessage =
+			error instanceof Error ? error.message : "Unknown error";
+		void devLog(errorMessage);
+		void queueMessage({
+			channel,
+			content: `Error: ${errorMessage}`,
+			priority: 4,
+		});
+	});
 }
 
 export default handleQuiz;

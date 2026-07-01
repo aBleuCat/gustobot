@@ -231,9 +231,12 @@ export async function progressQuiz(channel: GuildTextBasedChannel) {
 	quiz.currentQuestion = { ...question, status: "open" };
 	quiz.rounds--;
 	const cQ = quiz.currentQuestion;
+	const unixTimestamp = Math.floor(
+		(Date.now() + quiz.ansWindow * 1000) / 1000,
+	);
 	await queueMessage({
 		channel,
-		content: cQ.question,
+		content: `${cQ.question}\n\nYou must answer <t:${unixTimestamp}:R>`,
 		priority: 3,
 	});
 	if (typeof cQ.image === "string") {
@@ -255,14 +258,6 @@ export async function progressQuiz(channel: GuildTextBasedChannel) {
 
 	quiz.startTime = Date.now();
 	activateAnsWindow(channel, quiz.ansWindow);
-	const unixTimestamp = Math.floor(
-		(Date.now() + quiz.ansWindow * 1000) / 1000,
-	);
-	await queueMessage({
-		channel,
-		content: `You must answer <t:${unixTimestamp}:R>`,
-		priority: 2,
-	});
 }
 
 export async function newQuiz(
