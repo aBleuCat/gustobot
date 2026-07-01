@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { EmbedBuilder, GuildTextBasedChannel } from "discord.js";
+import { EmbedBuilder, type GuildTextBasedChannel } from "discord.js";
 import { config } from "../config.js";
 import type {
 	PoolQuestion,
@@ -131,7 +131,12 @@ function endQuiz(channel: GuildTextBasedChannel) {
 			score,
 		]),
 	);
-	const embed: EmbedBuilder = dictToEmbed("Scores", scores);
+	const embed: EmbedBuilder = dictToEmbed(
+		"Scores",
+		scores,
+		false,
+		"#94e2d5",
+	);
 
 	queueMessage({
 		channel,
@@ -335,11 +340,32 @@ export async function newQuiz(
 					: uniqueNormalizers,
 	};
 	quizzes.set(channel.id, leQuiz);
-	const { title, ...quizWithoutTitle } = quiz;
-	const embed = dictToEmbed(title, quizWithoutTitle);
+	const embed = new EmbedBuilder()
+		.setTitle(quiz.title)
+		.addFields(
+			{
+				name: `Pool${Array.isArray(quiz.pool) ? "s" : ""}`,
+				value: Array.isArray(quiz.pool)
+					? quiz.pool.join(", ")
+					: quiz.pool,
+			},
+			{ name: "Rounds", value: quiz.rounds.toString() },
+			{
+				name: "Delay Between Questions",
+				value: quiz.delay.toString() + " seconds",
+			},
+			{
+				name: "Answer Window",
+				value: quiz.ansWindow.toString() + " seconds",
+			},
+			{ name: "Repeat Type", value: quiz.repeat },
+			{ name: "Prize*", value: quiz.prize ?? "None" },
+		)
+		.setFooter({ text: "*Prize handling does not exist yet" })
+		.setColor("#89b4fa");
 	await queueMessage({
 		channel,
-		content: `${title} is starting! woah`,
+		content: `${quiz.title} is starting! woah`,
 		embeds: [embed],
 		priority: 3,
 	});

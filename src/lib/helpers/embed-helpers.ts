@@ -1,4 +1,8 @@
-import { EmbedBuilder, type APIEmbedField } from "discord.js";
+import {
+	EmbedBuilder,
+	type APIEmbedField,
+	type ColorResolvable,
+} from "discord.js";
 
 /**
  * Converts a dictionary object into a Discord Embed with fields.
@@ -10,6 +14,7 @@ function dictToEmbed(
 	title: string,
 	dict: Record<string, any>,
 	inline = false,
+	color?: ColorResolvable,
 ): EmbedBuilder {
 	const fields: APIEmbedField[] = Object.entries(dict).map(
 		([key, value]) => {
@@ -21,7 +26,12 @@ function dictToEmbed(
 		},
 	);
 
-	return new EmbedBuilder().setTitle(title).addFields(fields);
+	const embed = new EmbedBuilder()
+		.setTitle(title)
+		.addFields(fields);
+	if (color) embed.setColor(color);
+
+	return embed;
 }
 
 export default dictToEmbed;
