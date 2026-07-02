@@ -128,9 +128,9 @@ function endQuiz(channel: GuildTextBasedChannel) {
 	const embed: EmbedBuilder = dictToEmbed(
 		"Scores",
 		scores,
-		false,
-		"#94e2d5",
-	);
+		"leaderboard",
+		([, a], [, b]) => b - a,
+	).setColor("#94e2d5");
 
 	queueMessage({
 		channel,
