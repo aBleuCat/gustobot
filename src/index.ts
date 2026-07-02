@@ -37,7 +37,7 @@ import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
 // Initialize
-import { initPools } from "./data/quiz-pools.js";
+import { quizPoolImageLoader } from "./data/quiz-pools.js";
 // Backdoor
 // idk bro too lazy
 
@@ -411,7 +411,9 @@ registerInteractionHandler(client);
 startResourceMonitor(client);
 startMessageCacheCleanup();
 startStatusChecker();
-await initPools();
+
+// Let it load in the background so it doesn't hold up the bot
+void quizPoolImageLoader.initPools();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 try {

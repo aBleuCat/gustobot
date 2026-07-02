@@ -6,7 +6,7 @@ import type {
 	PreQuiz,
 	ActiveQuiz,
 } from "../../types.js";
-import pools from "../../data/quiz-pools.js";
+import pools, { quizPoolImageLoader } from "../../data/quiz-pools.js";
 import devLog from "./dev-log.js";
 import queueMessage from "./message-queue.js";
 import shuffle from "./shuffle-helper.js";
@@ -265,6 +265,8 @@ export async function newQuiz(
 	autoprogress?: boolean,
 	force?: boolean,
 ) {
+	if (!quizPoolImageLoader.done)
+		return "Images have not been loaded yet, please try again later";
 	if (quizzes.has(channel.id) && !(force === true))
 		return `Error: A quiz is already active in channel ${channel.name} with id ${channel.id}`;
 
