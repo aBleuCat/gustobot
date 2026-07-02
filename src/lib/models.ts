@@ -50,6 +50,7 @@ export type IHorseConfig = {
 } & mongoose.Document;
 export type IUserHorses = {
 	userId: string;
+	optIn: boolean;
 	lastGamble: number;
 	horseCoins: number;
 	horses: Map<string, number>;
@@ -167,6 +168,7 @@ export const HorseConfig = mongoose.model(
 
 const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	userId: String,
+	optIn: { type: Boolean, default: false },
 	lastGamble: { type: Number, default: 0 },
 	horseCoins: {
 		type: Number,
