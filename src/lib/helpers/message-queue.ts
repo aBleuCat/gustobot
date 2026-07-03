@@ -15,7 +15,7 @@ type ReplyInfo = {
 
 type QueueItem = {
 	channel: SendableChannel;
-	content: string;
+	content: string | undefined;
 	embeds: Array<EmbedBuilder | APIEmbed> | undefined;
 	reply: ReplyInfo | undefined;
 	priority: number;
@@ -65,7 +65,7 @@ async function queueMessage({
 	priority = 1,
 }: {
 	channel: SendableChannel;
-	content: string;
+	content?: string;
 	embeds?: Array<EmbedBuilder | APIEmbed>;
 	reply?: ReplyInfo;
 	priority?: number;
@@ -162,7 +162,7 @@ async function processChannelQueue(channelId: string): Promise<void> {
 
 		try {
 			const sent = await item.channel.send({
-				content: item.content,
+				...(item.content && { content: item.content }),
 				...(item.embeds && { embeds: item.embeds }),
 				...(item.reply?.mention && {
 					reply: { messageReference: item.reply.message },

@@ -249,13 +249,19 @@ const pools: Record<string, Pool> = {
 				question: "respond with test",
 				answer: /test/iv,
 				answerTxt: "test",
-				image: ["apple", "apple2"],
+				image: [
+					"https://cdn.discordapp.com/attachments/1068188325380374548/1516102329164763168/tier_newer.gif",
+					"https://cdn.discordapp.com/attachments/1282840454278156353/1519826942659133500/umayyadNOW.gif",
+				],
 			},
 			{
 				question: "respond with trial",
 				answer: /trial/iv,
 				answerTxt: "trial",
-				image: ["banana", "banana2"],
+				image: [
+					"https://cdn.discordapp.com/attachments/1358244650716106865/1503170758363320491/togif.gif",
+					"https://cdn.discordapp.com/attachments/1448818023921094679/1500295196506591385/attachment.gif",
+				],
 			},
 		],
 		metadata: {

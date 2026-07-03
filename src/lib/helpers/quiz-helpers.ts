@@ -7,6 +7,7 @@ import type {
 	ActiveQuiz,
 } from "../../types.js";
 import pools, { quizPoolImageLoader } from "../../data/quiz-pools.js";
+import { randItem } from "./random-helpers.js";
 import devLog from "./dev-log.js";
 import queueMessage from "./message-queue.js";
 import shuffle from "./shuffle-helper.js";
@@ -92,19 +93,36 @@ export async function expireAnsWindow(
 	}
 
 	quiz.currentQuestion.status = "closed";
+
+	let description = `Nobody answered in ${quiz.ansWindow}s! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
+	if (quiz.rounds > 0 && quiz.remainingPool.length > 0) {
+		const unixTimestamp = Math.floor(
+			(Date.now() + quiz.delay * 1000) / 1000,
+		);
+		description += `\n\nNext question <t:${unixTimestamp}:R>`;
+	} else {
+		description += "\n\nThat was the last question.";
+	}
+
+	const flavorTextOptions = [
+		"You guys suck",
+		"I've seen elderly type faster than you guys",
+		"Hop off the game bro",
+		"git gud",
+		"My grandpa types faster than you and he's dead",
+	];
+	const embed = new EmbedBuilder()
+		.setTitle("Nobody answered in time!")
+		.setDescription(description)
+		.setColor("#f38ba8")
+		.setFooter({
+			text: randItem(flavorTextOptions) ?? "git gud",
+		});
 	await queueMessage({
 		channel,
-		content: `Nobody answered in time (${quiz.ansWindow}s)! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`,
+		embeds: [embed],
 		priority: 3,
 	});
-	// Make sure the quiz will continue after this question before saying when is next question
-	if (quiz.rounds > 0 && quiz.remainingPool.length > 0) {
-		await queueMessage({
-			channel,
-			content: `Next question in ${quiz.delay}s`,
-			priority: 2,
-		});
-	}
 
 	await sleep(quiz.delay * 1000);
 	progressQuiz(channel).catch((error: unknown) => {
@@ -233,27 +251,28 @@ export async function progressQuiz(channel: GuildTextBasedChannel) {
 	const unixTimestamp = Math.floor(
 		(Date.now() + quiz.ansWindow * 1000) / 1000,
 	);
+	const embed = new EmbedBuilder()
+		.setTitle(
+			`Question ${quiz.totalRounds - quiz.rounds} of ${quiz.totalRounds}`,
+		)
+		.setDescription(
+			`${cQ.question}\n\nYou must answer <t:${unixTimestamp}:R>`,
+		)
+		.setColor("#fab387");
+
+	if (typeof cQ.image === "string") {
+		embed.setImage(cQ.image);
+	} else if (cQ.image) {
+		embed.setImage(
+			cQ.image[Math.floor(Math.random() * cQ.image.length)]!,
+		);
+	}
+
 	await queueMessage({
 		channel,
-		content: `${cQ.question}\n\nYou must answer <t:${unixTimestamp}:R>`,
+		embeds: [embed],
 		priority: 3,
 	});
-	if (typeof cQ.image === "string") {
-		await queueMessage({
-			channel,
-			content: cQ.image,
-			priority: 3,
-		});
-	} else if (cQ.image) {
-		await queueMessage({
-			channel,
-			content:
-				cQ.image[
-					Math.floor(Math.random() * cQ.image.length)
-				]!,
-			priority: 3,
-		});
-	}
 
 	quiz.startTime = Date.now();
 	activateAnsWindow(channel, quiz.ansWindow);
@@ -320,6 +339,7 @@ export async function newQuiz(
 		quiz.repeat === "all" ? pool : shuffle(pool, quiz.rounds);
 	const leQuiz: ActiveQuiz = {
 		...quiz,
+		totalRounds: quiz.rounds,
 		remainingPool: finalPool,
 		currentQuestion: {
 			question: "",

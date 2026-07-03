@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { Message } from "discord.js";
+import { EmbedBuilder, type Message } from "discord.js";
 import { returnAsTextBased } from "../../type-utils.js";
 import { quizzes, progressQuiz } from "../helpers/quiz-helpers.js";
 import queueMessage from "../helpers/message-queue.js";
@@ -43,30 +43,45 @@ async function handleQuiz(message: Message) {
 
 	quiz.currentQuestion.status = "closed";
 
-	let responseMessage = `Correct, ${author.displayName}! The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
+	let responseMessage = `The answer to "${quiz.currentQuestion.question}" was "${quiz.currentQuestion.answerTxt}"`;
 	if (quiz.startTime) {
 		const stopwatchTime = (Date.now() - quiz.startTime) / 1000;
 		responseMessage += `\n${author.displayName} answered in ${stopwatchTime.toFixed(2)}s`;
 	}
 
-	await queueMessage({
-		channel,
-		content: responseMessage,
-		priority: 3,
-	});
-
-	quiz.scores[author.id] = (quiz.scores[author.id] ?? 0) + 1;
-	// Make sure the quiz will continue after this question before saying when is next question
 	if (quiz.rounds > 0 && quiz.remainingPool.length > 0) {
 		const unixTimestamp = Math.floor(
 			(Date.now() + quiz.delay * 1000) / 1000,
 		);
-		await queueMessage({
-			channel,
-			content: `Next question <t:${unixTimestamp}:R>`,
-			priority: 2,
-		}); // Convert to timestamp when porting to discord
+		responseMessage += `\n\n-# Next question <t:${unixTimestamp}:R>`; // Put it in the description because the footer does not support timestamps
+	} else {
+		responseMessage += "\n\nThat was the last question.";
 	}
+
+	quiz.scores[author.id] = (quiz.scores[author.id] ?? 0) + 1;
+
+	const leader =
+		Object.entries(quiz.scores).toSorted(
+			([, a], [, b]) => b - a,
+		)[0]?.[0] ?? undefined;
+	const leaderName = leader
+		? (channel.guild?.members.cache.get(leader)?.displayName ??
+			`User ${leader}`)
+		: "Nobody";
+
+	const embed = new EmbedBuilder()
+		.setTitle(`Correct, ${author.displayName}!`)
+		.setDescription(responseMessage)
+		.setFooter({
+			text: `${leaderName} is in the lead!`,
+		})
+		.setColor("#a6e3a1");
+
+	await queueMessage({
+		channel,
+		embeds: [embed],
+		priority: 3,
+	});
 
 	await sleep(quiz.delay * 1000);
 	progressQuiz(channel).catch((error: unknown) => {

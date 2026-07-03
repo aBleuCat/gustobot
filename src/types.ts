@@ -82,6 +82,7 @@ export type PreQuiz = {
  */
 export type ActiveQuiz = {
 	remainingPool: PoolQuestion[];
+	totalRounds: number;
 	currentQuestion: {
 		question: string;
 		answer: RegExp;
