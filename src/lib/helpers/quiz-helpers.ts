@@ -101,7 +101,7 @@ export async function expireAnsWindow(
 		);
 		description += `\n\nNext question <t:${unixTimestamp}:R>`;
 	} else {
-		description += "\n\nThat was the last question.";
+		description += "\n\n-# That was the last question.";
 	}
 
 	const flavorTextOptions = [
