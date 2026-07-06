@@ -1,5 +1,12 @@
 import path from "node:path";
+import process from "node:process";
+import dotenv from "dotenv";
 import type { Pool, PoolQuestion } from "../types.js";
+
+dotenv.config();
+
+if (!process.env.GITHUB_TOKEN)
+	throw new Error("Github token not found in .env");
 
 type GithubFile = {
 	type: string;
@@ -31,7 +38,7 @@ const IMAGE_EXTENSIONS = new Set([
 const REPO = "someguy/something";
 const headers = {
 	"User-Agent": "node-image-fetch-script",
-	Authorization: "Bearer FINE GRAINED TOKEN GOES HERE",
+	Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
 };
 
 const DIR_REGEX = /^dir:\/([\w\-.\/%~]+)\/$/iv;
