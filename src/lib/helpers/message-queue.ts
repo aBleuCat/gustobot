@@ -161,6 +161,7 @@ async function processChannelQueue(channelId: string): Promise<void> {
 				...(item.reply?.mention && {
 					reply: { messageReference: item.reply.message },
 				}),
+				allowedMentions: { parse: [] },
 			});
 
 			const now = Date.now();
