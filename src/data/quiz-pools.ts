@@ -50,6 +50,7 @@ async function sleep(ms: number) {
 }
 
 /** Formats a duration in milliseconds as something like "1m 05s" or "12s" */
+
 function formatDuration(ms: number): string {
 	const totalSeconds = Math.max(0, Math.round(ms / 1000));
 	const minutes = Math.floor(totalSeconds / 60);
