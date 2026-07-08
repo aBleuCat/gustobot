@@ -17,7 +17,7 @@ const loader = new SubcommandLoader(
 
 await loader.load();
 
-const command = {
+const coinsCommand = {
 	data: mainCommand,
 	async execute(interaction: ChatInputCommandInteraction) {
 		// The class handles
@@ -28,4 +28,4 @@ const command = {
 	},
 };
 
-export default command;
+export default coinsCommand;

@@ -157,8 +157,8 @@ async function loadCommandsHelper(
 	// Resolve them all at once
 	const rawCommands = await Promise.all(commandPromises);
 
-	for (const [index, command] of rawCommands.entries()) {
-		if (!isCommand(command)) {
+	for (const [index, rawCommand] of rawCommands.entries()) {
+		if (!isCommand(rawCommand)) {
 			const fileName = files[index];
 			console.warn(
 				`[WARNING] The command file "${fileName}" failed validation and was skipped.`,
@@ -167,19 +167,23 @@ async function loadCommandsHelper(
 		}
 
 		// Only apply defaults if integrationTypes & contextTypes haven't been manually set in the file
-		if (!command.data.integration_types) {
-			command.data.setIntegrationTypes([
+		if (!rawCommand.data.integration_types) {
+			rawCommand.data.setIntegrationTypes([
 				GuildInstall,
 				UserInstall,
 			]);
 		}
 
-		if (!command.data.contexts) {
-			command.data.setContexts([Guild, BotDM, PrivateChannel]);
+		if (!rawCommand.data.contexts) {
+			rawCommand.data.setContexts([
+				Guild,
+				BotDM,
+				PrivateChannel,
+			]);
 		}
 
-		commandsData.push(command.data.toJSON());
-		validCommands.push(command);
+		commandsData.push(rawCommand.data.toJSON());
+		validCommands.push(rawCommand);
 	}
 
 	return [commandsData, validCommands];
@@ -198,8 +202,8 @@ const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	globalCommandFiles,
 	commandsPath,
 );
-for (const command of validCommands)
-	client.commands.set(command.data.name, command);
+for (const globalCommand of validCommands)
+	client.commands.set(globalCommand.data.name, globalCommand);
 
 // Load guild commands
 const guildCommandsPath = path.resolve(
@@ -215,12 +219,12 @@ const guildCommandFiles = fs
 	);
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
-for (const command of validGuildCommands)
-	client.commands.set(command.data.name, command);
+for (const guildCommand of validGuildCommands)
+	client.commands.set(guildCommand.data.name, guildCommand);
 
 console.log(
-	`Successfully validated ${validCommands.length} global commands.\n
-	Successfully validated ${validGuildCommands.length} guild commands`,
+	`Successfully validated ${validCommands.length} global commands.
+Successfully validated ${validGuildCommands.length} guild commands`,
 );
 
 // Ready event
