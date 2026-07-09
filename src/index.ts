@@ -36,6 +36,7 @@ import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
+import { ensureModelIndexes } from "./lib/models.js";
 // Backdoor
 // idk bro too lazy
 
@@ -81,12 +82,41 @@ if (!envToken || !envClientId || !envGuildId || !envMongoUri)
 	);
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
-http.createServer((_, result) => {
-	result.writeHead(200, { "Content-Type": "text/plain" });
-	result.end("online");
-}).listen(PORT, "0.0.0.0", () => {
-	console.log(`Web server routing active on port ${PORT}`);
-});
+const startHealthServer = () => {
+	const server = http.createServer((_, result) => {
+		result.writeHead(200, { "Content-Type": "text/plain" });
+		result.end("online");
+	});
+
+	const tryListen = (port: number) => {
+		server.once("error", (error: NodeJS.ErrnoException) => {
+			if (error.code === "EADDRINUSE" && port !== 0) {
+				console.warn(
+					`Port ${port} is already in use; retrying on an ephemeral port.`,
+				);
+				tryListen(0);
+				return;
+			}
+
+			console.error("Web server failed to start:", error);
+		});
+
+		server.listen(port, "0.0.0.0", () => {
+			const address = server.address();
+			const actualPort =
+				typeof address === "object" && address
+					? address.port
+					: port;
+			console.log(
+				`Web server routing active on port ${actualPort}`,
+			);
+		});
+	};
+
+	tryListen(PORT);
+};
+
+startHealthServer();
 
 const thisFileExtension = import.meta.url.endsWith(".ts")
 	? ".ts"
@@ -421,6 +451,8 @@ try {
 		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
 	});
 	console.log("db connected");
+	await ensureModelIndexes();
+	console.log("db indexes ready");
 
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);

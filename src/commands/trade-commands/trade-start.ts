@@ -3,21 +3,12 @@ import {
 	ButtonBuilder,
 	ButtonStyle,
 	type ChatInputCommandInteraction,
+	type EmbedBuilder,
 	ComponentType,
 	MessageFlags,
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
-import {
-	tradeMain,
-	applyTradeResult,
-	buildConfirmEmbed,
-	buildAcceptedEmbed,
-	buildFailedEmbed,
-	buildExpiredEmbed,
-	buildDeclinedEmbed,
-	buildConfirmTimeoutEmbed,
-	type ResolvedTrade,
-} from "../trade-main.js";
+import type { ResolvedTrade } from "../trade-main.js";
 import { config } from "../../lib/config.js";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -39,6 +30,7 @@ type ConfirmOutcome =
 async function runConfirmScreen(
 	interaction: ChatInputCommandInteraction,
 	result: ResolvedTrade,
+	buildConfirmEmbed: (trade: ResolvedTrade) => EmbedBuilder,
 ): Promise<ConfirmOutcome> {
 	const acceptButton = new ButtonBuilder()
 		.setCustomId("trade_accept")
@@ -130,6 +122,17 @@ async function runConfirmScreen(
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
+	const {
+		tradeMain,
+		applyTradeResult,
+		buildConfirmEmbed,
+		buildAcceptedEmbed,
+		buildFailedEmbed,
+		buildExpiredEmbed,
+		buildDeclinedEmbed,
+		buildConfirmTimeoutEmbed,
+	} = await import("../trade-main.js");
+
 	await interaction.deferReply();
 	const targetUser = interaction.options.getUser("user");
 	const { channel } = interaction;
@@ -161,7 +164,11 @@ export async function execute(
 		return;
 	}
 
-	const confirmation = await runConfirmScreen(interaction, result);
+	const confirmation = await runConfirmScreen(
+		interaction,
+		result,
+		buildConfirmEmbed,
+	);
 
 	if (confirmation.status === "declined") {
 		const declinerName =

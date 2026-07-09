@@ -6,7 +6,7 @@ import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import * as Models from "../src/lib/models.js";
+import * as Models from "../dist/lib/models.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -41,7 +41,9 @@ async function askQuestion(query) {
 function resolveArgs(modelArg, fileArg) {
 	const modelName = modelArg === "d" ? "UserHorses" : modelArg;
 	const fileName =
-		fileArg === "d" ? "../backups/dbbackup.json" : fileArg;
+		fileArg === "d"
+			? path.join(__dirname, "..", "backups", "dbbackup.json")
+			: fileArg;
 	const Model = ModelsMap[modelName];
 	if (!Model) {
 		console.error(
