@@ -2,13 +2,23 @@ import {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
+	EmbedBuilder,
 	type ChatInputCommandInteraction,
-	type EmbedBuilder,
 	ComponentType,
 	MessageFlags,
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
-import type { ResolvedTrade } from "../trade-main.js";
+import {
+	tradeMain,
+	applyTradeResult,
+	buildConfirmEmbed,
+	buildAcceptedEmbed,
+	buildFailedEmbed,
+	buildExpiredEmbed,
+	buildDeclinedEmbed,
+	buildConfirmTimeoutEmbed,
+	type ResolvedTrade,
+} from "../lib/trade-helpers.js";
 import { config } from "../../lib/config.js";
 
 export const data = new SlashCommandSubcommandBuilder()
@@ -122,17 +132,6 @@ async function runConfirmScreen(
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const {
-		tradeMain,
-		applyTradeResult,
-		buildConfirmEmbed,
-		buildAcceptedEmbed,
-		buildFailedEmbed,
-		buildExpiredEmbed,
-		buildDeclinedEmbed,
-		buildConfirmTimeoutEmbed,
-	} = await import("../trade-main.js");
-
 	await interaction.deferReply();
 	const targetUser = interaction.options.getUser("user");
 	const { channel } = interaction;
@@ -152,6 +151,24 @@ export async function execute(
 			embeds,
 			components: [buttons],
 		});
+	});
+
+	const initialReplyEmbeds = [
+		new EmbedBuilder()
+			.setTitle(interaction.user.displayName)
+			.setDescription(
+				"Use `/trade add` to set your offer",
+			)
+			.setColor("#181825"),
+		new EmbedBuilder()
+			.setTitle(targetUser.displayName)
+			.setDescription(
+				"Use `/trade add` to edit your offer",
+			)
+			.setColor("#181825"),
+	];
+	await interaction.editReply({
+		embeds: initialReplyEmbeds,
 	});
 
 	const result = await trade.promise;

@@ -4,7 +4,7 @@ import {
 	MessageFlags,
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { tradeMain } from "../trade-main.js";
+import { tradeMain } from "../lib/trade-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 export const data = new SlashCommandSubcommandBuilder()

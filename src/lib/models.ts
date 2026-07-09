@@ -50,6 +50,7 @@ export type IHorseConfig = {
 } & mongoose.Document;
 export type IUserHorses = {
 	userId: string;
+	optIn: boolean;
 	lastGamble: number;
 	horseCoins: number;
 	horses: Map<string, number>;
@@ -167,6 +168,7 @@ export const HorseConfig = mongoose.model(
 
 const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	userId: String,
+	optIn: { type: Boolean, default: false },
 	lastGamble: { type: Number, default: 0 },
 	horseCoins: {
 		type: Number,
@@ -219,13 +221,8 @@ export const OrbitalScript = mongoose.model(
 	}),
 );
 
-export async function ensureModelIndexes(): Promise<void> {
-	if (mongoose.connection.readyState !== 1) {
-		throw new Error(
-			"Cannot ensure MongoDB indexes before the connection is ready",
-		);
-	}
-
+// Ensure indexes are created in MongoDB
+try {
 	await Promise.all([
 		Rule.collection.createIndex({ watchUser: 1 }),
 		Rule.collection.createIndex({ channel: 1 }),
@@ -234,4 +231,6 @@ export async function ensureModelIndexes(): Promise<void> {
 		ModChannel.collection.createIndex({ guildId: 1 }),
 		UserHorses.collection.createIndex({ userId: 1 }),
 	]);
+} catch (error: unknown) {
+	console.error("Index creation error:", error);
 }

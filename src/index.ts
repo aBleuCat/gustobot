@@ -1,3 +1,4 @@
+/* eslint-disable id-denylist */
 // Node.js
 import process from "node:process";
 import http from "node:http";
@@ -36,7 +37,6 @@ import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
-import { ensureModelIndexes } from "./lib/models.js";
 // Backdoor
 // idk bro too lazy
 
@@ -82,41 +82,12 @@ if (!envToken || !envClientId || !envGuildId || !envMongoUri)
 	);
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
-const startHealthServer = () => {
-	const server = http.createServer((_, result) => {
-		result.writeHead(200, { "Content-Type": "text/plain" });
-		result.end("online");
-	});
-
-	const tryListen = (port: number) => {
-		server.once("error", (error: NodeJS.ErrnoException) => {
-			if (error.code === "EADDRINUSE" && port !== 0) {
-				console.warn(
-					`Port ${port} is already in use; retrying on an ephemeral port.`,
-				);
-				tryListen(0);
-				return;
-			}
-
-			console.error("Web server failed to start:", error);
-		});
-
-		server.listen(port, "0.0.0.0", () => {
-			const address = server.address();
-			const actualPort =
-				typeof address === "object" && address
-					? address.port
-					: port;
-			console.log(
-				`Web server routing active on port ${actualPort}`,
-			);
-		});
-	};
-
-	tryListen(PORT);
-};
-
-startHealthServer();
+http.createServer((_, result) => {
+	result.writeHead(200, { "Content-Type": "text/plain" });
+	result.end("online");
+}).listen(PORT, "0.0.0.0", () => {
+	console.log(`Web server routing active on port ${PORT}`);
+});
 
 const thisFileExtension = import.meta.url.endsWith(".ts")
 	? ".ts"
@@ -185,8 +156,8 @@ async function loadCommandsHelper(
 	// Resolve them all at once
 	const rawCommands = await Promise.all(commandPromises);
 
-	for (const [index, rawCommand] of rawCommands.entries()) {
-		if (!isCommand(rawCommand)) {
+	for (const [index, command] of rawCommands.entries()) {
+		if (!isCommand(command)) {
 			const fileName = files[index];
 			console.warn(
 				`[WARNING] The command file "${fileName}" failed validation and was skipped.`,
@@ -195,23 +166,19 @@ async function loadCommandsHelper(
 		}
 
 		// Only apply defaults if integrationTypes & contextTypes haven't been manually set in the file
-		if (!rawCommand.data.integration_types) {
-			rawCommand.data.setIntegrationTypes([
+		if (!command.data.integration_types) {
+			command.data.setIntegrationTypes([
 				GuildInstall,
 				UserInstall,
 			]);
 		}
 
-		if (!rawCommand.data.contexts) {
-			rawCommand.data.setContexts([
-				Guild,
-				BotDM,
-				PrivateChannel,
-			]);
+		if (!command.data.contexts) {
+			command.data.setContexts([Guild, BotDM, PrivateChannel]);
 		}
 
-		commandsData.push(rawCommand.data.toJSON());
-		validCommands.push(rawCommand);
+		commandsData.push(command.data.toJSON());
+		validCommands.push(command);
 	}
 
 	return [commandsData, validCommands];
@@ -230,8 +197,8 @@ const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	globalCommandFiles,
 	commandsPath,
 );
-for (const globalCommand of validCommands)
-	client.commands.set(globalCommand.data.name, globalCommand);
+for (const command of validCommands)
+	client.commands.set(command.data.name, command);
 
 // Load guild commands
 const guildCommandsPath = path.resolve(
@@ -247,12 +214,12 @@ const guildCommandFiles = fs
 	);
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
-for (const guildCommand of validGuildCommands)
-	client.commands.set(guildCommand.data.name, guildCommand);
+for (const command of validGuildCommands)
+	client.commands.set(command.data.name, command);
 
 console.log(
-	`Successfully validated ${validCommands.length} global commands.
-Successfully validated ${validGuildCommands.length} guild commands`,
+	`Successfully validated ${validCommands.length} global commands.\n
+	Successfully validated ${validGuildCommands.length} guild commands`,
 );
 
 // Ready event
@@ -438,7 +405,7 @@ client.on("interactionCreate", (interaction) => {
 	})(interaction);
 });
 
-// Register handlers not dependent on db
+// Register interaction handler immediately (doesn't need DB)
 registerInteractionHandler(client);
 startResourceMonitor(client);
 startMessageCacheCleanup();
@@ -451,8 +418,6 @@ try {
 		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
 	});
 	console.log("db connected");
-	await ensureModelIndexes();
-	console.log("db indexes ready");
 
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);

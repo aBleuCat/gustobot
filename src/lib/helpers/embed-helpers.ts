@@ -11,25 +11,32 @@ import { EmbedBuilder, type APIEmbedField } from "discord.js";
 function dictToEmbed<T>(
 	title: string,
 	dict: Record<string, T>,
-	style: "normal" | "inline" | "leaderboard" = "normal",
+	style:
+		| "normal"
+		| "inline"
+		| "leaderboard"
+		| "headerless leaderboard" = "normal",
 	sortFn?: (a: [string, T], b: [string, T]) => number,
 ): EmbedBuilder {
 	const dictArray = Object.entries(dict);
 	if (sortFn) dictArray.sort(sortFn);
 	let fields: APIEmbedField[] = [];
-	if (style === "leaderboard") {
+	if (
+		style === "leaderboard" ||
+		style === "headerless leaderboard"
+	) {
 		const players = dictArray.map(([key]) => key).join("\n");
 		const scores = dictArray
 			.map(([, value]) => String(value))
 			.join("\n");
 		fields = [
 			{
-				name: "Player",
+				name: style === "leaderboard" ? "Player" : "\u200B",
 				value: players || "none",
 				inline: true,
 			},
 			{
-				name: "Score",
+				name: style === "leaderboard" ? "Score" : "\u200B",
 				value: scores || "-",
 				inline: true,
 			},
