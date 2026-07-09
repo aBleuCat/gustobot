@@ -15,7 +15,6 @@ import handleHorseSpawn from "../triggers/horse-spawner.js";
 import handleHaiku from "../triggers/haiku.js";
 import handleBotPing from "../triggers/ping-handler.js";
 import handleSayItWithMe from "../triggers/say-it-with-me.js";
-import handleQuiz from "../triggers/quiz-handler.js";
 
 // Checks if user is bot, user is in blacklist, and user is in whitelist
 // Whitelisted bots are allowed, otherwise bots are not allowed
@@ -60,7 +59,6 @@ async function executePrimaryHandlers(
 async function executeSecondaryHandlers(message: Message) {
 	try {
 		await handleHorseSpawn(message);
-		await handleQuiz(message);
 	} catch (error) {
 		console.error("Secondary trigger error", error);
 		devLog(

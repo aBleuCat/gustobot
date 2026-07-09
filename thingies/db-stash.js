@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 import * as Models from "../src/lib/models.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 const ModelsMap = Models;
 
 const { MONGO_URI } = process.env;
