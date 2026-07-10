@@ -3,6 +3,7 @@ import type {
 	TextBasedChannel,
 	PartialGroupDMChannel,
 	Message,
+	MessageMentionOptions,
 } from "discord.js";
 import { config } from "../config.js";
 import devLog from "./dev-log.js";
@@ -17,6 +18,7 @@ type QueueItem = {
 	content: string;
 	reply: ReplyInfo | undefined;
 	priority: number;
+	allowedMentions: MessageMentionOptions | undefined;
 	resolve: (value: Message) => void;
 	reject: (reason: unknown) => void;
 };
@@ -60,11 +62,17 @@ async function queueMessage({
 	content,
 	reply,
 	priority = 1,
+	allowedMentions,
 }: {
 	channel: SendableChannel;
 	content: string;
 	reply?: ReplyInfo;
+	/** Higher number = closer to front of queue, will send before messages with lower priority number in the queue */
 	priority?: number;
+	/** The client is configured so messages cannot ping everyone and here by default. Pass this property to override that default.
+	 * @example allowedMentions: { parse: ["users", "roles", "everyone"] } // This allows all types of mentions, including here and everyone
+	 */
+	allowedMentions?: MessageMentionOptions;
 }): Promise<Message> {
 	const state = getChannelState(channel.id);
 
@@ -80,6 +88,7 @@ async function queueMessage({
 		content,
 		reply,
 		priority,
+		allowedMentions,
 		resolve,
 		reject,
 	};
@@ -161,7 +170,9 @@ async function processChannelQueue(channelId: string): Promise<void> {
 				...(item.reply?.mention && {
 					reply: { messageReference: item.reply.message },
 				}),
-				allowedMentions: { parse: [] },
+				...(item.allowedMentions && {
+					allowedMentions: item.allowedMentions,
+				}),
 			});
 
 			const now = Date.now();
