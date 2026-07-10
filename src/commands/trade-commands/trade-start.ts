@@ -148,6 +148,7 @@ export async function execute(
 	);
 	trade.onUpdate((embeds, buttons) => {
 		void interaction.editReply({
+			content: `<@${targetUser.id}>, ${interaction.user.displayName} is offering a trade!`,
 			embeds,
 			components: [buttons],
 		});
@@ -156,19 +157,31 @@ export async function execute(
 	const initialReplyEmbeds = [
 		new EmbedBuilder()
 			.setTitle(interaction.user.displayName)
-			.setDescription(
-				"Use `/trade add` to set your offer",
-			)
+			.setDescription("Use `/trade add` to set your offer")
 			.setColor("#181825"),
 		new EmbedBuilder()
 			.setTitle(targetUser.displayName)
-			.setDescription(
-				"Use `/trade add` to edit your offer",
-			)
+			.setDescription("Use `/trade add` to set your offer")
 			.setColor("#181825"),
 	];
-	await interaction.editReply({
+	const message = await interaction.editReply({
+		content: `<@${targetUser.id}>, ${interaction.user.displayName} is offering a trade!`,
 		embeds: initialReplyEmbeds,
+		components: [trade.buttons],
+	});
+
+	const offerCollector = message.createMessageComponentCollector({
+		componentType: ComponentType.Button,
+		filter: (buttonInteraction) =>
+			buttonInteraction.customId === "trade_lock" ||
+			buttonInteraction.customId === "trade_reset",
+		time: config.TRADE_DURATION,
+	});
+
+	offerCollector.on("collect", trade.collector);
+
+	void trade.promise.finally(() => {
+		offerCollector.stop();
 	});
 
 	const result = await trade.promise;

@@ -15,28 +15,31 @@ function dictToEmbed<T>(
 		| "normal"
 		| "inline"
 		| "leaderboard"
-		| "headerless leaderboard" = "normal",
+		| { leftHeader: string; rightHeader: string } = "normal",
 	sortFn?: (a: [string, T], b: [string, T]) => number,
 ): EmbedBuilder {
 	const dictArray = Object.entries(dict);
 	if (sortFn) dictArray.sort(sortFn);
 	let fields: APIEmbedField[] = [];
-	if (
-		style === "leaderboard" ||
-		style === "headerless leaderboard"
-	) {
+	if (style === "leaderboard" || typeof style === "object") {
 		const players = dictArray.map(([key]) => key).join("\n");
 		const scores = dictArray
 			.map(([, value]) => String(value))
 			.join("\n");
 		fields = [
 			{
-				name: style === "leaderboard" ? "Player" : "\u200B",
+				name:
+					style === "leaderboard"
+						? "Score"
+						: style.leftHeader,
 				value: players || "none",
 				inline: true,
 			},
 			{
-				name: style === "leaderboard" ? "Score" : "\u200B",
+				name:
+					style === "leaderboard"
+						? "Score"
+						: style.rightHeader,
 				value: scores || "-",
 				inline: true,
 			},

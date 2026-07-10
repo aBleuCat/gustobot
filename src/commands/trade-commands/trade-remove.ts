@@ -45,7 +45,7 @@ export async function autocomplete(
 
 	if (member.coinsOffered > 0 && "coin".includes(focused))
 		choices.push({
-			name: `coin (${member.coinsOffered} offered)`,
+			name: `Coin (${member.coinsOffered} offered)`,
 			value: "coin",
 		});
 
@@ -110,7 +110,7 @@ export async function execute(
 	}
 
 	return interaction.reply({
-		content: `Removed ${amount} ${item} from your offer`,
+		content: `Removed ${amount} ${horseName(item)} from your offer`,
 		flags: [MessageFlags.Ephemeral],
 	});
 }

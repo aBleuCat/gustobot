@@ -52,7 +52,7 @@ export async function autocomplete(
 	const availableCoins = ownedCoins - member.coinsOffered;
 	if (availableCoins > 0 && "coin".includes(focused))
 		choices.push({
-			name: `coin (${availableCoins} available)`,
+			name: `Coin (${availableCoins} available)`,
 			value: "coin",
 		});
 
@@ -123,7 +123,7 @@ export async function execute(
 
 	if (alreadyOffered + amount > available)
 		return interaction.reply({
-			content: `You don't have that many ${item} available (you have ${available}, already offering ${alreadyOffered}).`,
+			content: `You don't have that many ${horseName(item)} available (you have ${available}, already offering ${alreadyOffered}).`,
 			flags: [MessageFlags.Ephemeral],
 		});
 
@@ -140,7 +140,7 @@ export async function execute(
 	}
 
 	return interaction.reply({
-		content: `Added ${amount} ${item} to your offer`,
+		content: `Added ${amount} ${horseName(item)} to your offer`,
 		flags: [MessageFlags.Ephemeral],
 	});
 }

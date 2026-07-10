@@ -132,6 +132,7 @@ class ActiveTrade {
 		fn: (
 			embeds: EmbedBuilder[],
 			buttons: ActionRowBuilder<ButtonBuilder>,
+			collector: (interaction: ButtonInteraction) => void,
 		) => void,
 	) {
 		this.updateAction = fn;
@@ -247,11 +248,10 @@ class ActiveTrade {
 					),
 				),
 			};
-			return dictToEmbed(
-				user.name,
-				fields,
-				"headerless leaderboard",
-			);
+			return dictToEmbed(user.name, fields, {
+				leftHeader: "Item",
+				rightHeader: "Amount",
+			});
 		}
 
 		return [this._red, this._blue].map((user) =>
