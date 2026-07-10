@@ -300,8 +300,7 @@ class ActiveTrade {
 }
 
 export type TradeApplyResult =
-	| { success: true }
-	| { success: false; reason: string };
+	{ success: true } | { success: false; reason: string };
 
 function buildIncAndFilter(
 	userId: string,
