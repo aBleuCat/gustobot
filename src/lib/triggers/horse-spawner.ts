@@ -105,6 +105,18 @@ async function handleHorseSpawn(message: Message) {
 		return;
 	}
 
+	const { optIn } = (await UserHorses.findOne(
+		{ userId: message.author.id },
+		{ optIn: 1 },
+	).lean()) ?? { optIn: false };
+
+	if (!optIn) {
+		console.log(
+			`Horse did not spawn because ${message.author.displayName} was opted out`,
+		); // For debugging
+		return;
+	}
+
 	if (!(await cacheAndCheckMessage(message))) return;
 
 	const targetChannel = await message.guild.channels
