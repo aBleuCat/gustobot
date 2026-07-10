@@ -17,7 +17,7 @@ async function logToModChannel(guild: Guild, message: string) {
 		.fetch(config.channelId)
 		.catch(() => undefined);
 	if (channel?.isTextBased())
-		await channel.send(`[LOG]: ${message}`);
+		{await channel.send(`[LOG]: ${message}`);}
 }
 
 export async function logToAllModChannels(

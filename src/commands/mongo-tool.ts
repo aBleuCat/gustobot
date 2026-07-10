@@ -129,7 +129,7 @@ async function handleFind(options: {
 		limit,
 		verbose,
 	} = options;
-	// eslint-disable-next-line unicorn/no-array-callback-reference
+	 
 	const query = modelCtor.find(queryCriteria);
 	if (Object.keys(projection).length > 0) {
 		void query.select(projection);
@@ -326,14 +326,14 @@ const mongoTool = {
 		const focused = interaction.options.getFocused(true);
 
 		if (focused.name === "model") {
-			const search = String(focused.value).toLowerCase();
+			const search = focused.value.toLowerCase();
 			const choices = [...AVAILABLE_MODELS.keys()]
 				.filter((name) => name.includes(search))
 				.map((name) => ({ name, value: name }));
 
 			if (
 				search &&
-				!choices.some((choice) => choice.value === search)
+				choices.every((choice) => choice.value !== search)
 			) {
 				choices.unshift({ name: search, value: search });
 			}
@@ -364,7 +364,7 @@ const mongoTool = {
 			interaction.options.getInteger("limit") ?? undefined;
 		const projectionString =
 			interaction.options.getString("projection") ?? undefined;
-		const verbose =
+		const isVerbose =
 			interaction.options.getBoolean("verbose") ?? false;
 
 		const availableModelName = AVAILABLE_MODELS.get(modelName);
@@ -411,7 +411,7 @@ Available models: ${available}`,
 						queryCriteria,
 						projection,
 						limit,
-						verbose,
+						verbose: isVerbose,
 					});
 					break;
 				}

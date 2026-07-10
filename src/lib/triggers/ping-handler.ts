@@ -24,14 +24,16 @@ async function handleBotPing(message: Message, client: Client) {
 			entry.trigger.type === "contains" &&
 			content.includes(triggerText)
 		)
-			return true;
+			{return true;}
+
 		if (entry.trigger.type === "exact" && content === triggerText)
-			return true;
+			{return true;}
+
 		if (
 			entry.trigger.type === "author" &&
 			message.author.id === entry.trigger.text
 		)
-			return true;
+			{return true;}
 
 		return false;
 	});

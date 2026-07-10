@@ -51,18 +51,18 @@ export async function autocomplete(
 	const ownedCoins = userHorses?.horseCoins ?? 0;
 	const availableCoins = ownedCoins - member.coinsOffered;
 	if (availableCoins > 0 && "coin".includes(focused))
-		choices.push({
+		{choices.push({
 			name: `Coin (${availableCoins} available)`,
 			value: "coin",
-		});
+		});}
 
 	if (userHorses) {
-		for (const [slug, owned] of userHorses.horses.entries()) {
+		for (const [slug, owned] of userHorses.horses) {
 			const name = horseName(slug) ?? slug;
-			const matches =
+			const isMatches =
 				slug.includes(focused) ||
 				name.toLowerCase().includes(focused);
-			if (!matches) continue;
+			if (!isMatches) continue;
 
 			const available =
 				owned - (member.horsesOffered[slug] ?? 0);
@@ -83,24 +83,24 @@ export async function execute(
 ) {
 	const { channel } = interaction;
 	if (!channel)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "dasdfasdfasdfasdf idk your channel",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const trade = tradeMain.get(channel.id);
 	if (!trade)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "There's no active trade in this channel",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const color = trade.colorOf(interaction.user.id);
 	if (!color)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "You're not part of this trade",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const item = interaction.options
 		.getString("item", true)
@@ -122,10 +122,10 @@ export async function execute(
 			: (userHorses?.horses.get(item) ?? 0);
 
 	if (alreadyOffered + amount > available)
-		return interaction.reply({
+		{return interaction.reply({
 			content: `You don't have that many ${horseName(item)} available (you have ${available}, already offering ${alreadyOffered}).`,
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	try {
 		trade.add(color, item, amount);

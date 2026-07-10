@@ -27,9 +27,9 @@ export async function execute(
 	const target = interaction.options.getUser("target");
 	const amount = interaction.options.getInteger("amount");
 	if (!target || !amount)
-		return interaction.reply(
+		{return interaction.reply(
 			"Something went kaboom when trying to get your inputs",
-		);
+		);}
 
 	if (target.id === interaction.user.id) {
 		return interaction.reply({

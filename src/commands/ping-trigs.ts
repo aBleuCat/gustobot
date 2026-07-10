@@ -154,9 +154,10 @@ const pingTrigCommand = {
 				).catch(() => undefined);
 
 				if (deleted)
-					return interaction.editReply(
+					{return interaction.editReply(
 						`Removed \`${id}\`.`,
-					);
+					);}
+
 				return interaction.editReply(
 					`No entry found with id \`${id}\`.`,
 				);
@@ -165,9 +166,9 @@ const pingTrigCommand = {
 			case "list": {
 				const allEntries = await PingResponse.find({});
 				if (allEntries.length === 0)
-					return interaction.editReply(
+					{return interaction.editReply(
 						"Nothing added yet.",
-					);
+					);}
 
 				const randomPool = allEntries.filter(
 					(entry) => !entry.trigger?.type,

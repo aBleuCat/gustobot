@@ -14,16 +14,16 @@ const TOGGLE_FILE = path.join(__dirname, "../../.dmlogtoggle");
 
 async function dmAdmin(client: Client, message: string) {
 	if (!client?.users) return;
-	let enabled = false;
+	let isEnabled = false;
 	try {
-		enabled =
+		isEnabled =
 			fs.existsSync(TOGGLE_FILE) &&
 			fs.readFileSync(TOGGLE_FILE, "utf8").includes("on");
 	} catch {
 		return undefined;
 	}
 
-	if (!enabled) return;
+	if (!isEnabled) return;
 	try {
 		const user = await client.users.fetch(ADMIN_ID);
 		if (user) await user.send(message);

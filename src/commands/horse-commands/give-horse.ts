@@ -43,7 +43,7 @@ export async function autocomplete(
 
 	const choices = [];
 	if (inventory?.horses) {
-		for (const [slug, count] of inventory.horses.entries()) {
+		for (const [slug, count] of inventory.horses) {
 			if (count > 0 && HORSE_VALUES[slug]) {
 				choices.push({
 					name: `${horseName(slug)} (x${count})`,
@@ -67,13 +67,14 @@ export async function execute(
 	const horseSlug = interaction.options.getString("horse");
 	const botId = interaction.client.user.id;
 	if (!targetUser || !horseSlug)
-		return interaction.reply(
+		{return interaction.reply(
 			"try again, something went wrong when trying to recieve your inputs",
-		);
+		);}
+
 	if (!interaction.guild)
-		return interaction.reply(
+		{return interaction.reply(
 			"lo siento something went wrong when finding your server",
-		);
+		);}
 
 	if (targetUser.id === interaction.user.id) {
 		return interaction.reply({

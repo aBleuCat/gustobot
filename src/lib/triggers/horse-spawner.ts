@@ -17,7 +17,7 @@ const HORSE_VALUES = castAsHorseData(rawHorseValues);
 function determineSpawnedHorses(message: Message) {
 	const spawnedHorses: HorseData = {};
 	const spawnedCounts: Record<string, number> = {};
-	let anySpawned = false;
+	let isAnySpawned = false;
 
 	for (const [slug, data] of Object.entries(HORSE_VALUES)) {
 		if (data.spawn === false) continue;
@@ -34,7 +34,7 @@ function determineSpawnedHorses(message: Message) {
 
 		if (Math.floor(Math.random() * chance) === 0) {
 			spawnedCounts[slug] = (spawnedCounts[slug] ?? 0) + 1;
-			anySpawned = true;
+			isAnySpawned = true;
 
 			console.log(
 				`[HORSE] ${message.author.tag} spawned ${displayName} in guild ${message.guild?.name} (${message.guild?.id})!`,
@@ -43,7 +43,7 @@ function determineSpawnedHorses(message: Message) {
 		}
 	}
 
-	return { spawnedCounts, spawnedHorses, anySpawned };
+	return { spawnedCounts, spawnedHorses, anySpawned: isAnySpawned };
 }
 
 async function cacheAndCheckMessage(
@@ -66,12 +66,12 @@ async function cacheAndCheckMessage(
 	}
 
 	// Similarity check
-	const tooSimilar = cache.recentMessages.some(
+	const isTooSimilar = cache.recentMessages.some(
 		(previous) =>
 			stringSimilarity(previous, messageText) >=
 			config.SIMILARITY_THRESHOLD,
 	);
-	if (tooSimilar) {
+	if (isTooSimilar) {
 		return false;
 	}
 
@@ -188,7 +188,7 @@ async function handleHorseSpawn(message: Message) {
 			);
 		});
 		if (data.link)
-			queueMessage({
+			{queueMessage({
 				channel: castedChannel,
 				content: data.link,
 				priority: 2,
@@ -197,7 +197,7 @@ async function handleHorseSpawn(message: Message) {
 					"QueueMessage error while spawning horse:",
 					error,
 				);
-			});
+			});}
 	}
 
 	// If we updated inventory atomically, notify about coin drops and run condition

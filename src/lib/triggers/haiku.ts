@@ -7,8 +7,7 @@ type NonEmptyLines = [string, ...string[]];
 function castAsNonEmptyLines(
 	lines: string[],
 ): lines is NonEmptyLines {
-	if (lines[0]) return true;
-	return false;
+	return Boolean(lines[0]);
 }
 
 const syllableWords: Record<number, string[]> = {
@@ -31,7 +30,7 @@ function countSyllables(text: string) {
 	text = text.toLowerCase().trim();
 
 	// Remove punctuation for counting
-	text = text.replaceAll(/[^\w\s]/giv, "");
+	text = text.replaceAll(/[^\s\w]/giv, "");
 
 	// Basic syllable count: vowel groups
 	const vowels = text.match(/[aeiouy]+/giv);
@@ -63,7 +62,7 @@ function getSyllableCount(word: string) {
 }
 
 function breakUp(lines: NonEmptyLines) {
-	const words = lines[0].split(/\s+/iv);
+	const words = lines[0].split(/\s+/v);
 	const newLines = [];
 	let wordIndex = 0;
 
@@ -217,7 +216,8 @@ async function handleHaiku(message: Message) {
 	}
 
 	if (!("send" in message.channel))
-		throw new Error(`Expected sendable channel`);
+		{throw new Error(`Expected sendable channel`);}
+
 	const { channel } = message;
 
 	if (!targetMessage) {

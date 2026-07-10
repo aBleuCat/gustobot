@@ -33,10 +33,10 @@ const actionConfigCommand = {
 		const trigger = interaction.options.getString("trigger");
 		const response = interaction.options.getString("response");
 		if (!trigger || !response)
-			return interaction.reply({
+			{return interaction.reply({
 				content:
 					"Lo siento but your inputs didn't go through",
-			});
+			});}
 
 		await ActionResponse.findOneAndUpdate(
 			{ trigger: trigger.toLowerCase() },

@@ -1,12 +1,11 @@
 import { EmbedBuilder, type APIEmbedField } from "discord.js";
 
 /**
- * Converts a dictionary object into a Discord Embed with fields.
- * @param title The title of the embed.
- * @param dict The key-value data.
- * @param style The style of the embed. Inline: The fields are side by side. Leaderboard: The names are on the left side, the values are on the right side.
- * @param sortFn Function that is provided for the .sort() callback. The dictionary is converted to an array and sorted before use.
- *
+ Converts a dictionary object into a Discord Embed with fields.
+ @param title The title of the embed.
+ @param dict The key-value data.
+ @param style The style of the embed. Inline: The fields are side by side. Leaderboard: The names are on the left side, the values are on the right side.
+ @param sortFn Function that is provided for the .sort() callback. The dictionary is converted to an array and sorted before use.
  */
 function dictToEmbed<T>(
 	title: string,
@@ -45,14 +44,12 @@ function dictToEmbed<T>(
 			},
 		];
 	} else {
-		const inline = style === "inline";
-		fields = dictArray.slice(0, 25).map(([key, value]) => {
-			return {
+		const isInline = style === "inline";
+		fields = dictArray.slice(0, 25).map(([key, value]) => ({
 				name: key,
-				value: String(value) || "\u200B", // Prevent empty string errors
-				inline,
-			};
-		});
+				value: String(value) || "\u{200B}", // Prevent empty string errors
+				inline: isInline,
+			}));
 	}
 
 	const embed = new EmbedBuilder()

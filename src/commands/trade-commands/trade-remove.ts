@@ -44,20 +44,20 @@ export async function autocomplete(
 	const choices: Array<{ name: string; value: string }> = [];
 
 	if (member.coinsOffered > 0 && "coin".includes(focused))
-		choices.push({
+		{choices.push({
 			name: `Coin (${member.coinsOffered} offered)`,
 			value: "coin",
-		});
+		});}
 
 	for (const [slug, amount] of Object.entries(
 		member.horsesOffered,
 	)) {
 		if (amount <= 0) continue;
 		const name = horseName(slug) ?? slug;
-		const matches =
+		const isMatches =
 			slug.includes(focused) ||
 			name.toLowerCase().includes(focused);
-		if (!matches) continue;
+		if (!isMatches) continue;
 
 		choices.push({
 			name: `${name} (${amount} offered)`,
@@ -73,24 +73,24 @@ export async function execute(
 ) {
 	const { channel } = interaction;
 	if (!channel)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "dasdfasdfasdfasdf idk your channel",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const trade = tradeMain.get(channel.id);
 	if (!trade)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "There's no active trade in this channel",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const color = trade.colorOf(interaction.user.id);
 	if (!color)
-		return interaction.reply({
+		{return interaction.reply({
 			content: "You're not part of this trade",
 			flags: [MessageFlags.Ephemeral],
-		});
+		});}
 
 	const item = interaction.options
 		.getString("item", true)

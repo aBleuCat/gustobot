@@ -1,7 +1,7 @@
 /**
- * Fisher-yates shuffle algorithm
- * @param array An array of any item. Should not be a sparse array.
- * @param startAt Index where the shuffling should start at. Can be a positive or negative integer. Items before the shuffle index can be shuffled, but only the items after startIndex are guaranteed to be shuffled.
+ Fisher-yates shuffle algorithm
+ @param array An array of any item. Should not be a sparse array.
+ @param startAt Index where the shuffling should start at. Can be a positive or negative integer. Items before the shuffle index can be shuffled, but only the items after startIndex are guaranteed to be shuffled.
  */
 const shuffle = <T>(array: T[], startAt = 0): T[] => {
 	const shuffled = [...array];

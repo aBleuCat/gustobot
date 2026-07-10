@@ -65,7 +65,7 @@ function aggregateHorseStats(users: IUserHorses[]) {
 		totalCoins += user.horseCoins ?? 0;
 
 		if (user.horses) {
-			for (const [slug, count] of user.horses.entries()) {
+			for (const [slug, count] of user.horses) {
 				if (count <= 0) continue;
 				horseCounts[slug] = (horseCounts[slug] ?? 0) + count;
 				totalHorses += count;
@@ -161,7 +161,7 @@ function attachHorseStatsCollector(
 				return;
 			}
 
-			const pageString = i.customId.split("_")[2];
+			const pageString = i.customId.split("_", 3)[2];
 			if (!pageString) return;
 
 			const requestedPage = Number.parseInt(pageString, 10);

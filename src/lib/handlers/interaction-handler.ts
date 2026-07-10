@@ -37,7 +37,7 @@ const catchDataStore = new Map<string, CatchDataStoreValue>();
 
 setInterval(() => {
 	const now = Date.now();
-	for (const [key, value] of catchDataStore.entries()) {
+	for (const [key, value] of catchDataStore) {
 		if (
 			value._expiresAt !== undefined &&
 			value._expiresAt <= now
@@ -429,7 +429,7 @@ async function reportDamage(
 		process.env.CLIENT_ID,
 	].filter(Boolean);
 
-	let safeText = String(text);
+	let safeText = text;
 
 	// 2. Loop through the verified string array
 	for (const secret of secrets) {

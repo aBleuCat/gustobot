@@ -73,8 +73,9 @@ async function queueMessage({
 	reply?: ReplyInfo;
 	/** Higher number = closer to front of queue, will send before messages with lower priority number in the queue */
 	priority?: number;
-	/** The client is configured so messages cannot ping everyone and here by default. Pass this property to override that default.
-	 * @example allowedMentions: { parse: ["users", "roles", "everyone"] } // This allows all types of mentions, including here and everyone
+	/**
+	 The client is configured so messages cannot ping everyone and here by default. Pass this property to override that default.
+	 @example allowedMentions: { parse: ["users", "roles", "everyone"] } // This allows all types of mentions, including here and everyone
 	 */
 	allowedMentions?: MessageMentionOptions;
 }): Promise<Message> {

@@ -1,4 +1,4 @@
-/* eslint-disable id-denylist */
+/* eslint-disable id-denylist -- the ban on command is unnecessary here */
 // Node.js
 import process from "node:process";
 import http from "node:http";
@@ -46,22 +46,28 @@ const isDev = process.argv[2] === "dev";
 
 if (isDev) {
 	if (!process.env.BETA_TOKEN)
-		throw new Error("BETA_TOKEN not found in .env");
+		{throw new Error("BETA_TOKEN not found in .env");}
+
 	if (!process.env.BETA_CLIENT_ID)
-		throw new Error("BETA_CLIENT_ID not found in .env");
+		{throw new Error("BETA_CLIENT_ID not found in .env");}
+
 	if (!process.env.BETA_GUILD_ID)
-		throw new Error("BETA_GUILD_ID not found in .env");
+		{throw new Error("BETA_GUILD_ID not found in .env");}
+
 	if (!process.env.BETA_MONGO_URI)
-		throw new Error("BETA_MONGO_URI not found in .env");
+		{throw new Error("BETA_MONGO_URI not found in .env");}
 } else {
 	if (!process.env.TOKEN)
-		throw new Error("Bot token not found in .env");
+		{throw new Error("Bot token not found in .env");}
+
 	if (!process.env.CLIENT_ID)
-		throw new Error("Client ID not found in .env");
+		{throw new Error("Client ID not found in .env");}
+
 	if (!process.env.GUILD_ID)
-		throw new Error("Guild ID not found in .env");
+		{throw new Error("Guild ID not found in .env");}
+
 	if (!process.env.MONGO_URI)
-		throw new Error("Mongo URI not found in .env");
+		{throw new Error("Mongo URI not found in .env");}
 }
 
 const envToken = isDev ? process.env.BETA_TOKEN : process.env.TOKEN;
@@ -77,9 +83,9 @@ const envMongoUri = isDev
 
 // Narrow from string | undefined — guaranteed by the throws above
 if (!envToken || !envClientId || !envGuildId || !envMongoUri)
-	throw new Error(
+	{throw new Error(
 		"Required env vars missing after validation (should be unreachable)",
-	);
+	);}
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
 http.createServer((_, result) => {
@@ -117,11 +123,14 @@ function isCommand(commandObject: unknown): commandObject is Command {
 	if (typeof commandObject !== "object") return false;
 	for (const [key, value] of Object.entries(commandObject)) {
 		if (key === "data" && value instanceof SlashCommandBuilder)
-			continue;
+			{continue;}
+
 		if (key === "execute" && typeof value === "function")
-			continue;
+			{continue;}
+
 		if (key === "autocomplete" && typeof value === "function")
-			continue;
+			{continue;}
+
 		return false;
 	}
 
@@ -152,7 +161,8 @@ async function loadCommandsHelper(
 			typeof commandModule === "object" &&
 			"default" in commandModule
 		)
-			return commandModule.default;
+			{return commandModule.default;}
+
 		return commandModule;
 	});
 
@@ -201,7 +211,7 @@ const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	commandsPath,
 );
 for (const command of validCommands)
-	client.commands.set(command.data.name, command);
+	{client.commands.set(command.data.name, command);}
 
 // Load guild commands
 const guildCommandsPath = path.resolve(
@@ -218,7 +228,7 @@ const guildCommandFiles = fs
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
 for (const command of validGuildCommands)
-	client.commands.set(command.data.name, command);
+	{client.commands.set(command.data.name, command);}
 
 console.log(
 	`Successfully validated ${validCommands.length} global commands.\n
@@ -230,12 +240,12 @@ client.once(Events.ClientReady, () => {
 	(async () => {
 		// Make sure client has user
 		if (!client.user)
-			throw new Error(
+			{throw new Error(
 				"Client does not have user for some reason",
-			);
+			);}
 
 		if (isDev)
-			console.log("[DEV MODE] Running with beta credentials");
+			{console.log("[DEV MODE] Running with beta credentials");}
 
 		console.log(`Logged in as ${client.user.tag}`);
 		const options = {

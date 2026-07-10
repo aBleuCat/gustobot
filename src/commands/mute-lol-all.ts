@@ -51,9 +51,10 @@ const muteLolAll = {
 			?.filter((_, id) => id !== exception?.id)
 			.map((_, id) => id);
 		if (!targetChannelIds)
-			return interaction.reply({
+			{return interaction.reply({
 				content: "r u even in a server?",
-			});
+			});}
+
 		if (status) {
 			// Mute all
 			const operations = targetChannelIds.map((id) => ({
@@ -79,7 +80,7 @@ const muteLolAll = {
 		});
 
 		if (targetChannelIds.length > 0)
-			return interaction.reply("unmuted all channels");
+			{return interaction.reply("unmuted all channels");}
 	},
 };
 

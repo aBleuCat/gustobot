@@ -6,7 +6,8 @@ function stringSimilarity(a: string, b: string): number {
 	const getBigrams = (string: string) => {
 		const bigrams = new Set();
 		for (let i = 0; i < string.length - 1; i++)
-			bigrams.add(string.slice(i, i + 2));
+			{bigrams.add(string.slice(i, i + 2));}
+
 		return bigrams;
 	};
 

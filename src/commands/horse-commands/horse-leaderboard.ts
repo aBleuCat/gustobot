@@ -51,12 +51,14 @@ export async function execute(
 		let worth = 0;
 		let unique = 0;
 		for (const [name, count] of u.horses) {
-			if (count > 0) {
-				const horseData = HORSE_VALUES[name];
-				if (!horseData) continue;
-				worth += horseData.value * count;
-				if (horseData.comp !== false) unique++;
+			if (!(count > 0)) {
+				continue;
 			}
+
+			const horseData = HORSE_VALUES[name];
+			if (!horseData) continue;
+			worth += horseData.value * count;
+			if (horseData.comp !== false) unique++;
 		}
 
 		return {
@@ -99,7 +101,7 @@ export async function execute(
 		const results = await Promise.all(
 			ids.map(async (userId) => {
 				if (userCache.has(userId))
-					return userCache.get(userId);
+					{return userCache.get(userId);}
 
 				try {
 					const user = await fetchWithTimeout<User>(
@@ -226,7 +228,8 @@ export async function execute(
 					: parsedPage - 1;
 			if (currentPage < 0) currentPage = 0;
 			if (currentPage >= totalPages)
-				currentPage = totalPages - 1;
+				{currentPage = totalPages - 1;}
+
 			try {
 				await i.update({
 					embeds: [await buildEmbed(currentPage)],

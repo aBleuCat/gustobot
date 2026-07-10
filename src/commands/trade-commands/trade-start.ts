@@ -105,7 +105,7 @@ async function runConfirmScreen(
 					});
 
 					if (accepted.size === participantIds.length)
-						collector.stop("accepted");
+						{collector.stop("accepted");}
 				}
 			})();
 		});
@@ -136,11 +136,13 @@ export async function execute(
 	const targetUser = interaction.options.getUser("user");
 	const { channel } = interaction;
 	if (!channel)
-		return interaction.editReply(
+		{return interaction.editReply(
 			"dasdfasdfasdfasdf idk your channel",
-		);
+		);}
+
 	if (!targetUser)
-		return interaction.editReply("Couldn't get ur inputs");
+		{return interaction.editReply("Couldn't get ur inputs");}
+
 	const trade = tradeMain.new(
 		channel.id,
 		interaction.user,

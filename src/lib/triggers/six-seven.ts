@@ -21,7 +21,8 @@ async function handleSixSeven(message: Message) {
 			message.content.toLowerCase(),
 		)
 	)
-		return;
+		{return;}
+
 	const isMuted = await MutedChannel.findOne({
 		channelId: message.channel.id,
 	});

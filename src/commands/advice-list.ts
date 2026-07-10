@@ -22,9 +22,9 @@ const adviceListCommand = {
 		const advices = await Advice.find({});
 
 		if (advices.length === 0)
-			return interaction.reply(
+			{return interaction.reply(
 				"The circle of advice is currently empty.",
-			);
+			);}
 
 		const generateEmbed = (page: number) => {
 			const start = page * 10;

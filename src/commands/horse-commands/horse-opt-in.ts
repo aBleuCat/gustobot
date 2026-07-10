@@ -18,14 +18,14 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const optIn = interaction.options.getBoolean("in") ?? true;
+	const isOptIn = interaction.options.getBoolean("in") ?? true;
 	await UserHorses.updateOne(
 		{ userId: interaction.user.id },
-		{ $set: { optIn } },
+		{ $set: { optIn: isOptIn } },
 		{ upsert: true },
 	);
 	return interaction.reply({
-		content: `You have been opted ${optIn ? "in" : "out"}`,
+		content: `You have been opted ${isOptIn ? "in" : "out"}`,
 		flags: [MessageFlags.Ephemeral],
 	});
 }

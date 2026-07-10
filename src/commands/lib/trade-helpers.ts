@@ -99,10 +99,11 @@ class ActiveTrade {
 				if (interaction.customId === "trade_lock") {
 					const color = this.colorOf(interaction.user.id);
 					if (!color)
-						return interaction.reply({
+						{return interaction.reply({
 							content: "You cannot do that",
 							flags: [MessageFlags.Ephemeral],
-						});
+						});}
+
 					this.lock(color);
 					return interaction.reply({
 						content:
@@ -114,10 +115,11 @@ class ActiveTrade {
 				if (interaction.customId === "trade_reset") {
 					const color = this.colorOf(interaction.user.id);
 					if (!color)
-						return interaction.reply({
+						{return interaction.reply({
 							content: "You cannot do that",
 							flags: [MessageFlags.Ephemeral],
-						});
+						});}
+
 					this.reset(color);
 					return interaction.reply({
 						content: "You have reset your offer",
@@ -151,11 +153,11 @@ class ActiveTrade {
 		}
 
 		if (this.updateAction)
-			this.updateAction(
+			{this.updateAction(
 				this.embeds,
 				this.buttons,
 				this.collector,
-			);
+			);}
 	}
 
 	public remove(user: Color, name: string, amount: number) {
@@ -169,18 +171,19 @@ class ActiveTrade {
 			const horseOffer = allOffers[name];
 
 			if (amount > (horseOffer ?? 0))
-				throw new Error(
+				{throw new Error(
 					"Removal failed because there are not enough horses to remove.",
-				);
+				);}
+
 			allOffers[name] = (horseOffer ?? 0) - amount;
 		}
 
 		if (this.updateAction)
-			this.updateAction(
+			{this.updateAction(
 				this.embeds,
 				this.buttons,
 				this.collector,
-			);
+			);}
 	}
 
 	public lock(user: Color) {
@@ -199,11 +202,11 @@ class ActiveTrade {
 		this.resolveFn(result);
 
 		if (this.updateAction)
-			this.updateAction(
+			{this.updateAction(
 				this.embeds,
 				this.buttons,
 				this.collector,
-			);
+			);}
 	}
 
 	public colorOf(userId: string) {
@@ -220,11 +223,11 @@ class ActiveTrade {
 		this[userProperty].horsesOffered = {};
 
 		if (this.updateAction)
-			this.updateAction(
+			{this.updateAction(
 				this.embeds,
 				this.buttons,
 				this.collector,
-			);
+			);}
 	}
 
 	public get red() {
@@ -287,15 +290,17 @@ class ActiveTrade {
 
 	private checkStatus(user?: ColorWithUnderwear) {
 		if (user && this[user].locked)
-			throw new Error(
+			{throw new Error(
 				"The user is locked. The action cannot proceed.",
-			);
+			);}
+
 		if (this.resolveStatus === "resolved")
-			throw new Error(
+			{throw new Error(
 				"This trade has been resolved and is no longer open to new offers.",
-			);
+			);}
+
 		if (this.resolveStatus === "expired")
-			throw new Error("This trade has expired.");
+			{throw new Error("This trade has expired.");}
 	}
 }
 
@@ -313,7 +318,7 @@ function buildIncAndFilter(
 	const filter: Record<string, unknown> = { userId };
 
 	if (gives.coinsOffered > 0)
-		filter.horseCoins = { $gte: gives.coinsOffered };
+		{filter.horseCoins = { $gte: gives.coinsOffered };}
 
 	const slugs = new Set([
 		...Object.keys(gives.horsesOffered),
@@ -359,7 +364,7 @@ export async function applyTradeResult(
 			);
 
 			if (!redResult || !blueResult)
-				throw new Error("insufficient balance");
+				{throw new Error("insufficient balance");}
 		});
 
 		return { success: true };
@@ -377,13 +382,13 @@ function offerLines(member: ResolvedTradeMember): string {
 	const lines: string[] = [];
 
 	if (member.coinsOffered > 0)
-		lines.push(`🪙 ${member.coinsOffered} coin`);
+		{lines.push(`🪙 ${member.coinsOffered} coin`);}
 
 	for (const [slug, amount] of Object.entries(
 		member.horsesOffered,
 	)) {
 		if (amount > 0)
-			lines.push(`🐴 ${amount}x ${horseName(slug) ?? slug}`);
+			{lines.push(`🐴 ${amount}x ${horseName(slug) ?? slug}`);}
 	}
 
 	return lines.length > 0 ? lines.join("\n") : "nothing";
@@ -487,16 +492,16 @@ class TradeMain {
 		blue: User,
 	): ActiveTrade {
 		if (this.trades.has(channelId))
-			throw new Error(
+			{throw new Error(
 				"A trade is already active in this channel.",
-			);
+			);}
 
 		const trade = new ActiveTrade(red, blue);
 		this.trades.set(channelId, trade);
 
 		void trade.promise.finally(() => {
 			if (this.trades.get(channelId) === trade)
-				this.trades.delete(channelId);
+				{this.trades.delete(channelId);}
 		});
 
 		return trade;

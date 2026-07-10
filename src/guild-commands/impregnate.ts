@@ -25,22 +25,24 @@ const impregnateCommand = {
 
 		try {
 			if (!interaction.guild)
-				return await interaction.reply({
+				{return await interaction.reply({
 					content: "You suck couldnt find ur guild holy L",
-				});
+				});}
+
 			if (!user)
-				return await interaction.reply({
+				{return await interaction.reply({
 					content:
 						"Couldn't get your inputs for user, try again",
-				});
+				});}
+
 			const target = await interaction.guild.members
 				.fetch(user.id)
 				.catch(() => undefined);
 			if (!target)
-				return await interaction.reply({
+				{return await interaction.reply({
 					content: "Member not found.",
 					flags: [MessageFlags.Ephemeral],
-				});
+				});}
 
 			await target.roles.add(roleId);
 			return await interaction.reply(

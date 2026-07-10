@@ -3,7 +3,7 @@ import { immutConfig } from "../config.js";
 import queueMessage from "../helpers/message-queue.js";
 import { returnAsTextBased } from "../../type-utils.js";
 
-const SAY_IT_WITH_ME_REGEX = /^say it with me[:\s]+(.+)$/iv;
+const SAY_IT_WITH_ME_REGEX = /^say it with me[\s:]+(.+)$/iv;
 
 async function handleSayItWithMe(message: Message) {
 	const channel = returnAsTextBased(message.channel);

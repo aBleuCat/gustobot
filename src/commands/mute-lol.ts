@@ -25,10 +25,10 @@ const muteLolCommand = {
 		const channel = interaction.options.getChannel("channel");
 
 		if (!channel)
-			return interaction.reply({
+			{return interaction.reply({
 				content:
 					"uh oh smth went wrong didnt get ur inputs try again",
-			});
+			});}
 
 		const existing = await MutedChannel.findOne({
 			channelId: channel.id,

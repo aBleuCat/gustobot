@@ -131,10 +131,10 @@ function buildMissingList(
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const ephemeral =
+	const isEphemeral =
 		interaction.options.getBoolean("ephemeral") ?? true;
 	await interaction.deferReply({
-		flags: ephemeral ? [MessageFlags.Ephemeral] : [],
+		flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
 	});
 	const targetUser =
 		interaction.options.getUser("user") ?? interaction.user;
