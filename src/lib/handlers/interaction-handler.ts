@@ -21,7 +21,7 @@ import { ORBITAL_ID, DELTA } from "../../commands/orbital-cannon.js";
 import { OrbitalScript } from "../models.js";
 import { handleCommandError } from "../helpers/error-handlers.js";
 import { castAsWebhookable } from "../../type-utils.js";
-
+/* eslint-disable id-denylist */
 // Catch data store
 type CatchDataStoreValue = {
 	ans: string;
@@ -458,6 +458,7 @@ async function reportDamage(
 		allowedMentions: { parse: [] },
 	});
 }
+/* eslint-enable id-denylist */
 
 export { catchDataStore };
 export default registerInteractionHandler;

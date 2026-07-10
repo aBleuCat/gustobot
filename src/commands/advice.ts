@@ -5,6 +5,7 @@ import {
 	MessageFlags,
 } from "discord.js";
 import { Advice } from "../lib/models.js";
+import { randItem } from "../lib/helpers/random-helpers.js";
 
 const adviceCommand = {
 	data: new SlashCommandBuilder()
@@ -32,8 +33,7 @@ const adviceCommand = {
 		}
 
 		// Pick a random one
-		const randomAdvice =
-			allAdvice[Math.floor(Math.random() * allAdvice.length)];
+		const randomAdvice = randItem(allAdvice);
 		if (!randomAdvice) {
 			return interaction.reply({
 				content: "Something went wrong fetching the advice.",

@@ -1,26 +1,36 @@
 import {
 	SlashCommandBuilder,
+	InteractionContextType,
+	ApplicationIntegrationType,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
 } from "discord.js";
 import { SubcommandLoader } from "./lib/subcommand-loader.js";
 
+/* eslint-disable @typescript-eslint/naming-convention */
+const { Guild } = InteractionContextType;
+const { GuildInstall } = ApplicationIntegrationType;
+/* eslint-enable @typescript-eslint/naming-convention */
+
 const mainCommand = new SlashCommandBuilder()
-	.setName("coins")
-	.setDescription("All horse-coin-related commands");
+	.setName("trade")
+	.setDescription(
+		"All commands related to trading horses and horse coins",
+	)
+	.setContexts([Guild])
+	.setIntegrationTypes([GuildInstall]);
 
 const loader = new SubcommandLoader(
 	mainCommand,
 	import.meta.url,
-	"coin-commands",
+	"trade-commands",
 );
 
 await loader.load();
 
-const coinsCommand = {
+const tradeCommand = {
 	data: mainCommand,
 	async execute(interaction: ChatInputCommandInteraction) {
-		// The class handles
 		await loader.execute(interaction);
 	},
 	async autocomplete(interaction: AutocompleteInteraction) {
@@ -28,4 +38,4 @@ const coinsCommand = {
 	},
 };
 
-export default coinsCommand;
+export default tradeCommand;

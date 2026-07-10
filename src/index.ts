@@ -1,3 +1,4 @@
+/* eslint-disable id-denylist */
 // Node.js
 import process from "node:process";
 import http from "node:http";

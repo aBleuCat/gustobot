@@ -1,5 +1,6 @@
 import type { Message } from "discord.js";
 import queueMessage from "../helpers/message-queue.js";
+import { randItem } from "../helpers/random-helpers.js";
 
 type NonEmptyLines = [string, ...string[]];
 
@@ -47,7 +48,7 @@ function countSyllables(text: string) {
 function getWordWithSyllables(targetSyllables: number) {
 	const words = syllableWords[targetSyllables] ?? [];
 	if (words.length === 0) return null;
-	return words[Math.floor(Math.random() * words.length)];
+	return randItem(words);
 }
 
 // Get syllable count for a word

@@ -3,6 +3,7 @@ export default {
 	space: false,
 	semicolon: true,
 	rules: {
+		"id-denylist": ["error", "command"], // There usually is a more helpful name also I keep accidentally importing command
 		"@typescript-eslint/naming-convention": [
 			"error",
 			{
