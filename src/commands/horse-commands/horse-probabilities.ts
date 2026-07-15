@@ -2,7 +2,7 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 } from "discord.js";
-import { config } from "../../lib/config.js";
+import { config, immutConfig } from "../../lib/config.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { UserHorses, type IUserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
@@ -133,7 +133,12 @@ export async function execute(
 	const header = `Name                                | Prob       | Avg Messages\n${"-".repeat(70)}`;
 	const footer = `\nAverage coin wealth: ${formatStatValue(averageCoinWealth)} coins\nMean horse wealth: ${formatStatValue(averageHorseWealth)} coins\nMedian horse wealth: ${formatStatValue(medianHorseWealth)} coins\n\nTotal chance for ANY horse: ${(totalRate * 100).toFixed(4)}%\nAverage 1 horse every ${Math.round(1 / totalRate)} messages.`;
 
-	const fullTable = `\`\`\`\n${header}\n${statsLines.join("\n")}\n${footer}\n\`\`\``;
+	let fullTable = `\`\`\`\n${header}\n${statsLines.join("\n")}\n${footer}\n\`\`\``;
+	if (fullTable.length > immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT) {
+		const overflow = fullTable.length - immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT;
+		const keepCount = Math.max(0, statsLines.length - Math.ceil(overflow / 60));
+		fullTable = `\`\`\`\n${header}\n${statsLines.slice(0, keepCount).join("\n")}\n...\n${footer}\n\`\`\``;
+	}
 
 	return interaction.reply({ content: fullTable });
 }
