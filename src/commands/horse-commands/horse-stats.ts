@@ -94,6 +94,19 @@ function aggregateHorseStats(users: IUserHorses[]) {
 	};
 }
 
+function calculateMedian(values: number[]) {
+	if (values.length === 0) return 0;
+	const sorted = [...values].toSorted((a, b) => a - b);
+	const middle = Math.floor(sorted.length / 2);
+	if (sorted.length % 2 === 0) {
+		const lower = sorted[middle - 1] ?? 0;
+		const upper = sorted[middle] ?? 0;
+		return (lower + upper) / 2;
+	}
+
+	return sorted[middle] ?? 0;
+}
+
 function gini(values: number[]) {
 	if (values.length === 0) return 0;
 	const sorted = values.toSorted((a, b) => a - b);
@@ -254,6 +267,11 @@ export async function execute(
 		playersWithHorses > 0
 			? Math.round(totalWealth / playersWithHorses)
 			: 0;
+	const avgCoinWealth =
+		playersWithHorses > 0
+			? Math.round(totalCoins / playersWithHorses)
+			: 0;
+	const medianHorseWealth = calculateMedian(playerWealth);
 	const richest =
 		playersWithHorses > 0 ? Math.max(...playerWealth) : 0;
 
@@ -287,7 +305,9 @@ export async function execute(
 		`🪙 **Total Horse Coins**: ${totalCoins}`,
 		`💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
 		`📈 **Avg. Wealth per Player**: $${avgWealth.toLocaleString()}`,
-		`🤑 **Richest Player**: $${richest.toLocaleString()}`,
+		`� **Avg. Coin Wealth per Player**: ${avgCoinWealth.toLocaleString()}`,
+		`🐴 **Median Horse Wealth**: $${medianHorseWealth.toLocaleString()}`,
+		`�🤑 **Richest Player**: $${richest.toLocaleString()}`,
 		`⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? "😬" : giniScore > 0.4 ? "😐" : "😌"}`,
 		``,
 		`📉 **Wealth Distribution**`,
