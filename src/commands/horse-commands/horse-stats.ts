@@ -158,11 +158,12 @@ function attachHorseStatsCollector(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const collector = response.createMessageComponentCollector({
+		filter: (i) => i.customId.startsWith("hstats_"),
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on("collect", (i: ButtonInteraction) => {
-		void (async () => {
+	collector.on("collect", async (i: ButtonInteraction) => {
+		try {
 			if (i.user.id !== interaction.user.id) {
 				await i
 					.reply({
@@ -177,7 +178,7 @@ function attachHorseStatsCollector(
 			const pageString = i.customId.split("_").at(-1) ?? "";
 			if (!pageString) return;
 
-			const requestedPage = Number.parseInt(pageString, 10);
+			const requestedPage = Number(pageString);
 			if (Number.isNaN(requestedPage)) return;
 
 			const page = Math.min(
@@ -191,7 +192,9 @@ function attachHorseStatsCollector(
 					buildPageButtons(page, totalPages).toJSON(),
 				],
 			});
-		})().catch(() => undefined);
+		} catch (error: unknown) {
+			console.error("Horse stats button handler failed", error);
+		}
 	});
 }
 
