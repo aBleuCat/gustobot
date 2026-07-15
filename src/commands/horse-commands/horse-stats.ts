@@ -174,7 +174,7 @@ function attachHorseStatsCollector(
 				return;
 			}
 
-			const pageString = i.customId.split("_", 3)[2];
+			const pageString = i.customId.split("_").at(-1) ?? "";
 			if (!pageString) return;
 
 			const requestedPage = Number.parseInt(pageString, 10);
@@ -198,12 +198,12 @@ function attachHorseStatsCollector(
 function buildPageButtons(page: number, totalPages: number) {
 	return new ActionRowBuilder<ButtonBuilder>().addComponents(
 		new ButtonBuilder()
-			.setCustomId(`hstats_prev_${page}`)
+			.setCustomId(`hstats_prev_${page - 1}`)
 			.setLabel("◀")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page === 0),
 		new ButtonBuilder()
-			.setCustomId(`hstats_next_${page}`)
+			.setCustomId(`hstats_next_${page + 1}`)
 			.setLabel("▶")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page >= totalPages - 1),
@@ -305,9 +305,9 @@ export async function execute(
 		`🪙 **Total Horse Coins**: ${totalCoins}`,
 		`💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
 		`📈 **Avg. Wealth per Player**: $${avgWealth.toLocaleString()}`,
-		`� **Avg. Coin Wealth per Player**: ${avgCoinWealth.toLocaleString()}`,
+		`🪙 **Avg. Coin Wealth per Player**: ${avgCoinWealth.toLocaleString()}`,
 		`🐴 **Median Horse Wealth**: $${medianHorseWealth.toLocaleString()}`,
-		`�🤑 **Richest Player**: $${richest.toLocaleString()}`,
+		`🤑 **Richest Player**: $${richest.toLocaleString()}`,
 		`⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? "😬" : giniScore > 0.4 ? "😐" : "😌"}`,
 		``,
 		`📉 **Wealth Distribution**`,
