@@ -66,7 +66,10 @@ function aggregateHorseStats(users: IUserHorses[]) {
 
 		if (user.horses) {
 			for (const [slug, count] of user.horses) {
-				if (count <= 0) continue;
+				if (!(count > 0)) {
+					continue;
+				}
+
 				horseCounts[slug] = (horseCounts[slug] ?? 0) + count;
 				totalHorses += count;
 				userWealth +=
@@ -146,11 +149,13 @@ function buildBreakdownPage(
 
 function attachHorseStatsCollector(
 	response: {
-		createMessageComponentCollector(options: { time: number }): {
-			on(
+		createMessageComponentCollector: (options: {
+			time: number;
+		}) => {
+			on: (
 				event: "collect",
-				listener: (i: ButtonInteraction) => void,
-			): void;
+				listener: (i: ButtonInteraction) => unknown,
+			) => void;
 		};
 	},
 	sortedByCount: HorseCountEntry[],
@@ -158,43 +163,46 @@ function attachHorseStatsCollector(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const collector = response.createMessageComponentCollector({
-		filter: (i) => i.customId.startsWith("hstats_"),
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on("collect", async (i: ButtonInteraction) => {
-		try {
-			if (i.user.id !== interaction.user.id) {
-				await i
-					.reply({
-						content:
-							"Only the command user can use these buttons.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-				return;
+	collector.on("collect", (i: ButtonInteraction) => {
+		void (async () => {
+			try {
+				if (i.user.id !== interaction.user.id) {
+					await i
+						.reply({
+							content:
+								"Only the command user can use these buttons.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+					return;
+				}
+
+				if (!i.customId.startsWith("hstats_")) return;
+
+				const pageString = i.customId.split("_").at(-1) ?? "";
+				if (!pageString) return;
+
+				const requestedPage = Number(pageString);
+				if (Number.isNaN(requestedPage)) return;
+
+				const page = Math.min(
+					Math.max(requestedPage, 0),
+					totalPages - 1,
+				);
+
+				await i.update({
+					content: buildBreakdownPage(sortedByCount, page),
+					components: [
+						buildPageButtons(page, totalPages).toJSON(),
+					],
+				});
+			} catch (error: unknown) {
+				console.error("Horse stats button handler failed", error);
 			}
-
-			const pageString = i.customId.split("_").at(-1) ?? "";
-			if (!pageString) return;
-
-			const requestedPage = Number(pageString);
-			if (Number.isNaN(requestedPage)) return;
-
-			const page = Math.min(
-				Math.max(requestedPage, 0),
-				totalPages - 1,
-			);
-
-			await i.update({
-				content: buildBreakdownPage(sortedByCount, page),
-				components: [
-					buildPageButtons(page, totalPages).toJSON(),
-				],
-			});
-		} catch (error: unknown) {
-			console.error("Horse stats button handler failed", error);
-		}
+		})();
 	});
 }
 
