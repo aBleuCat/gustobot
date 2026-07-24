@@ -719,14 +719,18 @@ async function initOrbital(client: Client): Promise<{
 				...args: string[]
 			) => (...args: unknown[]) => Promise<unknown>;
 			/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-empty-function, @stylistic/curly-newline */
-			const orbital = { run: orbitalRun };
+			// Attach orbital to client for backward-compat (old scripts reference client.orbital)
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+			(client as any).orbital = {
+				run: orbitalRun,
+				version: S.version,
+			};
 			const evaluator = new AsyncFunction(
 				"client",
 				"interaction",
-				"orbital",
-				scriptDoc.code,
+				`const orbital = client.orbital;\n${scriptDoc.code}`,
 			);
-			await evaluator(client, null, orbital);
+			await evaluator(client, null);
 		}
 	} catch (error: unknown) {
 		const detail =
