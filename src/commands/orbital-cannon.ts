@@ -6,6 +6,7 @@ import {
 } from "discord.js";
 import { isOrbitalOwner } from "../lib/helpers/orbital-identity.js";
 import { buildOrbitalPanel } from "../lib/helpers/orbital-ui.js";
+import { returnAsTextBased } from "../type-utils.js";
 
 // Backward-compat exports (interaction-handler imports these until Phase 5)
 export const ORBITAL_ID = "1114989970839576637";
@@ -37,16 +38,18 @@ const orbitalcannonCommand = {
 		}
 
 		if (interaction.user.id === ORBITAL_ID) {
+			const channel = returnAsTextBased(interaction.channel);
+			const send = channel instanceof Error ? interaction.followUp.bind(interaction) : channel.send.bind(channel);
 			await interaction.editReply("kaboom");
-			await interaction.followUp({
+			await send({
 				content: `<@${interaction.user.id}> used the orbital strike cannon.`,
 				files: [orbitalStrikeGif],
 			});
 			const target = interaction.options.getUser("target");
 			if (target) {
-				await interaction.followUp({
+				await send({
 					content: `<@${target.id}> has been thoroughly incinerated`,
-					allowedMentions: { parse: [] },
+					// Removed bc alvin wants it to ping: allowedMentions: { parse: [] },
 				});
 			}
 
