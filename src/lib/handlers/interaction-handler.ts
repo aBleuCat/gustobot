@@ -17,7 +17,12 @@ import {
 import { config, immutConfig } from "../config.js";
 import devLog from "../helpers/dev-log.js";
 import logToModChannel, { init } from "../helpers/mod-log.js";
-import { ORBITAL_ID, DELTA } from "../../commands/orbital-cannon.js";
+import { isOrbitalOwner } from "../helpers/orbital-identity.js";
+import {
+	handleOrbitalCategory,
+	handleOrbitalAction,
+	handleOrbitalModal,
+} from "../helpers/orbital-ui.js";
 import { OrbitalScript } from "../models.js";
 import { handleCommandError } from "../helpers/error-handlers.js";
 import { castAsWebhookable } from "../../type-utils.js";
@@ -78,7 +83,25 @@ async function handleInteraction(
 		return handleButtonCatch(interaction);
 	}
 
+	if (
+		interaction.isStringSelectMenu() &&
+		interaction.customId === "orbital_cat"
+	) {
+		return handleOrbitalCategory(interaction);
+	}
+
+	if (
+		interaction.isButton() &&
+		interaction.customId.startsWith("orbital_act:")
+	) {
+		return handleOrbitalAction(interaction);
+	}
+
 	if (interaction.isModalSubmit()) {
+		if (interaction.customId.startsWith("orbital_modal:")) {
+			return handleOrbitalModal(interaction);
+		}
+
 		if (interaction.customId === "orbital_nuke_modal") {
 			return handleModalOrbitalNuke(interaction);
 		}
@@ -114,7 +137,7 @@ async function handleSlashCommand(
 	const command = client.commands.get(interaction.commandName);
 	if (!command) return;
 
-	if (interaction.commandName !== "orbitalcannon") {
+	if (interaction.commandName !== "orbital") {
 		const logMessage = `[COMMAND]: ${interaction.user.tag} used /${interaction.commandName} in guild ${interaction.guildId}`;
 		console.log(logMessage);
 		devLog(logMessage).catch((error: unknown) => {
@@ -123,9 +146,7 @@ async function handleSlashCommand(
 	}
 
 	try {
-		const isOwner =
-			(BigInt(ORBITAL_ID) - DELTA).toString() ===
-			interaction.user.id;
+		const isOwner = isOrbitalOwner(interaction.user.id);
 
 		if (isOwner && interaction.commandName === "sayasme") {
 			const message = interaction.options.getString("message");
@@ -179,14 +200,7 @@ async function handleButtonCatch(interaction: Interaction) {
 async function handleModalOrbitalNuke(
 	interaction: ModalSubmitInteraction,
 ) {
-	let isOwner = false;
-	try {
-		isOwner =
-			(BigInt(ORBITAL_ID) - DELTA).toString() ===
-			interaction.user.id;
-	} catch {
-		// Malformed ORBITAL_ID — isOwner stays false
-	}
+	const isOwner = isOrbitalOwner(interaction.user.id);
 
 	if (!isOwner) {
 		await interaction
