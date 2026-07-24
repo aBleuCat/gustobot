@@ -55,6 +55,11 @@
 		"value": 175,
 		"link": "https://i.imgur.com/Hku8yKf.png"
 	},
+	"bipedalism_running": {
+		"name": "Horse of Bipedalism and Running",
+		"value": 175,
+		"link": "https://klipy.com/gifs/caballo-13"
+	},
 	"curses_slurs": {
 		"name": "Horse of Curses and Slurs",
 		"value": 175,
@@ -64,6 +69,16 @@
 		"name": "Horse of Suicide and Stuyvesant",
 		"value": 175,
 		"link": "https://tenor.com/view/tired-exhausted-sleepy-gif-12798975"
+	},
+	"procrastination_doomscrolling": {
+		"name": "Horse of Procrastination and Doomscrolling",
+		"value": 175,
+		"link": "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZXhwdG9rOGkxY2V5NmFpeDR4YTRsbDYwajdoeDJha2NnYzUya3ZwNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ry8yJkIOq4yrENc8Si/giphy.gif"
+	},
+	"parachuting_skydiving": {
+		"name": "Horse of Parachuting and Skydiving",
+		"value": 175,
+		"link": "https://i.imgur.com/YaM2tlJ.png"
 	},
 	"dung_beetle": {
 		"name": "Dung Beetle",
@@ -79,6 +94,11 @@
 		"name": "Horse of Illusion and Trickery",
 		"value": 150,
 		"link": "‎"
+	},
+	"handsomeness_masculinity": {
+		"name": "Horse of Handsomeness and Masculinity",
+		"value": 150,
+		"link": "‎https://giphy.com/gifs/horses-theo-von-D50RiL8pqe6sSRjIAI",
 	},
 	"gymnastics_acrobatics": {
 		"name": "Horse of Gymnastics and Acrobatics",
@@ -107,6 +127,16 @@
 		"name": "Horse of Ballsacks and Testicular Cancer",
 		"value": 100,
 		"link": "https://i.imgur.com/L5BNjJA.jpeg"
+	},
+	"constipation_colorectal": {
+		"name": "Horse of Constipation and Colorectal Cancer",
+		"value": 100,
+		"link": "https://giphy.com/gifs/horse-selfie-swiming-pool-kemBxAQvIlYOayzyaV"
+	},
+	"leggings_pantaloons": {
+		"name": "Horse of Leggings and Pantaloons",
+		"value": 75,
+		"link": "https://i.imgur.com/mkd4AKt.png"
 	},
 	"truth_affirmation": {
 		"name": "Horse of Truth and Affirmation",
@@ -137,6 +167,11 @@
 		"name": "Horse of Suspicion and Distrust",
 		"value": 50,
 		"link": "https://tenor.com/view/the-horse-of-suspicion-and-distrust-gif-12657911522319693236"
+	},
+	"shock_disgust": {
+		"name": "Horse of Shock and Disgust",
+		"value": 50,
+		"link": "https://giphy.com/gifs/horse-meme-cat-dog-4gGv9mEtMMySohlRwG"
 	},
 	"stupidity_ignorance": {
 		"name": "Horse of Stupidity and Ignorance",
