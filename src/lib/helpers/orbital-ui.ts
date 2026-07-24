@@ -456,9 +456,13 @@ export function buildModal(action: string): ModalBuilder | undefined {
 			.setCustomId(field.id)
 			.setStyle(field.style)
 			.setRequired(field.required);
-		if (field.placeholder)
+		if (field.placeholder) {
 			input.setPlaceholder(field.placeholder);
-		if (field.maxLength) input.setMaxLength(field.maxLength);
+		}
+
+		if (field.maxLength) {
+			input.setMaxLength(field.maxLength);
+		}
 
 		const label = new LabelBuilder()
 			.setLabel(field.label)
@@ -503,6 +507,70 @@ function parseHorseField(
 	payload[targetKey] = value || undefined;
 }
 
+function parseModalField(
+	fieldId: string,
+	value: string,
+	interaction: ModalSubmitInteraction,
+	payload: Record<string, unknown>,
+): void {
+	switch (fieldId) {
+		case "target_user": {
+			if (/^\d{17,20}$/v.test(value)) {
+				payload.userId = value;
+			} else {
+				payload.username = value;
+			}
+
+			return;
+		}
+
+		case "amount": {
+			parseNumericField(value, payload, "amount");
+			return;
+		}
+
+		case "multiplier": {
+			parseNumericField(value, payload, "multiplier");
+			return;
+		}
+
+		case "horse_name":
+		case "horse_slug": {
+			parseHorseField(fieldId, value, payload);
+			return;
+		}
+
+		case "cfg_key": {
+			payload[value] = undefined;
+			return;
+		}
+
+		case "cfg_value": {
+			parseConfigValue(value, interaction, payload);
+			return;
+		}
+
+		case "no_lose": {
+			payload.noLose = value.toLowerCase() === "true";
+			return;
+		}
+
+		case "force_lose_horse": {
+			payload.forceLoseHorseOnce = value;
+			return;
+		}
+
+		case "code": {
+			payload.code = value;
+			break;
+		}
+
+		default: {
+			break;
+		}
+	}
+}
+
 export function parseModalValues(
 	action: string,
 	interaction: ModalSubmitInteraction,
@@ -514,61 +582,11 @@ export function parseModalValues(
 
 	for (const field of fields) {
 		const value = interaction.fields.getTextInputValue(field.id);
-		if (!value && !field.required) continue;
-
-		switch (field.id) {
-			case "target_user": {
-				if (/^\d{17,20}$/v.test(value))
-					payload.userId = value;
-				else payload.username = value;
-				break;
-			}
-
-			case "amount": {
-				parseNumericField(value, payload, "amount");
-				break;
-			}
-
-			case "multiplier": {
-				parseNumericField(value, payload, "multiplier");
-				break;
-			}
-
-			case "horse_name":
-			case "horse_slug": {
-				parseHorseField(field.id, value, payload);
-				break;
-			}
-
-			case "cfg_key": {
-				payload[value] = undefined;
-				break;
-			}
-
-			case "cfg_value": {
-				parseConfigValue(value, interaction, payload);
-				break;
-			}
-
-			case "no_lose": {
-				payload.noLose = value.toLowerCase() === "true";
-				break;
-			}
-
-			case "force_lose_horse": {
-				payload.forceLoseHorseOnce = value;
-				break;
-			}
-
-			case "code": {
-				payload.code = value;
-				break;
-			}
-
-			default: {
-				break;
-			}
+		if (!value && !field.required) {
+			continue;
 		}
+
+		parseModalField(field.id, value, interaction, payload);
 	}
 
 	return payload;
@@ -579,15 +597,22 @@ export function parseModalValues(
 // ---------------------------------------------------------------------------
 
 export function buildResultText(result: unknown): string {
-	if (result === null || result === undefined)
+	if (result === null || result === undefined) {
 		return "✅ (no output)";
-	if (typeof result === "string") return result;
+	}
+
+	if (typeof result === "string") {
+		return result;
+	}
+
 	if (
 		typeof result === "number" ||
 		typeof result === "boolean" ||
 		typeof result === "bigint"
-	)
+	) {
 		return String(result);
+	}
+
 	if (typeof result === "object") {
 		try {
 			return JSON.stringify(result, null, 2);
@@ -612,7 +637,7 @@ export async function handleOrbitalCategory(
 	const actionRow = buildActionRow(category);
 	const secondRow = buildSecondRow(category);
 	const components = [actionRow, secondRow].filter(
-		(r): r is ActionRowBuilder<ButtonBuilder> => r !== null,
+		(row): row is ActionRowBuilder<ButtonBuilder> => row !== undefined,
 	);
 
 	const embed = new EmbedBuilder()
@@ -684,7 +709,7 @@ export async function handleOrbitalModal(
 	const payload = parseModalValues(action, interaction);
 
 	try {
-		await interaction.deferUpdate();
+		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 		const result = await orbitalRun(action, payload, interaction);
 		const text = buildResultText(result);
 		await interaction.editReply({
@@ -693,8 +718,18 @@ export async function handleOrbitalModal(
 	} catch (error: unknown) {
 		const message =
 			error instanceof Error ? error.message : String(error);
+		if (interaction.deferred || interaction.replied) {
+			await interaction
+				.editReply({ content: `❌ ${message}` })
+				.catch(() => undefined);
+			return;
+		}
+
 		await interaction
-			.editReply({ content: `❌ ${message}` })
+			.reply({
+				content: `❌ ${message}`,
+				flags: [MessageFlags.Ephemeral],
+			})
 			.catch(() => undefined);
 	}
 }

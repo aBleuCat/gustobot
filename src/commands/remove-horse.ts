@@ -11,7 +11,7 @@ import { immutConfig } from "../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
-const removeHorseCommand = {
+const horseRemovalCommand = {
 	data: new SlashCommandBuilder()
 		.setName("removehorse")
 		.setDescription(
@@ -83,10 +83,12 @@ const removeHorseCommand = {
 		const amount = interaction.options.getInteger("amount") ?? 1;
 		const isEphemeral =
 			interaction.options.getBoolean("ephemeral") ?? true;
-		if (!target || !type)
+		if (!target || !type) {
 			return interaction.reply(
 				"Something went wrong when trying to get your input",
 			);
+		}
+
 		// Verify the horse type exists in data
 		const horseData = HORSE_VALUES[type];
 		if (!horseData) {
@@ -96,23 +98,23 @@ const removeHorseCommand = {
 			});
 		}
 
+		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+
 		const inventory = await UserHorses.findOne({
 			userId: target.id,
 		});
 		if (!inventory) {
-			return interaction.reply({
-				content: `No inventory found for <@${target.id}>.`,
-				flags: [MessageFlags.Ephemeral],
-			});
+			return interaction.editReply(
+				`No inventory found for <@${target.id}>.`,
+			);
 		}
 
 		const currentCount = inventory.horses.get(type) ?? 0;
 		if (currentCount === 0) {
 			const horseDisplay = horseData.name;
-			return interaction.reply({
-				content: `${horseDisplay} not found in <@${target.id}>'s inventory.`,
-				flags: [MessageFlags.Ephemeral],
-			});
+			return interaction.editReply(
+				`${horseDisplay} not found in <@${target.id}>'s inventory.`,
+			);
 		}
 
 		const removed = Math.min(amount, currentCount);
@@ -128,10 +130,9 @@ const removeHorseCommand = {
 		await inventory.save();
 
 		const horseDisplay = horseData.name;
-		await interaction.reply({
-			content: `Removed **${removed}x ${horseDisplay}** from <@${target.id}>.`,
-			flags: [MessageFlags.Ephemeral],
-		});
+		await interaction.editReply(
+			`Removed **${removed}x ${horseDisplay}** from <@${target.id}>.`,
+		);
 		await interaction.followUp({
 			content: `<@${target.id}> has had **${removed}x ${horseDisplay}** taken away.`,
 			flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
@@ -139,4 +140,4 @@ const removeHorseCommand = {
 	},
 };
 
-export default removeHorseCommand;
+export default horseRemovalCommand;

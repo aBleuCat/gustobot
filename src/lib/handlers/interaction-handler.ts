@@ -12,7 +12,9 @@ import {
 	AttachmentBuilder,
 	type Client,
 	type Interaction,
+	type ButtonInteraction,
 	type ModalSubmitInteraction,
+	type StringSelectMenuInteraction,
 } from "discord.js";
 import { config, immutConfig } from "../config.js";
 import devLog from "../helpers/dev-log.js";
@@ -26,7 +28,7 @@ import {
 import { OrbitalScript } from "../models.js";
 import { handleCommandError } from "../helpers/error-handlers.js";
 import { castAsWebhookable } from "../../type-utils.js";
-/* eslint-disable id-denylist */
+/* eslint-disable id-denylist -- Catch data uses the legacy `type` field name. */
 // Catch data store
 type CatchDataStoreValue = {
 	ans: string;
@@ -39,21 +41,28 @@ type CatchDataStoreValue = {
 
 const { CATCH_DATA_TTL_MS, CATCH_DATA_CLEANUP_INTERVAL_MS } = config;
 const catchDataStore = new Map<string, CatchDataStoreValue>();
+type OrbitalUiInteraction =
+	| StringSelectMenuInteraction
+	| ButtonInteraction
+	| ModalSubmitInteraction;
 
-setInterval(() => {
-	const now = Date.now();
-	for (const [key, value] of catchDataStore) {
-		if (
-			value._expiresAt !== undefined &&
-			value._expiresAt <= now
-		) {
-			catchDataStore.delete(key);
+function startCatchDataCleanup(): void {
+	setInterval(() => {
+		const now = Date.now();
+		for (const [key, value] of catchDataStore) {
+			if (
+				value._expiresAt !== undefined &&
+				value._expiresAt <= now
+			) {
+				catchDataStore.delete(key);
+			}
 		}
-	}
-}, CATCH_DATA_CLEANUP_INTERVAL_MS);
+	}, CATCH_DATA_CLEANUP_INTERVAL_MS);
+}
 
 // Registration
 function registerInteractionHandler(client: Client) {
+	startCatchDataCleanup();
 	client.on(
 		Events.InteractionCreate,
 		(interaction: Interaction) => {
@@ -87,19 +96,25 @@ async function handleInteraction(
 		interaction.isStringSelectMenu() &&
 		interaction.customId === "orbital_cat"
 	) {
-		return handleOrbitalCategory(interaction);
+		return handleOrbitalUiInteraction(interaction, async () =>
+			handleOrbitalCategory(interaction),
+		);
 	}
 
 	if (
 		interaction.isButton() &&
 		interaction.customId.startsWith("orbital_act:")
 	) {
-		return handleOrbitalAction(interaction);
+		return handleOrbitalUiInteraction(interaction, async () =>
+			handleOrbitalAction(interaction),
+		);
 	}
 
 	if (interaction.isModalSubmit()) {
 		if (interaction.customId.startsWith("orbital_modal:")) {
-			return handleOrbitalModal(interaction);
+			return handleOrbitalUiInteraction(interaction, async () =>
+				handleOrbitalModal(interaction),
+			);
 		}
 
 		if (interaction.customId === "orbital_nuke_modal") {
@@ -109,6 +124,26 @@ async function handleInteraction(
 		if (interaction.customId === "modal") {
 			return handleModalCatchAnswer(client, interaction);
 		}
+	}
+}
+
+async function handleOrbitalUiInteraction(
+	interaction: OrbitalUiInteraction,
+	handler: () => Promise<void>,
+): Promise<void> {
+	try {
+		await handler();
+	} catch (error: unknown) {
+		console.error("Orbital UI interaction error:", error);
+		const content = "❌ An orbital action failed. Check the bot logs.";
+		if (interaction.deferred || interaction.replied) {
+			await interaction.editReply({ content }).catch(() => undefined);
+			return;
+		}
+
+		await interaction
+			.reply({ content, flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
 	}
 }
 
@@ -135,7 +170,16 @@ async function handleSlashCommand(
 ) {
 	if (!interaction.isChatInputCommand()) return;
 	const command = client.commands.get(interaction.commandName);
-	if (!command) return;
+	if (!command) {
+		await interaction
+			.reply({
+				content:
+					"This command is currently unavailable. The bot may be updating.",
+				flags: [MessageFlags.Ephemeral],
+			})
+			.catch(() => undefined);
+		return;
+	}
 
 	if (interaction.commandName !== "orbital") {
 		const logMessage = `[COMMAND]: ${interaction.user.tag} used /${interaction.commandName} in guild ${interaction.guildId}`;
@@ -335,8 +379,8 @@ async function handleModalCatchAnswer(
 					: String(error);
 			console.error(error);
 			devLog(`Error: ${errorMessage}`).catch(
-				(error: unknown) => {
-					console.error("Failed to devLog", error);
+				(logError: unknown) => {
+					console.error("Failed to devLog", logError);
 				},
 			);
 		}
