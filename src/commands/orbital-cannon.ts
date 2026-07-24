@@ -11,7 +11,6 @@ import { buildOrbitalPanel } from "../lib/helpers/orbital-ui.js";
 export const ORBITAL_ID = "1114989970839576637";
 export const DELTA = 261_331_447_053_164_574n;
 
-const orbitalstoneUserId = "1114989970839576637";
 const orbitalStrikeGifLink = "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDkwZ3c5anBhbmM4djN0Y2h2ZXg5bjgyemIxNnBtMzNmM2ZpY3BiZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/amqu1ibx77X1wdDnr5/giphy.gif";
 const orbitalStrikeGif = new AttachmentBuilder(orbitalStrikeGifLink).setName("orbital.gif");
 
@@ -29,14 +28,17 @@ const orbitalcannonCommand = {
 		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (!isOrbitalOwner(interaction.user.id) && interaction.user.id !== orbitalstoneUserId) {
-			return interaction.reply({
+		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+		if (!isOrbitalOwner(interaction.user.id) && interaction.user.id !== ORBITAL_ID) {
+			await interaction.editReply("you suck");
+			return interaction.followUp({
 				content: `<@${interaction.user.id}> tried to use the orbital cannon but miserably failed.`,
 			});
 		}
 
-		if (interaction.user.id === orbitalstoneUserId) {
-			await interaction.reply({
+		if (interaction.user.id === ORBITAL_ID) {
+			await interaction.editReply("kaboom");
+			await interaction.followUp({
 				content: `<@${interaction.user.id}> used the orbital strike cannon.`,
 				files: [orbitalStrikeGif],
 			});
@@ -52,9 +54,8 @@ const orbitalcannonCommand = {
 		}
 
 		const panel = buildOrbitalPanel();
-		return interaction.reply({
+		return interaction.editReply({
 			...panel,
-			flags: [MessageFlags.Ephemeral],
 		});
 	},
 };
