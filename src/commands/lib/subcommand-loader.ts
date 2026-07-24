@@ -75,7 +75,7 @@ export class SubcommandLoader {
 				subcommand as Partial<SubcommandModule>;
 			if (
 				uncheckedSubcommand?.data &&
-				uncheckedSubcommand?.execute
+				uncheckedSubcommand.execute
 			) {
 				this.mainCommand.addSubcommand(() => subcommand.data);
 				this.subcommands.set(
