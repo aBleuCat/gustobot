@@ -8,10 +8,10 @@ import {
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
 import { config } from "../../lib/config.js";
-import { raceMaster } from "../horse-race-main.js";
+import { raceMaster } from "../lib/horse-race-challenge.js";
+import { executeRace } from "../lib/horse-race-run.js";
 
-const { RACE_CHALLENGE_DURATION, RACE_FINAL_CONFIRMATION_TIME } =
-	config;
+const { RACE_CHALLENGE_DURATION } = config;
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("start")
@@ -21,11 +21,34 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setName("user")
 			.setDescription("Who do you wanna challenge?")
 			.setRequired(true),
+	)
+	.addUserOption((option) =>
+		option
+			.setName("user2")
+			.setDescription("An optional third player to include"),
+	)
+	.addUserOption((option) =>
+		option
+			.setName("user3")
+			.setDescription("An optional fourth player to include"),
+	)
+	.addUserOption((option) =>
+		option
+			.setName("user4")
+			.setDescription("An optional fifth player to include"),
 	);
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const targetUser = interaction.options.getUser("user");
+	const extraUsers = [
+		interaction.options.getUser("user2"),
+		interaction.options.getUser("user3"),
+		interaction.options.getUser("user4"),
+	].filter(
+		(maybeUser): maybeUser is NonNullable<typeof maybeUser> =>
+			Boolean(maybeUser ?? null),
+	);
 	const { channel, user } = interaction;
 
 	if (!targetUser)
@@ -36,23 +59,53 @@ export async function execute(
 		return interaction.reply(
 			"Couldn't figure out what channel this command was used in, try again",
 		);
-	const redId = user.id;
-	const blueId = targetUser.id;
+
+	const participantIds = [
+		user.id,
+		targetUser.id,
+		...extraUsers.map((participant) => participant.id),
+	];
+	const distinctParticipantIds = [...new Set(participantIds)];
+
+	if (distinctParticipantIds.length !== participantIds.length) {
+		return interaction.reply({
+			content: "You can't challenge the same person twice",
+			flags: [MessageFlags.Ephemeral],
+		});
+	}
+
+	if (distinctParticipantIds.length > 5) {
+		return interaction.reply({
+			content: "You can include up to five players in a race",
+			flags: [MessageFlags.Ephemeral],
+		});
+	}
+
+	if (raceMaster.exists(channel.id)) {
+		return interaction.reply({
+			content: "There's already an active race in this channel",
+			flags: [MessageFlags.Ephemeral],
+		});
+	}
+
+	const participantMentions = distinctParticipantIds
+		.map((participantId) => `<@${participantId}>`)
+		.join(", ");
 
 	const challengeButtonRow =
 		new ActionRowBuilder<ButtonBuilder>().addComponents(
 			new ButtonBuilder()
-				.setCustomId(`race_accept_${blueId}`)
+				.setCustomId("race_accept")
 				.setLabel("Accept")
 				.setStyle(ButtonStyle.Success),
 		);
-	// Ping em both for good measure
 	const response = await interaction.reply({
-		content: `## Horse Race Challenge\n<@${redId}> has challenged <@${blueId}> to a horse race!\n-# It would be very mean if you didn't accept`,
+		content: `## Horse Race Challenge\n${participantMentions} are about to race!\n-# Accept if you want to join`,
 		components: [challengeButtonRow],
 	});
 
 	const message = await interaction.fetchReply();
+	const acceptedUsers = new Set<string>();
 
 	const collector = response.createMessageComponentCollector({
 		time: RACE_CHALLENGE_DURATION,
@@ -61,157 +114,106 @@ export async function execute(
 	collector.on(
 		"collect",
 		(buttonInteraction: ButtonInteraction) => {
-			(async (buttonInteraction: ButtonInteraction) => {
-				if (buttonInteraction.user.id !== blueId)
-					return buttonInteraction.reply({
-						content: `Yo can you read? This is for <@${blueId}>`,
-						flags: [MessageFlags.Ephemeral],
-					});
-
-				await buttonInteraction.reply({
-					content: "You have accepted the challenge",
-					flags: [MessageFlags.Ephemeral],
-				});
-
-				collector.stop("accepted");
-
-				await interaction.editReply({
-					content: `## Horse Race Challenge\n<@${blueId}> has accepted the challenge\n<@${redId}> and <@${blueId}>, select your horses`,
-					components: [],
-				});
-
-				let accepted = false;
-				/* eslint-disable no-await-in-loop, @typescript-eslint/no-loop-func */
-				while (!accepted) {
-					const race = raceMaster.new(
-						channel.id,
-						redId,
-						blueId,
-					);
-					race.onUpdate((update) => {
-						void message.edit({ embeds: [update] });
-					});
-					const result = await race.promise;
-
-					if (!result) {
-						return message.edit({
-							content:
-								"You guys took too long bro it timed out",
-							embeds: [],
-							components: [],
-						});
-					}
-
-					const acceptButton = new ButtonBuilder()
-						.setCustomId("race_accept")
-						.setLabel("Accept")
-						.setStyle(ButtonStyle.Success);
-					const cancelButton = new ButtonBuilder()
-						.setCustomId("race_cancel")
-						.setLabel("Cancel")
-						.setStyle(ButtonStyle.Danger);
-					const row =
-						new ActionRowBuilder<ButtonBuilder>().setComponents(
-							acceptButton,
-							cancelButton,
-						);
-
-					const confirmationMessage = await message.edit({
-						content:
-							"Both horses are ready. Do you wish to proceed?",
-						embeds: [race.horsesEmbed],
-						components: [row],
-					});
-					try {
-						// Track who has accepted
-						const acceptedUsers = new Set<string>();
-						let timedOutOrCancelled = false;
-
-						const decisionCollector =
-							confirmationMessage.createMessageComponentCollector(
-								{
-									filter: (i) =>
-										i.user.id === redId ||
-										i.user.id === blueId,
-									time: RACE_FINAL_CONFIRMATION_TIME,
-								},
-							);
-
-						await new Promise<void>((resolve, reject) => {
-							decisionCollector.on("collect", (i) => {
-								(async (i) => {
-									if (
-										i.customId === "race_cancel"
-									) {
-										// If any player cancels, stop the collector immediately
-										timedOutOrCancelled = true;
-										decisionCollector.stop(
-											"cancelled",
-										);
-
-										await i.update({
-											content: `<@${i.user.id}> cancelled. Reselect your horses`,
-											embeds: [],
-											components: [],
-										});
-										resolve();
-										return;
-									}
-
-									if (
-										i.customId === "race_accept"
-									) {
-										acceptedUsers.add(i.user.id);
-
-										if (
-											acceptedUsers.size === 2
-										) {
-											decisionCollector.stop(
-												"both_accepted",
-											);
-											accepted = true;
-
-											await i.update({
-												content:
-													"Both players have accepted! The race is starting!",
-												components: [],
-											});
-											resolve();
-										} else {
-											// Only one person accepted so far, update the status
-											await i.update({
-												content: `<@${i.user.id}> accepted! Waiting for the other player`,
-												components: [row],
-											});
-										}
-									}
-								})(i);
-							});
-
-							decisionCollector.on(
-								"end",
-								(_, reason) => {
-									if (reason === "time") {
-										reject(new Error("timeout"));
-									}
-								},
-							);
-						});
-
-						if (timedOutOrCancelled) continue;
-					} catch {
-						return message.edit({
-							content:
-								"Timed out waiting for both players to confirm. Cancelled.",
-							embeds: [],
-							components: [],
-						});
-					}
-
-					// Race here
-				}
-				/* eslint-enable no-await-in-loop, @typescript-eslint/no-loop-func */
-			})(buttonInteraction);
+			void handleRaceAcceptance(buttonInteraction);
 		},
 	);
+
+	const handleRaceAcceptance = async (
+		buttonInteraction: ButtonInteraction,
+	): Promise<void> => {
+		if (
+			!distinctParticipantIds.includes(
+				buttonInteraction.user.id,
+			)
+		) {
+			await buttonInteraction.reply({
+				content: `Yo can you read? This is for ${participantMentions}`,
+				flags: [MessageFlags.Ephemeral],
+			});
+			return;
+		}
+
+		if (acceptedUsers.has(buttonInteraction.user.id)) {
+			await buttonInteraction.reply({
+				content: "You already accepted the challenge",
+				flags: [MessageFlags.Ephemeral],
+			});
+			return;
+		}
+
+		acceptedUsers.add(buttonInteraction.user.id);
+		await buttonInteraction.reply({
+			content: "You have accepted the challenge",
+			flags: [MessageFlags.Ephemeral],
+		});
+
+		if (acceptedUsers.size < distinctParticipantIds.length) {
+			const remainingMentions = distinctParticipantIds
+				.filter(
+					(participantId) =>
+						!acceptedUsers.has(participantId),
+				)
+				.map((participantId) => `<@${participantId}>`)
+				.join(", ");
+			await message.edit({
+				content: `## Horse Race Challenge\nWaiting for ${remainingMentions} to accept`,
+				components: [challengeButtonRow],
+			});
+			return;
+		}
+
+		collector.stop("accepted");
+
+		let race: ReturnType<typeof raceMaster.new>;
+		try {
+			race = raceMaster.new(channel.id, distinctParticipantIds);
+		} catch (error) {
+			await message.edit({
+				content:
+					error instanceof Error
+						? `Couldn't start the race: ${error.message}`
+						: "Couldn't start the race, try again",
+				embeds: [],
+				components: [],
+			});
+			return;
+		}
+
+		race.onUpdate((update) => {
+			void message.edit({ embeds: [update] });
+		});
+
+		void race.promise.then((readyChallenge) => {
+			if (!readyChallenge) return; // Expired before everyone picked
+			void executeRace(readyChallenge, message).catch(
+				(error: unknown) => {
+					console.error("Race execution failed:", error);
+					void message.edit({
+						content:
+							"Something went wrong mid-race, sorry!",
+						embeds: [],
+						components: [],
+					});
+				},
+			);
+		});
+
+		await message.edit({
+			content:
+				"## Horse Race Challenge\nEveryone has accepted. Select your horses!",
+			embeds: [race.horsesEmbed],
+			components: [],
+		});
+	};
+
+	collector.on("end", (_, reason) => {
+		if (reason === "time") {
+			void message.edit({
+				content:
+					"The race challenge timed out before everyone accepted",
+				embeds: [],
+				components: [],
+			});
+		}
+	});
 }
