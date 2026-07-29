@@ -2,6 +2,7 @@ import { EmbedBuilder } from "discord.js";
 import { config } from "../../lib/config.js";
 import type { ITrainedHorsesProps } from "../../lib/models.js";
 import { fetchWithTimeout } from "../../lib/helpers/timeout-helpers.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 const { RACE_WAITING_DURATION } = config;
 
@@ -207,7 +208,7 @@ export class UnreadyRaceChallenge {
 			const label =
 				color.charAt(0).toUpperCase() + color.slice(1);
 			const value = horse
-				? `${horse.name}, a ${horse.breed}`
+				? `${horse.name}, a ${horseName(horse.breed)}`
 				: "none";
 			return {
 				name: label,

@@ -5,6 +5,7 @@ import {
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
 import { raceMaster } from "../lib/horse-race-challenge.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("remove")
@@ -42,7 +43,7 @@ export async function execute(
 		});
 	const embed = new EmbedBuilder().addFields(
 		{ name: "Name", value: removedHorse.name },
-		{ name: "Breed", value: removedHorse.breed },
+		{ name: "Breed", value: horseName(removedHorse.breed) },
 		{ name: "Speed", value: `\`${removedHorse.speed}\`` },
 		{
 			name: "Speed Modifier",

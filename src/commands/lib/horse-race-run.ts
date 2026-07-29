@@ -262,6 +262,6 @@ export async function executeRace(
 		content: hasRaceCompleted
 			? "The race has ended."
 			: "This race was taking too long, so it ended.",
-		embeds: [resultsEmbed],
+		embeds: [resultsEmbed, statsEmbed],
 	});
 }

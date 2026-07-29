@@ -9,6 +9,7 @@ import {
 import { Types } from "mongoose";
 import { TrainedHorses } from "../../lib/models.js";
 import { raceMaster } from "../lib/horse-race-challenge.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("add")
@@ -39,7 +40,7 @@ export async function autocomplete(
 				)
 				.slice(0, 25)
 				.map((horse) => ({
-					name: `${horse.name} (${horse.breed})`,
+					name: `${horse.name} (${horseName(horse.breed)})`,
 					value: horse._id.toString(),
 				})),
 		);
@@ -109,7 +110,7 @@ export async function execute(
 		race.addHorse(color, selectedHorse);
 		const embed = new EmbedBuilder().addFields(
 			{ name: "Name", value: selectedHorse.name },
-			{ name: "Breed", value: selectedHorse.breed || "Unknown" },
+			{ name: "Breed", value: horseName(selectedHorse.breed) ?? "Unknown" },
 			{
 				name: "Speed",
 				value: `\`${selectedHorse.speed}\``,
