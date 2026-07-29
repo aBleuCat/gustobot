@@ -43,7 +43,11 @@ export async function execute(
 	const embed = new EmbedBuilder().addFields(
 		{ name: "Name", value: removedHorse.name },
 		{ name: "Breed", value: removedHorse.breed },
-		{ name: "Stats", value: `\`${removedHorse.speedStat}\`` },
+		{ name: "Speed", value: `\`${removedHorse.speed}\`` },
+		{
+			name: "Speed Modifier",
+			value: `\`${removedHorse.speedModifier > 0 ? "+" : ""}${Math.round(removedHorse.speedModifier * 100)}%\``,
+		},
 	);
 	return interaction.reply({
 		content: "Your horse has been removed",

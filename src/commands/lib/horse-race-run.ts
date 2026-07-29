@@ -153,7 +153,7 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 		const newTick: RacingHorse[] = [];
 		for (const { position, userId, horse } of lastTick) {
 			const positionDelta =
-				horse.speedStat +
+				horse.speed +
 				Math.ceil(
 					(Math.random() - 0.5) * 2 * RACE_RANDOM_FACTOR,
 				);
@@ -213,6 +213,7 @@ export async function executeRace(
 		.setDescription(
 			`The winner is...\n**${winner?.horse.name ?? "no one?"}**`,
 		);
+	const statsEmbed = new EmbedBuilder().setTitle("Speed Stats");
 	if (final) {
 		const players = final.map((player) => player.horse.name);
 		const finalPositions = final.map((player) => Math.round(player.position));
@@ -225,6 +226,33 @@ export async function executeRace(
 			{
 				name: "Final Position",
 				value: finalPositions.join("\n"),
+				inline: true,
+			},
+		);
+
+		const ticksElapsed = race.length - 1;
+		const nominalSpeeds = final.map((player) =>
+			player.horse.speed.toFixed(2),
+		);
+		const averageSpeeds = final.map((player) =>
+			ticksElapsed > 0
+				? (player.position / ticksElapsed).toFixed(2)
+				: "0.00",
+		);
+		statsEmbed.addFields(
+			{
+				name: "Players",
+				value: players.join("\n"),
+				inline: true,
+			},
+			{
+				name: "Nominal Speed",
+				value: nominalSpeeds.join("\n"),
+				inline: true,
+			},
+			{
+				name: "Average Speed",
+				value: averageSpeeds.join("\n"),
 				inline: true,
 			},
 		);

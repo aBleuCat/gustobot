@@ -111,8 +111,12 @@ export async function execute(
 			{ name: "Name", value: selectedHorse.name },
 			{ name: "Breed", value: selectedHorse.breed || "Unknown" },
 			{
-				name: "Stats",
-				value: `\`${selectedHorse.speedStat}\``,
+				name: "Speed",
+				value: `\`${selectedHorse.speed}\``,
+			},
+			{
+				name: "Speed Modifier",
+				value: `\`${selectedHorse.speedModifier > 0 ? "+" : ""}${Math.round(selectedHorse.speedModifier * 100)}%\``,
 			},
 		);
 		const message: InteractionReplyOptions = {

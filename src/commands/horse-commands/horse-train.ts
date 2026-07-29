@@ -131,8 +131,10 @@ export async function execute(
 			content: `You do not have enough moneys to pay for the cost of training this horse\nIt costs ${price}, but you only have ${userCoins}`,
 			flags: [MessageFlags.Ephemeral],
 		});
-	const speedStat = Number((Math.random() * 0.4 - 0.2).toFixed(2)); // Generate number betwen 0.2 and -0.2
-	const totalSpeed = speed + speed * speedStat;
+	const speedModifier = Number(
+		(Math.random() * 0.4 - 0.2).toFixed(2),
+	); // Generate number betwen 0.2 and -0.2
+	const totalSpeed = speed + speed * speedModifier;
 
 	const payForTrainingButtonRow =
 		new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -161,7 +163,7 @@ export async function execute(
 			{ name: "Breed", value: horseName(horseSlug) },
 			{
 				name: "Speed Stat",
-				value: `\`${speedStat > 0 ? "+" : ""}${Math.round(speedStat * 100)}%\``,
+				value: `\`${speedModifier > 0 ? "+" : ""}${Math.round(speedModifier * 100)}%\``,
 			},
 			{ name: "Speed", value: String(totalSpeed) },
 		);
@@ -266,7 +268,8 @@ export async function execute(
 			ownerId: interaction.user.id,
 			name: trainedHorseName,
 			breed: trainedHorseSlug,
-			speedStat: totalSpeed,
+			speed: totalSpeed,
+			speedModifier,
 		};
 
 		await TrainedHorses.create(trainedHorse);
