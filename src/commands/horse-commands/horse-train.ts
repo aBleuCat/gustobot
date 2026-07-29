@@ -133,7 +133,7 @@ export async function execute(
 		});
 	const speedModifier = Number(
 		(Math.random() * 0.2 - 0.1).toFixed(2),
-	); // Generate number betwen 0.2 and -0.2
+	); // Generate number betwen 0.1 and -0.1
 	const totalSpeed = speed + speed * speedModifier;
 
 	const payForTrainingButtonRow =
