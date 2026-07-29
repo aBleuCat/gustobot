@@ -215,7 +215,7 @@ export async function executeRace(
 		);
 	if (final) {
 		const players = final.map((player) => player.horse.name);
-		const finalPositions = final.map((player) => player.position);
+		const finalPositions = final.map((player) => Math.round(player.position));
 		resultsEmbed.addFields(
 			{
 				name: "Players",

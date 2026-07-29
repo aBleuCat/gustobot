@@ -20,6 +20,8 @@ import { horseName } from "../../lib/helpers/horse-funcs.js";
 import { config, immutConfig } from "../../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
+const escapeRegex = (input: string) =>
+	input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const { TRAINING_PRICE_CONSTANT, TRAINING_PRICE_DIVISOR } = config;
 const TRAINING_DURATION_BEFORE_EXPIRATION = 2 * immutConfig.MINUTE_MS;
 
@@ -88,22 +90,28 @@ export async function execute(
 				"Something went wrong when recieving your inputs",
 			flags: [MessageFlags.Ephemeral],
 		});
+	// Captured into fresh consts so the narrowed (non-null) type
+	// survives being read inside the nested handleTrainAcceptance
+	// closure below, since TS narrowing doesn't cross function boundaries.
+	const trainedHorseSlug = horseSlug;
+	const trainedHorseName = name;
 	const horseObject = HORSE_VALUES[horseSlug];
 	if (!horseObject)
 		return interaction.reply({
 			content: "That horse doesn't seem to exist",
 			flags: [MessageFlags.Ephemeral],
 		});
-	if (!userCoins)
+	if (userCoins === undefined || userCoins === null)
 		return interaction.reply({
 			content:
 				"Could not find your inventory, or your inventory has been lobotomized",
 			flags: [MessageFlags.Ephemeral],
 		});
 
+	const escapedName = escapeRegex(name);
 	const existingHorse = await TrainedHorses.findOne({
 		ownerId: interaction.user.id,
-		name: { $regex: new RegExp(`^${name}$`, "iv") },
+		name: { $regex: new RegExp(`^${escapedName}$`, "iv") },
 	});
 
 	if (existingHorse) {
@@ -153,7 +161,7 @@ export async function execute(
 			{ name: "Breed", value: horseName(horseSlug) },
 			{
 				name: "Speed Stat",
-				value: `\`${speedStat > 0 ? "+" : ""}${speedStat * 100}%\``,
+				value: `\`${speedStat > 0 ? "+" : ""}${Math.round(speedStat * 100)}%\``,
 			},
 			{ name: "Speed", value: String(totalSpeed) },
 		);
@@ -161,82 +169,110 @@ export async function execute(
 		"collect",
 		(buttonInteraction: ButtonInteraction) => {
 			(async (buttonInteraction: ButtonInteraction) => {
-				if (buttonInteraction.user !== interaction.user)
-					return buttonInteraction.reply({
-						content: `What are you trynna do? Only <@${interaction.user.id}> can confirm this`,
-						flags: [MessageFlags.Ephemeral],
-					});
-				if (
-					buttonInteraction.customId === "train_pay_reject"
-				) {
-					collector.stop("cancelled");
-					return buttonInteraction.update({
-						content: "Training cancelled :(",
-						components: [],
-					});
+				try {
+					await handleTrainAcceptance(buttonInteraction);
+				} catch (error) {
+					console.error(
+						"/horse train collector error:",
+						error,
+					);
+					await buttonInteraction
+						.reply({
+							content:
+								"Something went wrong finishing the training, sorry!",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
 				}
-
-				const secondNameDupeCheck =
-					await TrainedHorses.findOne({
-						ownerId: interaction.user.id,
-						name: {
-							$regex: new RegExp(`^${name}$`, "iv"),
-						},
-					});
-
-				if (secondNameDupeCheck) {
-					collector.stop("rejected_duplicate_name");
-
-					return buttonInteraction.update({
-						content: `Transaction failed. You managed to create a horse named **${name}** while this prompt was open.`,
-						components: [],
-					});
-				}
-
-				collector.stop("accepted");
-				/* Deduct because trained horses are not normal horses,
-				and normal actions should not be applicable to trained horses
-				because normal actions are not designed to
-				E.g., /horses give only interacts with UserHorses
-				and not with TrainedHorses, creating a dupe bug */
-				const updateResult = await UserHorses.updateOne(
-					{
-						userId: interaction.user.id,
-						// Check that they have enough coins RIGHT NOW
-						horseCoins: { $gte: price },
-						// Check that they still have at least 1 of this horse type
-						[`horses.${horseSlug}`]: { $gt: 0 },
-					},
-					{
-						$inc: {
-							[`horses.${horseSlug}`]: -1,
-							horseCoins: -price,
-						},
-					},
-				);
-
-				// If no documents matched, it means they spent their coins or gave away horse
-				if (updateResult.matchedCount === 0) {
-					return buttonInteraction.reply({
-						content:
-							"Transaction failed! You no longer have enough coins or the required horse.",
-						flags: [MessageFlags.Ephemeral],
-					});
-				}
-
-				const trainedHorse: ITrainedHorsesProps = {
-					ownerId: interaction.user.id,
-					name,
-					breed: horseSlug,
-					speedStat,
-				};
-
-				await TrainedHorses.create(trainedHorse);
-				await buttonInteraction.update({
-					embeds: [embed],
-					components: [],
-				});
 			})(buttonInteraction);
 		},
 	);
+
+	collector.on("end", (_, reason) => {
+		if (reason === "time") {
+			void response
+				.edit({
+					content: "Training offer expired.",
+					components: [],
+				})
+				.catch(() => undefined);
+		}
+	});
+
+	async function handleTrainAcceptance(
+		buttonInteraction: ButtonInteraction,
+	) {
+		if (buttonInteraction.user.id !== interaction.user.id)
+			return buttonInteraction.reply({
+				content: `What are you trynna do? Only <@${interaction.user.id}> can confirm this`,
+				flags: [MessageFlags.Ephemeral],
+			});
+		if (buttonInteraction.customId === "train_pay_reject") {
+			collector.stop("cancelled");
+			return buttonInteraction.update({
+				content: "Training cancelled :(",
+				components: [],
+			});
+		}
+
+		const secondNameDupeCheck = await TrainedHorses.findOne({
+			ownerId: interaction.user.id,
+			name: {
+				$regex: new RegExp(`^${escapedName}$`, "iv"),
+			},
+		});
+
+		if (secondNameDupeCheck) {
+			collector.stop("rejected_duplicate_name");
+
+			return buttonInteraction.update({
+				content: `Transaction failed. You managed to create a horse named **${name}** while this prompt was open.`,
+				components: [],
+			});
+		}
+
+		collector.stop("accepted");
+		/* Deduct because trained horses are not normal horses,
+		and normal actions should not be applicable to trained horses
+		because normal actions are not designed to
+		E.g., /horses give only interacts with UserHorses
+		and not with TrainedHorses, creating a dupe bug */
+		const updateResult = await UserHorses.updateOne(
+			{
+				userId: interaction.user.id,
+				// Check that they have enough coins RIGHT NOW
+				horseCoins: { $gte: price },
+				// Check that they still have at least 1 of this horse type
+				[`horses.${horseSlug}`]: { $gt: 0 },
+			},
+			{
+				$inc: {
+					[`horses.${horseSlug}`]: -1,
+					horseCoins: -price,
+				},
+			},
+		);
+
+		// If no documents matched, it means they spent their coins or gave away horse
+		if (updateResult.matchedCount === 0) {
+			return buttonInteraction.reply({
+				content:
+					"Transaction failed! You no longer have enough coins or the required horse.",
+				flags: [MessageFlags.Ephemeral],
+			});
+		}
+
+		const trainedHorse: ITrainedHorsesProps = {
+			ownerId: interaction.user.id,
+			name: trainedHorseName,
+			breed: trainedHorseSlug,
+			speedStat: totalSpeed,
+		};
+
+		await TrainedHorses.create(trainedHorse);
+		return buttonInteraction.update({
+			embeds: [embed],
+			components: [],
+		});
+	}
 }

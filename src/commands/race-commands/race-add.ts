@@ -109,7 +109,7 @@ export async function execute(
 		race.addHorse(color, selectedHorse);
 		const embed = new EmbedBuilder().addFields(
 			{ name: "Name", value: selectedHorse.name },
-			{ name: "Breed", value: selectedHorse.breed },
+			{ name: "Breed", value: selectedHorse.breed || "Unknown" },
 			{
 				name: "Stats",
 				value: `\`${selectedHorse.speedStat}\``,
