@@ -132,7 +132,7 @@ export async function execute(
 			flags: [MessageFlags.Ephemeral],
 		});
 	const speedModifier = Number(
-		(Math.random() * 0.4 - 0.2).toFixed(2),
+		(Math.random() * 0.2 - 0.1).toFixed(2),
 	); // Generate number betwen 0.2 and -0.2
 	const totalSpeed = speed + speed * speedModifier;
 
