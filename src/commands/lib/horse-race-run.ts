@@ -75,10 +75,12 @@ function createTrackDisplay(
 }
 
 const commentaryStrings = {
-	lead: ['$horse is in the lead!'],
+	lead: ['$horse is in the lead!', "$horse is first, but it's fine, first is the worst anyway"],
 	significantLead: [
 		'$horse is leaving everyone else in the dust!',
 		'$horse is humbling the competition!',
+		'Why are we just letting $horse win?',
+		'$horse is mogging their competitors',
 	],
 	overtake: [
 		'$horse overtakes $horse2 and takes first!',
