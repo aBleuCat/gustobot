@@ -98,7 +98,8 @@ export const config = {
 	RACE_FINAL_CONFIRMATION_TIME: 2 * MINUTE_MS,
 	MAX_RACE_DURATION: 40,
 	RACE_TRACK_LENGTH: 2000,
-	RACE_RANDOM_FACTOR: 5,
+	RACE_RANDOM_JITTER: 10,
+	RACE_MORALE_FACTOR: 5,
 
 	// For horse-train.ts
 	TRAINING_PRICE_CONSTANT: 2,
@@ -188,10 +189,12 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How long the bot waits for both players to confirm their horse selections before the race begins",
 	MAX_RACE_DURATION:
 		"A safe cap, in race ticks, (ticks are about a second) on how long a race can last",
-	RACE_RANDOM_FACTOR:
+	RACE_RANDOM_JITTER:
 		"How much randomness to add to each race tick. E.g., if 5, each horse can move -4 to +5 their speed stat",
 	RACE_TRACK_LENGTH:
 		"How long the race track will be. E.g., if 2000, a unicorn will on avg take 10 ticks (~seconds) to finish",
+	RACE_MORALE_FACTOR:
+		"At the start of each race, each horses gets a randomly generated morale number. The maximum size of this number is determined by this factor. E.g., if 5, morale can be between -4 and 5",
 	TRAINING_PRICE_CONSTANT:
 		"The constant in the equation that determines the cost of training a horse: floor(value / divisor) + constant",
 	TRAINING_PRICE_DIVISOR:
