@@ -68,13 +68,13 @@
 	"bipedalism_running": {
 		"name": "Horse of Bipedalism and Running",
 		"value": 175,
-		"speed": 175,
+		"speed": 160,
 		"link": "https://klipy.com/gifs/caballo-13"
 	},
 	"curses_slurs": {
 		"name": "Horse of Curses and Slurs",
 		"value": 175,
-		"speed": 160,
+		"speed": 155,
 		"link": "https://i.imgur.com/amxDr5U.png"
 	},
 	"suicide_stuyvesant": {
@@ -203,7 +203,7 @@
 	"shock_disgust": {
 		"name": "Horse of Shock and Disgust",
 		"value": 50,
-		"speed": 125,
+		"speed": 115,
 		"link": "https://giphy.com/gifs/horse-meme-cat-dog-4gGv9mEtMMySohlRwG"
 	},
 	"stupidity_ignorance": {
@@ -221,7 +221,7 @@
 	"peasantry_beggary": {
 		"name": "Horse of Peasantry and Beggary",
 		"value": 25,
-		"speed": 110,
+		"speed": 105,
 		"link": "https://tenor.com/view/megoshthat%C3%B3-horse-raining-downpour-gif-13970826"
 	}
 }
