@@ -167,7 +167,7 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 		for (const {position, userId, horse} of lastTick) {
 			const positionDelta =
 				horse.speed +
-				Math.ceil((Math.random() - 0.5) * 2 * RACE_RANDOM_JITTER) +
+				Math.round((Math.random() - 0.5) * 2 * RACE_RANDOM_JITTER) +
 				(morale[userId] ?? 0);
 			const newPosition =
 				positionDelta <= 0 ? position : position + positionDelta;
