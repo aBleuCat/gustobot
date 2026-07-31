@@ -189,6 +189,37 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 	return computedRace;
 }
 
+/** Calculate the amount of XP each horse deserves. Do not use this version.
+ * @param final The final tick. Should be sorted from first place to last place.
+ */
+function calculateXp(finalTick: RacingHorse[], ticksElapsed: number) {
+	const xpResults: Array<RacingHorse & { xp: number }> = [];
+	const raceResults = finalTick.map((racer) => ({
+		...racer,
+		avgSpeed: ticksElapsed > 0
+			? (racer.position / ticksElapsed)
+			: 0,
+	}));
+	for (const [i, racer] of raceResults.entries()) {
+		const { horse, avgSpeed } = racer;
+		let xpSum = 0;
+		if (avgSpeed > horse.speed + 10) xpSum += avgSpeed - horse.speed - 10;
+		const beatenRacers = raceResults.slice(i + 1);
+		for (const beatenRacer of beatenRacers) {
+			if (beatenRacer.horse.speed <= horse.speed - 15) continue;
+			xpSum += (beatenRacer.horse.speed - horse.speed + 15) * 2;
+		}
+		for (const competitor of raceResults) {
+			if (competitor === racer) continue;
+			if (competitor.horse.speed <= horse.speed - 15) continue;
+			xpSum += competitor.horse.speed - horse.speed + 15;
+		}
+		if (!raceResults.some((user) => user.position > racer.position)) xpSum *= 1.2;
+		xpResults.push({ ...racer, xp: xpSum });
+	}
+	return xpResults;
+}
+
 export async function executeRace(
 	horses: ReadyRaceChallenge,
 	message: Message,
