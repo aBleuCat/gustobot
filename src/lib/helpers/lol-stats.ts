@@ -1,7 +1,7 @@
 import { immutConfig } from "../config.js";
 import { LolStats } from "../models.js";
 
-async function updateLolStatsDB() {
+export default async function updateLolStatsDB() {
 	let stats = await LolStats.findOne({ id: "global_stats" });
 	stats ??= new LolStats({ id: "global_stats" });
 
@@ -34,5 +34,3 @@ async function updateLolStatsDB() {
 	await stats.save();
 	return stats;
 }
-
-export default updateLolStatsDB;

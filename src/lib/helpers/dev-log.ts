@@ -48,7 +48,7 @@ export async function initDevLog(client: Client) {
 		);
 	} catch (error) {
 		if (error instanceof Error)
-			console.error("[devLog Init Error]:", error.message);
+			{console.error("[devLog Init Error]:", error.message);}
 	}
 }
 
@@ -96,8 +96,8 @@ async function devLog(message: string, type = "standard") {
 		// Temporary to prevent rate limiting from too many requests to discord
 		if (
 			type !== "status" &&
-			!filterExceptions.some((word) =>
-				lowMessage.includes(word),
+			filterExceptions.every((word) =>
+				!lowMessage.includes(word),
 			)
 		) {
 			if (type !== "bg") {
@@ -114,7 +114,7 @@ async function devLog(message: string, type = "standard") {
 		}
 	} catch (error) {
 		if (error instanceof Error)
-			console.error("[devLog Send Error]:", error.message);
+			{console.error("[devLog Send Error]:", error.message);}
 	}
 }
 

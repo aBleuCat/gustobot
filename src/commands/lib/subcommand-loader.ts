@@ -61,7 +61,7 @@ export class SubcommandLoader {
 		const importPromises = files.map(async (file) => {
 			const filePath = path.join(this.folderPath, file);
 			const fileUrl = pathToFileURL(filePath).href;
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+			 
 			const subcommand: SubcommandModule = (await import(
 				fileUrl
 			)) as SubcommandModule;
@@ -75,7 +75,7 @@ export class SubcommandLoader {
 				subcommand as Partial<SubcommandModule>;
 			if (
 				uncheckedSubcommand?.data &&
-				uncheckedSubcommand?.execute
+				uncheckedSubcommand.execute
 			) {
 				this.mainCommand.addSubcommand(() => subcommand.data);
 				this.subcommands.set(

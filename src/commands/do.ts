@@ -20,9 +20,9 @@ const doCommand = {
 			.getString("action")
 			?.toLowerCase();
 		if (!actionInput)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something exploded and I didn't get your input",
-			);
+			);}
 
 		// Check database for triggers
 		const allActions = await ActionResponse.find({});

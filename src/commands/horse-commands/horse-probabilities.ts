@@ -2,11 +2,11 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 } from "discord.js";
-import { config } from "../../lib/config.js";
+import { config, immutConfig } from "../../lib/config.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 
-const horsesData = castAsHorseData(rawHorseValues);
+const horseDataCatalog = castAsHorseData(rawHorseValues);
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("probabilities")
@@ -23,18 +23,24 @@ export async function execute(
 
 	let totalRate = 0;
 
-	const horseStats = Object.values(horsesData)
+	const horseStats = Object.values(horseDataCatalog as Record<string, unknown>)
 		.map((horse) => {
-			const chance = calculateChance(horse.value);
-			const isSpawnable = horse.spawn !== false;
+			const horseInfo = horse as {
+				name: string;
+				value?: number;
+				spawn?: boolean;
+			};
+			const horseValue = horseInfo.value ?? 0;
+			const chance = calculateChance(horseValue);
+			const isSpawnable = horseInfo.spawn !== false;
 
 			if (isSpawnable) {
 				totalRate += chance;
 			}
 
 			return {
-				name: horse.name,
-				val: horse.value,
+				name: horseInfo.name,
+				val: horseValue,
 				prob: (chance * 100).toFixed(5),
 				msgFreq: Math.round(1 / chance).toLocaleString(),
 				isSpawnable,
@@ -52,7 +58,12 @@ export async function execute(
 	const header = `Name                                | Prob       | Avg Messages\n${"-".repeat(70)}`;
 	const footer = `\nTotal chance for ANY horse: ${(totalRate * 100).toFixed(4)}%\nAverage 1 horse every ${Math.round(1 / totalRate)} messages.`;
 
-	const fullTable = `\`\`\`\n${header}\n${statsLines.join("\n")}\n${footer}\n\`\`\``;
+	let fullTable = `\`\`\`\n${header}\n${statsLines.join("\n")}\n${footer}\n\`\`\``;
+	if (fullTable.length > immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT) {
+		const overflow = fullTable.length - immutConfig.DISCORD_MSG_SAFE_CHAR_LIMIT;
+		const keepCount = Math.max(0, statsLines.length - Math.ceil(overflow / 60));
+		fullTable = `\`\`\`\n${header}\n${statsLines.slice(0, keepCount).join("\n")}\n...\n${footer}\n\`\`\``;
+	}
 
 	return interaction.reply({ content: fullTable });
 }

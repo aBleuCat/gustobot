@@ -87,13 +87,15 @@ const dexImpersonateCommand = {
 			flags: [MessageFlags.Ephemeral],
 		});
 		if (!target || !image || !bold || !type || !answer)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something went wrong when trying to get your inputted data",
-			);
+			);}
+
 		if (!interaction.guild)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something went wrong when trying to find your guild",
-			);
+			);}
+
 		// Use a unique key per spawn so multiple spawns don't collide
 		const spawnId = `${target.id}-${Date.now()}`;
 		catchDataStore.set(spawnId, {

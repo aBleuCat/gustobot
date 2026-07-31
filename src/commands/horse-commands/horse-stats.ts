@@ -65,8 +65,11 @@ function aggregateHorseStats(users: IUserHorses[]) {
 		totalCoins += user.horseCoins ?? 0;
 
 		if (user.horses) {
-			for (const [slug, count] of user.horses.entries()) {
-				if (count <= 0) continue;
+			for (const [slug, count] of user.horses) {
+				if (!(count > 0)) {
+					continue;
+				}
+
 				horseCounts[slug] = (horseCounts[slug] ?? 0) + count;
 				totalHorses += count;
 				userWealth +=
@@ -92,6 +95,19 @@ function aggregateHorseStats(users: IUserHorses[]) {
 		totalWealth,
 		playersWithHorses,
 	};
+}
+
+function calculateMedian(values: number[]) {
+	if (values.length === 0) return 0;
+	const sorted = [...values].toSorted((a, b) => a - b);
+	const middle = Math.floor(sorted.length / 2);
+	if (sorted.length % 2 === 0) {
+		const lower = sorted[middle - 1] ?? 0;
+		const upper = sorted[middle] ?? 0;
+		return (lower + upper) / 2;
+	}
+
+	return sorted[middle] ?? 0;
 }
 
 function gini(values: number[]) {
@@ -133,11 +149,13 @@ function buildBreakdownPage(
 
 function attachHorseStatsCollector(
 	response: {
-		createMessageComponentCollector(options: { time: number }): {
-			on(
+		createMessageComponentCollector: (options: {
+			time: number;
+		}) => {
+			on: (
 				event: "collect",
-				listener: (i: ButtonInteraction) => void,
-			): void;
+				listener: (i: ButtonInteraction) => unknown,
+			) => void;
 		};
 	},
 	sortedByCount: HorseCountEntry[],
@@ -150,47 +168,53 @@ function attachHorseStatsCollector(
 
 	collector.on("collect", (i: ButtonInteraction) => {
 		void (async () => {
-			if (i.user.id !== interaction.user.id) {
-				await i
-					.reply({
-						content:
-							"Only the command user can use these buttons.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-				return;
+			try {
+				if (i.user.id !== interaction.user.id) {
+					await i
+						.reply({
+							content:
+								"Only the command user can use these buttons.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+					return;
+				}
+
+				if (!i.customId.startsWith("hstats_")) return;
+
+				const pageString = i.customId.split("_").at(-1) ?? "";
+				if (!pageString) return;
+
+				const requestedPage = Number(pageString);
+				if (Number.isNaN(requestedPage)) return;
+
+				const page = Math.min(
+					Math.max(requestedPage, 0),
+					totalPages - 1,
+				);
+
+				await i.update({
+					content: buildBreakdownPage(sortedByCount, page),
+					components: [
+						buildPageButtons(page, totalPages).toJSON(),
+					],
+				});
+			} catch (error: unknown) {
+				console.error("Horse stats button handler failed", error);
 			}
-
-			const pageString = i.customId.split("_")[2];
-			if (!pageString) return;
-
-			const requestedPage = Number.parseInt(pageString, 10);
-			if (Number.isNaN(requestedPage)) return;
-
-			const page = Math.min(
-				Math.max(requestedPage, 0),
-				totalPages - 1,
-			);
-
-			await i.update({
-				content: buildBreakdownPage(sortedByCount, page),
-				components: [
-					buildPageButtons(page, totalPages).toJSON(),
-				],
-			});
-		})().catch(() => undefined);
+		})();
 	});
 }
 
 function buildPageButtons(page: number, totalPages: number) {
 	return new ActionRowBuilder<ButtonBuilder>().addComponents(
 		new ButtonBuilder()
-			.setCustomId(`hstats_prev_${page}`)
+			.setCustomId(`hstats_prev_${page - 1}`)
 			.setLabel("◀")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page === 0),
 		new ButtonBuilder()
-			.setCustomId(`hstats_next_${page}`)
+			.setCustomId(`hstats_next_${page + 1}`)
 			.setLabel("▶")
 			.setStyle(ButtonStyle.Secondary)
 			.setDisabled(page >= totalPages - 1),
@@ -254,6 +278,11 @@ export async function execute(
 		playersWithHorses > 0
 			? Math.round(totalWealth / playersWithHorses)
 			: 0;
+	const avgCoinWealth =
+		playersWithHorses > 0
+			? Math.round(totalCoins / playersWithHorses)
+			: 0;
+	const medianHorseWealth = calculateMedian(playerWealth);
 	const richest =
 		playersWithHorses > 0 ? Math.max(...playerWealth) : 0;
 
@@ -287,6 +316,8 @@ export async function execute(
 		`🪙 **Total Horse Coins**: ${totalCoins}`,
 		`💰 **Total Wealth**: $${totalWealth.toLocaleString()}`,
 		`📈 **Avg. Wealth per Player**: $${avgWealth.toLocaleString()}`,
+		`🪙 **Avg. Coin Wealth per Player**: ${avgCoinWealth.toLocaleString()}`,
+		`🐴 **Median Horse Wealth**: $${medianHorseWealth.toLocaleString()}`,
 		`🤑 **Richest Player**: $${richest.toLocaleString()}`,
 		`⚖️ **Wealth Inequality (Gini)**: ${(giniScore * 100).toFixed(1)}% ${giniScore > 0.7 ? "😬" : giniScore > 0.4 ? "😐" : "😌"}`,
 		``,

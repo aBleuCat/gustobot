@@ -104,6 +104,12 @@ export const config = {
 	// For horse-train.ts
 	TRAINING_PRICE_CONSTANT: 2,
 	TRAINING_PRICE_DIVISOR: 30,
+	// For quiz-helper.ts
+	QUIZ_START_DELAY: 5 * SECOND_MS,
+
+	// For trade-main.ts
+	TRADE_DURATION: 10 * MINUTE_MS,
+	TRADE_CONFIRM_DURATION: 3 * MINUTE_MS,
 
 	// Changeable with /hacks lists
 	lists: {
@@ -199,4 +205,10 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"The constant in the equation that determines the cost of training a horse: floor(value / divisor) + constant",
 	TRAINING_PRICE_DIVISOR:
 		"The divisor in the equation that determines the cost of training a horse: floor(value / divisor) + constant",
+	QUIZ_START_DELAY:
+		"The length of the delay after a quiz is created before it starts (in ms)",
+	TRADE_DURATION:
+		"How long people should be allowed to place their offers in trades (in ms)",
+	TRADE_CONFIRM_DURATION:
+		"How long the bot should wait for both players to confirm a trade (in ms)",
 };

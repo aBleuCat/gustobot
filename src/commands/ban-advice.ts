@@ -32,9 +32,10 @@ const banAdviceCommand = {
 		const target = interaction.options.getUser("user");
 
 		if (!target)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something went wrong when recieving your target input",
-			);
+			);}
+
 		const exists = await AdviceBan.findOne({ userId: target.id });
 
 		if (exists) {

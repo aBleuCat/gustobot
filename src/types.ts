@@ -49,6 +49,68 @@ export type Command = {
 	) => Promise<void>;
 };
 
+export type PoolQuestion = {
+	question: string;
+	image?: string | string[];
+	answer: RegExp;
+	answerTxt: string;
+};
+/** The data type to input into newQuiz() */
+export type PreQuiz = {
+	title: string;
+	/** In seconds, not milliseconds */
+	delay: number;
+	/**
+	 If you wish to pull from multiple pools, put the pools in an array.
+	 @example pool: "pool1"
+	 @example pool: ["pool1", "pool2"]
+	 */
+	pool: string | string[];
+	rounds: number;
+	/** In seconds, not milliseconds */
+	ansWindow: number;
+	/** @todo Haven't added prize capibilities yet */
+	prize?: string;
+	/**
+	 Questions** means that questions can repeat but the same image cannot. E.g., you can get times square twice but not same image of it
+	 All** means that both images and questions can repeat
+	 */
+	repeat: "none" | "questions" | "all";
+};
+/**
+ Represents a quiz actively managed by quiz handlers and in use for discord
+ @internal
+ */
+export type ActiveQuiz = {
+	remainingPool: PoolQuestion[];
+	totalRounds: number;
+	currentQuestion: {
+		question: string;
+		answer: RegExp;
+		answerTxt: string;
+		status: "idle" | "open" | "closed";
+		image?: string | string[];
+	};
+	scores: Record<string, number>;
+	/** * The timer for the current question; when the round ends, the timer is here so that it is easy to clear */
+	timer?: NodeJS.Timeout | undefined;
+	startTime?: number;
+	normalize?:
+		| undefined
+		| ((value: string) => string)
+		| Array<(value: string) => string>;
+} & PreQuiz;
+export type Pool = {
+	metadata?: {
+		/**
+		 Runs on any incoming message before testing against the answer regex.
+		 @example normalizer: (response) => response.replaceAll(/\s?the\s?/giv, "");
+		 */
+		normalizer?: (value: string) => string;
+	};
+	pool: PoolQuestion[];
+};
+
 declare module "discord.js" {
 	// eslint-disable-next-line @typescript-eslint/consistent-type-definitions, no-unused-vars
 	interface Client {

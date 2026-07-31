@@ -77,9 +77,10 @@ const forceHorseCommand = {
 		const isEphemeral =
 			interaction.options.getBoolean("ephemeral") ?? true;
 		if (!target || !type)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something went wrong when trying to get your input",
-			);
+			);}
+
 		// Verify the horse type exists in data
 		const horseData = HORSE_VALUES[type];
 		if (!horseData) {
@@ -113,10 +114,10 @@ const forceHorseCommand = {
 		});
 
 		if (horseData.link)
-			await interaction.followUp({
+			{await interaction.followUp({
 				content: horseData.link,
 				flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
-			});
+			});}
 
 		await conditionHorse(inventory, { interaction });
 	},

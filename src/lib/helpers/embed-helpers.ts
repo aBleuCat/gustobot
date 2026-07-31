@@ -46,10 +46,10 @@ function dictToEmbed<T>(
 	} else {
 		const isInline = style === "inline";
 		fields = dictArray.slice(0, 25).map(([key, value]) => ({
-			name: key,
-			value: String(value) || "\u{200B}", // Prevent empty string errors
-			inline: isInline,
-		}));
+				name: key,
+				value: String(value) || "\u{200B}", // Prevent empty string errors
+				inline: isInline,
+			}));
 	}
 
 	const embed = new EmbedBuilder()

@@ -15,19 +15,17 @@ const autoRoleViewCommand = {
 		const rules = await Rule.find();
 
 		if (rules.length === 0)
-			return interaction.reply("No rules found in cloud.");
+			{return interaction.reply("No rules found in cloud.");}
 
 		const embed = new EmbedBuilder()
 			.setTitle("Active Autorole Rules")
 			.setColor("#F1C40F");
 
 		const list = rules
-			.map((r) => {
-				return `\`${r.ruleId}\`
+			.map((r) => `\`${r.ruleId}\`
 					<@${r.watchUser}> triggers on <@${r.targetUser}>.
 					Adds <@&${r.addRole}> and restores <@&${r.restoreRole}>.
-					Duration: ${r.durationMs / immutConfig.MINUTE_MS}m\n`;
-			})
+					Duration: ${r.durationMs / immutConfig.MINUTE_MS}m\n`)
 			.join("\n---\n");
 
 		embed.setDescription(list);

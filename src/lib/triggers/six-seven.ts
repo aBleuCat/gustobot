@@ -2,6 +2,7 @@ import type { Message } from "discord.js";
 import { MutedChannel } from "../models.js";
 import queueMessage from "../helpers/message-queue.js";
 import { returnAsTextBased } from "../../type-utils.js";
+import { randItem } from "../helpers/random-helpers.js";
 
 const RESPONSES = [
 	"grown man btw",
@@ -20,13 +21,13 @@ async function handleSixSeven(message: Message) {
 			message.content.toLowerCase(),
 		)
 	)
-		return;
+		{return;}
+
 	const isMuted = await MutedChannel.findOne({
 		channelId: message.channel.id,
 	});
 	if (isMuted) return;
-	const thingy =
-		RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+	const thingy = randItem(RESPONSES);
 	if (!thingy) return;
 	queueMessage({
 		channel,

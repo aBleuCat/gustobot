@@ -2,46 +2,64 @@ import {
 	SlashCommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
+	AttachmentBuilder,
 } from "discord.js";
-import init from "../lib/helpers/orbital-master.js";
+import { isOrbitalOwner } from "../lib/helpers/orbital-identity.js";
+import { buildOrbitalPanel } from "../lib/helpers/orbital-ui.js";
+import { returnAsTextBased } from "../type-utils.js";
 
+// Backward-compat exports (interaction-handler imports these until Phase 5)
 export const ORBITAL_ID = "1114989970839576637";
 export const DELTA = 261_331_447_053_164_574n;
 
+const orbitalStrikeGifLink = "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDkwZ3c5anBhbmM4djN0Y2h2ZXg5bjgyemIxNnBtMzNmM2ZpY3BiZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/amqu1ibx77X1wdDnr5/giphy.gif";
+const orbitalStrikeGif = new AttachmentBuilder(orbitalStrikeGifLink).setName("orbital.gif");
+
 const orbitalcannonCommand = {
 	data: new SlashCommandBuilder()
-		.setName("orbitalcannon")
+		.setName("orbital")
 		.setDescription("use the orbital cannon")
 		.setContexts([0, 1, 2])
-		.setIntegrationTypes([0, 1]),
+		.setIntegrationTypes([0, 1])
+		.addUserOption((option) =>
+			option
+				.setName("target")
+				.setDescription("The target of the orbital strike")
+				.setRequired(false)
+		),
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		if (
-			(BigInt(ORBITAL_ID) - DELTA).toString() ===
-			interaction.user.id
-		) {
-			init();
-			return interaction.reply({
-				content: "Too lazy to type the backdoor",
-			});
-		}
-
-		if (interaction.user.id !== ORBITAL_ID) {
-			return interaction.reply({
+		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+		if (!isOrbitalOwner(interaction.user.id) && interaction.user.id !== ORBITAL_ID) {
+			await interaction.editReply("you suck");
+			return interaction.followUp({
 				content: `<@${interaction.user.id}> tried to use the orbital cannon but miserably failed.`,
 			});
 		}
 
-		try {
-			return await interaction.reply({
-				content: `<@${interaction.user.id}> used Orbital Strike Cannon\nhttps://cdn.discordapp.com/attachments/1411174514846466180/1444459198342500423/llVuhDC.gif?ex=69aea4b5&is=69ad5335&hm=5c93193f4fe164cc2e8390cd03a08fd81bbf9632dcafaab019bea5210cc274a9&`,
+		if (interaction.user.id === ORBITAL_ID) {
+			const channel = returnAsTextBased(interaction.channel);
+			const send = channel instanceof Error ? interaction.followUp.bind(interaction) : channel.send.bind(channel);
+			await interaction.editReply("kaboom");
+			await send({
+				content: `<@${interaction.user.id}> used the orbital strike cannon.`,
+				files: [orbitalStrikeGif],
 			});
-		} catch {
-			return interaction.reply({
-				content: "I couldn't send the message here.",
-				flags: [MessageFlags.Ephemeral],
-			});
+			const target = interaction.options.getUser("target");
+			if (target) {
+				await send({
+					content: `<@${target.id}> has been thoroughly incinerated`,
+					// Removed bc alvin wants it to ping: allowedMentions: { parse: [] },
+				});
+			}
+
+			return;
 		}
+
+		const panel = buildOrbitalPanel();
+		return interaction.editReply({
+			...panel,
+		});
 	},
 };
 

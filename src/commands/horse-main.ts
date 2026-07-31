@@ -15,9 +15,10 @@ const loader = new SubcommandLoader(
 	"horse-commands",
 );
 
+// eslint-disable-next-line unicorn/no-top-level-side-effects
 await loader.load();
 
-const command = {
+const horsesCommand = {
 	data: mainCommand,
 	async execute(interaction: ChatInputCommandInteraction) {
 		// The class handles
@@ -28,4 +29,4 @@ const command = {
 	},
 };
 
-export default command;
+export default horsesCommand;

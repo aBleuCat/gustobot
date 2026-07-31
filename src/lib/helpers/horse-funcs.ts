@@ -33,7 +33,7 @@ async function checkForEqualitySpawn(
 	const hasDark = (user.horses.get("darkness_despair") ?? 0) > 0;
 	const hasEqual =
 		(user.horses.get("equality_parallelism") ?? 0) > 0;
-	if (!(hasLight && hasDark && !hasEqual)) return false;
+	if (!(hasLight && hasDark) || hasEqual) return false;
 	const [lightName, darkName, equalName] = [
 		"brightness_prosperity",
 		"darkness_despair",
@@ -63,9 +63,9 @@ export async function conditionHorse(
 	user: IUserHorses,
 	options: ConditionHorseOptions,
 ) {
-	const equalityModified = await checkForEqualitySpawn(
+	const isEqualityModified = await checkForEqualitySpawn(
 		user,
 		options,
 	);
-	if (equalityModified) await user.save();
+	if (isEqualityModified) await user.save();
 }

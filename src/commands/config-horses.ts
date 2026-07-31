@@ -53,9 +53,9 @@ const configureHorsesCommand = {
 		const enabled = interaction.options.getBoolean("enabled");
 		const channel = interaction.options.getChannel("channel");
 		if (!channel)
-			return interaction.reply(
+			{return interaction.reply(
 				"Something went wrong when trying to get your inputs",
-			);
+			);}
 
 		await HorseConfig.findOneAndUpdate(
 			{ guildId: interaction.guildId },
@@ -65,7 +65,6 @@ const configureHorsesCommand = {
 
 		return interaction.reply({
 			content: `Horse spawning now **${enabled ? "ON" : "OFF"}** in <#${channel.id}>.`,
-			ephemeral: false,
 		});
 	},
 };

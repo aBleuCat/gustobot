@@ -31,13 +31,13 @@ const dmLogToggleCommand = {
 			});
 		}
 
-		let enabled = false;
-		enabled = fs.existsSync(TOGGLE_FILE)
+		let isEnabled = false;
+		isEnabled = fs.existsSync(TOGGLE_FILE)
 			? !fs.readFileSync(TOGGLE_FILE, "utf8").includes("on")
 			: true;
-		fs.writeFileSync(TOGGLE_FILE, enabled ? "on" : "off");
+		fs.writeFileSync(TOGGLE_FILE, isEnabled ? "on" : "off");
 		await interaction.reply({
-			content: `DM debug logs are now **${enabled ? "ENABLED" : "DISABLED"}**.`,
+			content: `DM debug logs are now **${isEnabled ? "ENABLED" : "DISABLED"}**.`,
 			flags: [MessageFlags.Ephemeral],
 		});
 	},

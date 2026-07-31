@@ -1,8 +1,10 @@
-// Message queue for multi-layer rate-limited sending
 import type {
 	TextBasedChannel,
 	PartialGroupDMChannel,
 	Message,
+	EmbedBuilder,
+	APIEmbed,
+	MessageMentionOptions,
 } from "discord.js";
 import { config } from "../config.js";
 import devLog from "./dev-log.js";
@@ -14,9 +16,11 @@ type ReplyInfo = {
 
 type QueueItem = {
 	channel: SendableChannel;
-	content: string;
+	content: string | undefined;
+	embeds: Array<EmbedBuilder | APIEmbed> | undefined;
 	reply: ReplyInfo | undefined;
 	priority: number;
+	allowedMentions: MessageMentionOptions | undefined;
 	resolve: (value: Message) => void;
 	reject: (reason: unknown) => void;
 };
@@ -58,13 +62,22 @@ function getChannelState(channelId: string): ChannelState {
 async function queueMessage({
 	channel,
 	content,
+	embeds,
 	reply,
 	priority = 1,
+	allowedMentions,
 }: {
 	channel: SendableChannel;
-	content: string;
+	content?: string;
+	embeds?: Array<EmbedBuilder | APIEmbed>;
 	reply?: ReplyInfo;
+	/** Higher number = closer to front of queue, will send before messages with lower priority number in the queue */
 	priority?: number;
+	/**
+	 The client is configured so messages cannot ping everyone and here by default. Pass this property to override that default.
+	 @example allowedMentions: { parse: ["users", "roles", "everyone"] } // This allows all types of mentions, including here and everyone
+	 */
+	allowedMentions?: MessageMentionOptions;
 }): Promise<Message> {
 	const state = getChannelState(channel.id);
 
@@ -78,8 +91,10 @@ async function queueMessage({
 	const item: QueueItem = {
 		channel,
 		content,
+		embeds,
 		reply,
 		priority,
+		allowedMentions,
 		resolve,
 		reject,
 	};
@@ -157,9 +172,13 @@ async function processChannelQueue(channelId: string): Promise<void> {
 
 		try {
 			const sent = await item.channel.send({
-				content: item.content,
+				...(item.content && { content: item.content }),
+				...(item.embeds && { embeds: item.embeds }),
 				...(item.reply?.mention && {
 					reply: { messageReference: item.reply.message },
+				}),
+				...(item.allowedMentions && {
+					allowedMentions: item.allowedMentions,
 				}),
 			});
 

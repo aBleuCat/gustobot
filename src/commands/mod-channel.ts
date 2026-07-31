@@ -47,10 +47,10 @@ const modChannelConfig = {
 		const channel = interaction.options.getChannel("channel");
 
 		if (!interaction.member || !interaction.guild || !channel)
-			return interaction.reply({
+			{return interaction.reply({
 				content:
 					"uhh something exploded and couldnt get your info",
-			});
+			});}
 
 		// Update if exists, otherwise create new
 		await ModChannel.findOneAndUpdate(

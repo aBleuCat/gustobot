@@ -32,10 +32,11 @@ const purgeCommand = {
 
 		const target = interaction.options.getUser("target");
 		if (!target)
-			return interaction.reply({
+			{return interaction.reply({
 				content:
 					"uhh something went wrong when receieving ur inputs, try again",
-			});
+			});}
+
 		const result = await Advice.deleteMany({
 			authorId: target.id,
 		});

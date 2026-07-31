@@ -17,7 +17,7 @@ const HORSE_VALUES = castAsHorseData(rawHorseValues);
 // Returns [{slug, value, count}] sorted by value; does not expand by count to avoid OOM
 function getSortedHorseList(inventory: IUserHorses, sortDir = "asc") {
 	const list = [];
-	for (const [slug, count] of inventory.horses.entries()) {
+	for (const [slug, count] of inventory.horses) {
 		if (count > 0 && HORSE_VALUES[slug]) {
 			list.push({
 				slug,
@@ -36,7 +36,8 @@ function getSortedHorseList(inventory: IUserHorses, sortDir = "asc") {
 function coinValueForSlug(slug: string) {
 	const horseValue = HORSE_VALUES[slug]?.value;
 	if (!horseValue)
-		throw new Error(`Slug ${slug} is not in HORSE_VALUES`);
+		{throw new Error(`Slug ${slug} is not in HORSE_VALUES`);}
+
 	return Math.max(1, Math.floor((horseValue * SELL_PRICE) / 25));
 }
 
@@ -82,7 +83,7 @@ export async function autocomplete(
 			},
 		];
 		if (inventory?.horses) {
-			for (const [slug, count] of inventory.horses.entries()) {
+			for (const [slug, count] of inventory.horses) {
 				if (count > 0 && HORSE_VALUES[slug]) {
 					choices.push({
 						name: `${horseName(slug)} (x${count})`,
@@ -139,7 +140,7 @@ async function topOrBottomBulkSell(
 		0,
 	);
 	let totalCoins = 0;
-	for (const [slug, cnt] of sellMap.entries()) {
+	for (const [slug, cnt] of sellMap) {
 		inventory.horses.set(
 			slug,
 			(inventory.horses.get(slug) ?? 0) - cnt,
@@ -152,7 +153,7 @@ async function topOrBottomBulkSell(
 	await inventory.save();
 
 	const label = isTop ? "most valuable" : "least valuable";
-	const lines = [...sellMap.entries()]
+	const lines = [...sellMap]
 		.toSorted(
 			(a, b) =>
 				(HORSE_VALUES[b[0]]?.value ?? 0) -

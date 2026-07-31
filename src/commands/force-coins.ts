@@ -39,9 +39,9 @@ const forceCoinsCommand = {
 		const target = interaction.options.getUser("target");
 		const amount = interaction.options.getInteger("amount");
 		if (!target || !amount)
-			return interaction.reply(
+			{return interaction.reply(
 				"Uh oh something exploded kaboom and I didn't get your input",
-			);
+			);}
 
 		let inventory = await UserHorses.findOne({
 			userId: target.id,
