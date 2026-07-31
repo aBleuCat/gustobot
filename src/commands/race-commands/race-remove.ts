@@ -1,0 +1,58 @@
+import {
+	type ChatInputCommandInteraction,
+	EmbedBuilder,
+	MessageFlags,
+	SlashCommandSubcommandBuilder,
+} from "discord.js";
+import { raceMaster } from "../lib/horse-race-challenge.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
+
+export const data = new SlashCommandSubcommandBuilder()
+	.setName("remove")
+	.setDescription(
+		"Remove the horse you have selected for the race",
+	);
+
+export async function execute(
+	interaction: ChatInputCommandInteraction,
+) {
+	const { channel } = interaction;
+	if (!channel)
+		return interaction.reply({
+			content: "Your channel could not be found",
+			flags: [MessageFlags.Ephemeral],
+		});
+	const race = raceMaster.get(channel.id);
+	if (!race)
+		return interaction.reply({
+			content: "There is no race happening in this channel",
+			flags: [MessageFlags.Ephemeral],
+		});
+	const color = race.getColor(interaction.user.id);
+	if (!color)
+		return interaction.reply({
+			content: "You do not appear to be in the race",
+			flags: [MessageFlags.Ephemeral],
+		});
+	const removedHorse = race.removeHorse(color);
+	if (!removedHorse)
+		return interaction.reply({
+			content:
+				"You didn't seem to have selected a horse to begin with",
+			flags: [MessageFlags.Ephemeral],
+		});
+	const embed = new EmbedBuilder().addFields(
+		{ name: "Name", value: removedHorse.name },
+		{ name: "Breed", value: horseName(removedHorse.breed) },
+		{ name: "Speed", value: `\`${removedHorse.speed}\`` },
+		{
+			name: "Speed Modifier",
+			value: `\`${removedHorse.speedModifier > 0 ? "+" : ""}${Math.round(removedHorse.speedModifier * 100)}%\``,
+		},
+	);
+	return interaction.reply({
+		content: "Your horse has been removed",
+		embeds: [embed],
+		flags: [MessageFlags.Ephemeral],
+	});
+}

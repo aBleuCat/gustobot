@@ -74,6 +74,15 @@ export type IOrbitalScript = {
 	name: string;
 	code: string;
 } & mongoose.Document;
+export type ITrainedHorsesProps = {
+	ownerId: string;
+	name: string;
+	breed: string;
+	speedModifier: number; // The modifier on the breed's base speed that yeilds speed. It's here for easier balancing.
+	speed: number;
+	xp: number;
+};
+export type ITrainedHorses = ITrainedHorsesProps & mongoose.Document;
 
 const ruleSchema = new mongoose.Schema<IRule>({
 	ruleId: String,
@@ -221,6 +230,21 @@ export const OrbitalScript = mongoose.model(
 	}),
 );
 
+const trainedHorsesSchema = new mongoose.Schema<ITrainedHorses>({
+	ownerId: String,
+	name: String,
+	breed: String,
+	speed: Number,
+	speedModifier: Number,
+	xp: { type: Number, default: 0 },
+});
+trainedHorsesSchema.index({ ownerId: 1 });
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const TrainedHorses = mongoose.model(
+	"TrainedHorses",
+	trainedHorsesSchema,
+);
+
 // Ensure indexes are created in MongoDB
 try {
 	await Promise.all([
@@ -230,6 +254,7 @@ try {
 		Timeout.collection.createIndex({ revertAt: 1 }),
 		ModChannel.collection.createIndex({ guildId: 1 }),
 		UserHorses.collection.createIndex({ userId: 1 }),
+		TrainedHorses.collection.createIndex({ ownerId: 1 }),
 	]);
 } catch (error: unknown) {
 	console.error("Index creation error:", error);

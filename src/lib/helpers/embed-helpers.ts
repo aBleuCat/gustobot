@@ -29,7 +29,7 @@ function dictToEmbed<T>(
 			{
 				name:
 					style === "leaderboard"
-						? "Score"
+						? "Players"
 						: style.leftHeader,
 				value: players || "none",
 				inline: true,
