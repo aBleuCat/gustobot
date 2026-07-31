@@ -270,6 +270,7 @@ export async function execute(
 			breed: trainedHorseSlug,
 			speed: totalSpeed,
 			speedModifier,
+			xp: 0,
 		};
 
 		await TrainedHorses.create(trainedHorse);

@@ -79,6 +79,7 @@ export type ITrainedHorsesProps = {
 	breed: string;
 	speedModifier: number; // The modifier on the breed's base speed that yeilds speed. It's here for easier balancing.
 	speed: number;
+	xp: number;
 };
 export type ITrainedHorses = ITrainedHorsesProps & mongoose.Document;
 
@@ -233,6 +234,7 @@ const trainedHorsesSchema = new mongoose.Schema<ITrainedHorses>({
 	breed: String,
 	speed: Number,
 	speedModifier: Number,
+	xp: { type: Number, default: 0 },
 });
 trainedHorsesSchema.index({ ownerId: 1 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
