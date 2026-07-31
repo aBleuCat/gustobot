@@ -456,8 +456,6 @@ export async function runNukeCode(
 ): Promise<unknown> {
 	const context = vm.createContext({
 		interaction,
-		// eslint-disable-next-line unicorn/prefer-module
-		require,
 		console,
 	});
 
