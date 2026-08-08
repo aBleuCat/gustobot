@@ -197,7 +197,7 @@ export async function execute(
 	);
 	const ownedUniqueCount = [...inventory.horses]
 		.filter(
-			([slug, count]) => count > 0 && HORSE_VALUES[slug]?.comp !== false,
+			([slug, count]) => count > 0 && HORSE_VALUES[slug] && HORSE_VALUES[slug].comp !== false,
 		).length;
 	const completionPercentage = Math.round(
 		(ownedUniqueCount / allPossibleSlugs.length) * 100,
