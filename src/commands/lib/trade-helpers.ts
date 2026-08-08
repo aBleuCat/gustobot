@@ -43,8 +43,12 @@ function omitKey<
 }
 
 class ActiveTrade {
+	private resolveFn!: (value: ResolvedTrade | undefined) => void;
+	private _cancelled = false;
+	private _cancelReason: "timeout" | "cancelled" | undefined;
+	private _cancellerId: string | undefined;
+
 	public readonly promise: Promise<ResolvedTrade | undefined>;
-	private resolveFn!: (value: ResolvedTrade) => void;
 	private resolveStatus: "active" | "resolved" | "expired" =
 		"active";
 
@@ -78,7 +82,7 @@ class ActiveTrade {
 			locked: false,
 		};
 
-		const successPromise = new Promise<ResolvedTrade>(
+		const successPromise = new Promise<ResolvedTrade | undefined>(
 			(resolve) => {
 				this.resolveFn = resolve;
 			},
@@ -123,6 +127,31 @@ class ActiveTrade {
 					this.reset(color);
 					return interaction.reply({
 						content: "You have reset your offer",
+						flags: [MessageFlags.Ephemeral],
+					});
+				}
+
+				if (interaction.customId === "trade_cancel") {
+					const color = this.colorOf(interaction.user.id);
+					if (!color)
+						{return interaction.reply({
+							content: "You cannot do that",
+							flags: [MessageFlags.Ephemeral],
+						});}
+
+					if (this._cancelled)
+						{return interaction.reply({
+							content: "Trade is already cancelled",
+							flags: [MessageFlags.Ephemeral],
+						});}
+
+					this._cancelled = true;
+					this._cancelReason = "cancelled";
+					this._cancellerId = interaction.user.id;
+					this.resolveFn(undefined);
+
+					return interaction.reply({
+						content: "You cancelled the trade.",
 						flags: [MessageFlags.Ephemeral],
 					});
 				}
@@ -278,14 +307,27 @@ class ActiveTrade {
 			.setCustomId("trade_reset")
 			.setLabel("Reset")
 			.setStyle(ButtonStyle.Danger);
+		const cancelButton = new ButtonBuilder()
+			.setCustomId("trade_cancel")
+			.setLabel("Cancel Trade")
+			.setStyle(ButtonStyle.Secondary);
 		return new ActionRowBuilder<ButtonBuilder>().addComponents(
 			lockButton,
 			resetButton,
+			cancelButton,
 		);
 	}
 
 	public get collector() {
 		return this._collector;
+	}
+
+	public get cancelReason() {
+		return this._cancelReason;
+	}
+
+	public get cancellerId() {
+		return this._cancellerId;
 	}
 
 	private checkStatus(user?: ColorWithUnderwear) {
@@ -451,6 +493,17 @@ export function buildExpiredEmbed(): EmbedBuilder {
 		.setTitle("❌ Trade Expired")
 		.setColor("#6c7086")
 		.setDescription("Neither user locked in time.");
+}
+
+export function buildCancelledEmbed(
+	cancellerName: string,
+): EmbedBuilder {
+	return new EmbedBuilder()
+		.setTitle("❌ Trade Cancelled")
+		.setColor("#6c7086")
+		.setDescription(
+			`${cancellerName} cancelled the trade. No balances were changed.`,
+		);
 }
 
 export function buildDeclinedEmbed(

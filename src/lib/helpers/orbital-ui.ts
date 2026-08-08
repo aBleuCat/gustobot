@@ -13,11 +13,15 @@ import {
 	type StringSelectMenuInteraction,
 	type ButtonInteraction,
 } from "discord.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
 import { orbitalRun } from "./orbital-master.js";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+const HORSE_VALUES = castAsHorseData(rawHorseValues, "all");
 
 type ModalField = {
 	id: string;
@@ -32,12 +36,23 @@ type ModalField = {
 // Constants
 // ---------------------------------------------------------------------------
 
+/** Actions that require a horse dropdown before modal. */
+const NEEDS_HORSE_SELECT = new Set([
+	"horses.get",
+	"horses.add",
+	"horses.set",
+	"horses.remove",
+	"spawn.oneshot",
+	"spawn.force",
+]);
+
 const CATEGORIES = [
 	{ label: "Config", value: "config", emoji: "⚙️" },
 	{ label: "Coins", value: "coins", emoji: "🪙" },
 	{ label: "Horses", value: "horses", emoji: "🐴" },
 	{ label: "Spawn", value: "spawn", emoji: "🎲" },
 	{ label: "Gamble", value: "gamble", emoji: "🎰" },
+	{ label: "Race", value: "race", emoji: "🏁" },
 	{ label: "Code", value: "code", emoji: "💻" },
 ] as const;
 
@@ -98,6 +113,14 @@ const CATEGORY_ACTIONS: Record<
 			needsModal: true,
 		},
 	],
+	race: [
+		{ label: "List", action: "race.list", needsModal: false },
+		{ label: "Set Speed", action: "race.speed.set", needsModal: true },
+		{ label: "Set Mod", action: "race.speed.modifier", needsModal: true },
+		{ label: "Set XP", action: "race.xp.set", needsModal: true },
+		{ label: "Free Train", action: "race.freetrain", needsModal: true },
+		{ label: "Delete", action: "race.delete", needsModal: true },
+	],
 	code: [
 		{
 			label: "Execute",
@@ -113,14 +136,14 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			id: "cfg_key",
 			label: "Config Key",
 			style: TextInputStyle.Short,
-			placeholder: "SPAWN_COEFFICIENT",
+			placeholder: "SPAWN_COEFFICIENT, COIN_CHANCE, DEBOUNCE_MS...",
 			required: true,
 		},
 		{
 			id: "cfg_value",
-			label: "Value",
+			label: "New Value",
 			style: TextInputStyle.Short,
-			placeholder: "15",
+			placeholder: "numeric or string value",
 			required: true,
 		},
 	],
@@ -184,24 +207,11 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			style: TextInputStyle.Short,
 			required: true,
 		},
-		{
-			id: "horse_name",
-			label: "Horse Name (optional)",
-			style: TextInputStyle.Short,
-			placeholder: "leave empty for all",
-			required: false,
-		},
 	],
 	"horses.add": [
 		{
 			id: "target_user",
 			label: "User ID or Username",
-			style: TextInputStyle.Short,
-			required: true,
-		},
-		{
-			id: "horse_name",
-			label: "Horse Name",
 			style: TextInputStyle.Short,
 			required: true,
 		},
@@ -221,12 +231,6 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			required: true,
 		},
 		{
-			id: "horse_name",
-			label: "Horse Name",
-			style: TextInputStyle.Short,
-			required: true,
-		},
-		{
 			id: "amount",
 			label: "Amount",
 			style: TextInputStyle.Short,
@@ -238,12 +242,6 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 		{
 			id: "target_user",
 			label: "User ID or Username",
-			style: TextInputStyle.Short,
-			required: true,
-		},
-		{
-			id: "horse_name",
-			label: "Horse Name",
 			style: TextInputStyle.Short,
 			required: true,
 		},
@@ -262,13 +260,6 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			style: TextInputStyle.Short,
 			required: true,
 		},
-		{
-			id: "horse_name",
-			label: "Horse Name (optional)",
-			style: TextInputStyle.Short,
-			placeholder: "leave empty for random",
-			required: false,
-		},
 	],
 	"spawn.force": [
 		{
@@ -276,13 +267,6 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			label: "User ID or Username",
 			style: TextInputStyle.Short,
 			required: true,
-		},
-		{
-			id: "horse_slug",
-			label: "Horse Slug (optional)",
-			style: TextInputStyle.Short,
-			placeholder: "leave empty for random",
-			required: false,
 		},
 	],
 	"spawn.mult.get": [
@@ -333,16 +317,16 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 		},
 		{
 			id: "no_lose",
-			label: "No Lose (true/false)",
+			label: "No Lose Mode",
 			style: TextInputStyle.Short,
-			placeholder: "false",
+			placeholder: "true = never lose, false = normal",
 			required: false,
 		},
 		{
 			id: "force_lose_horse",
-			label: "Force Lose Horse (optional)",
+			label: "Force Lose Horse Name",
 			style: TextInputStyle.Short,
-			placeholder: "horse name",
+			placeholder: "exact horse name, or leave empty",
 			required: false,
 		},
 	],
@@ -351,6 +335,81 @@ const MODAL_FIELDS: Record<string, ModalField[]> = {
 			id: "target_user",
 			label: "User ID or Username",
 			style: TextInputStyle.Short,
+			required: true,
+		},
+	],
+	"race.speed.set": [
+		{
+			id: "horse_name",
+			label: "Trained Horse Name",
+			style: TextInputStyle.Short,
+			required: true,
+		},
+		{
+			id: "amount",
+			label: "New Speed",
+			style: TextInputStyle.Short,
+			placeholder: "185",
+			required: true,
+		},
+	],
+	"race.speed.modifier": [
+		{
+			id: "horse_name",
+			label: "Trained Horse Name",
+			style: TextInputStyle.Short,
+			required: true,
+		},
+		{
+			id: "amount",
+			label: "New Modifier (e.g. 0.1 for +10%)",
+			style: TextInputStyle.Short,
+			placeholder: "0.1",
+			required: true,
+		},
+	],
+	"race.xp.set": [
+		{
+			id: "horse_name",
+			label: "Trained Horse Name",
+			style: TextInputStyle.Short,
+			required: true,
+		},
+		{
+			id: "amount",
+			label: "New XP",
+			style: TextInputStyle.Short,
+			placeholder: "100",
+			required: true,
+		},
+	],
+	"race.delete": [
+		{
+			id: "horse_name",
+			label: "Trained Horse Name",
+			style: TextInputStyle.Short,
+			required: true,
+		},
+	],
+	"race.freetrain": [
+		{
+			id: "horse_name",
+			label: "Trained Horse Name",
+			style: TextInputStyle.Short,
+			placeholder: "My Free Horse",
+			required: true,
+		},
+		{
+			id: "target_user",
+			label: "User ID or Username",
+			style: TextInputStyle.Short,
+			required: true,
+		},
+		{
+			id: "horse_slug",
+			label: "Horse Breed (slug)",
+			style: TextInputStyle.Short,
+			placeholder: "unicorn",
 			required: true,
 		},
 	],
@@ -437,6 +496,122 @@ export function buildSecondRow(
 	return new ActionRowBuilder<ButtonBuilder>().addComponents(
 		...buttons,
 	);
+}
+
+// ---------------------------------------------------------------------------
+// Horse select menu
+// ---------------------------------------------------------------------------
+
+/**
+Returns modal fields for horse-related actions WITHOUT the horse_name/slug
+field (since the horse is selected via dropdown).
+*/
+function getModalFieldsForHorseAction(
+	action: string,
+): ModalField[] | undefined {
+	switch (action) {
+		case "horses.get":
+		case "horses.add":
+		case "horses.set":
+		case "horses.remove": {
+			return [
+				{
+					id: "target_user",
+					label: "User ID or Username",
+					style: TextInputStyle.Short,
+					required: true,
+				},
+				...(action === "horses.get"
+					? []
+					: [
+							{
+								id: "amount",
+								label: "Amount",
+								style: TextInputStyle.Short,
+								placeholder: "1",
+								required: true,
+							},
+						]),
+			];
+		}
+
+		case "spawn.oneshot":
+		case "spawn.force": {
+			return [
+				{
+					id: "target_user",
+					label: "User ID or Username",
+					style: TextInputStyle.Short,
+					required: true,
+				},
+			];
+		}
+
+		default: {
+			return undefined;
+		}
+	}
+}
+
+export function buildHorseSelectMenu(
+	action: string,
+	page = 0,
+): {
+	components: Array<ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>>;
+} {
+	const entries = Object.entries(HORSE_VALUES)
+		.toSorted(([, a], [, b]) => b.value - a.value);
+
+	const PAGE_SIZE = 23; // 23 horses + Random = 24 options, room for page button
+	const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+	const start = page * PAGE_SIZE;
+	const pageEntries = entries.slice(start, start + PAGE_SIZE);
+
+	const options = [
+		{ label: "\u{1F3B2} Random", value: "__random__" },
+		...pageEntries.map(([slug, data]) => ({
+			label: data.name,
+			value: slug,
+			description: `Value: ${data.value} | Speed: ${data.speed}`,
+		})),
+	];
+
+	const select = new StringSelectMenuBuilder()
+		.setCustomId(`orbital_horse:${action}:${page}`)
+		.setPlaceholder("Select a horse...")
+		.addOptions(...options);
+
+	const rows: Array<ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>> = [
+		new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
+	];
+
+	// Add page navigation buttons if needed
+	if (totalPages > 1) {
+		const buttons = new ActionRowBuilder<ButtonBuilder>();
+		if (page > 0) {
+			buttons.addComponents(
+				new ButtonBuilder()
+					.setCustomId(`orbital_horse_page:${action}:${page - 1}`)
+					.setLabel("\u{2B05} Previous")
+					.setStyle(ButtonStyle.Secondary),
+			);
+		}
+
+		if (page < totalPages - 1) {
+			buttons.addComponents(
+				new ButtonBuilder()
+					.setCustomId(`orbital_horse_page:${action}:${page + 1}`)
+					.setLabel("Next \u{27A1}")
+					.setStyle(ButtonStyle.Secondary),
+			);
+		}
+
+		if (buttons.components.length > 0) {
+			rows.push(buttons);
+		}
+	}
+
+	return { components: rows };
 }
 
 // ---------------------------------------------------------------------------
@@ -632,7 +807,10 @@ export async function handleOrbitalCategory(
 	interaction: StringSelectMenuInteraction,
 ): Promise<void> {
 	const category = interaction.values[0];
-	if (!category) return;
+	if (!category) {
+		await interaction.deferUpdate().catch(() => undefined);
+		return;
+	}
 
 	const actionRow = buildActionRow(category);
 	const secondRow = buildSecondRow(category);
@@ -657,6 +835,7 @@ const IMMEDIATE_ACTIONS = new Set([
 	"config.get",
 	"config.reset",
 	"status",
+	"race.list",
 	"cmd.whitelist.list",
 	"cmd.whitelist.reset",
 ]);
@@ -666,7 +845,12 @@ export async function handleOrbitalAction(
 ): Promise<void> {
 	const parts = interaction.customId.split(":");
 	const action = parts[2];
-	if (!action) return;
+	if (!action) {
+		await interaction
+			.reply({ content: "Invalid action.", flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
+		return;
+	}
 
 	// Immediate actions (no modal needed)
 	if (IMMEDIATE_ACTIONS.has(action)) {
@@ -686,6 +870,17 @@ export async function handleOrbitalAction(
 		return;
 	}
 
+	// Actions that need horse selection first
+	if (NEEDS_HORSE_SELECT.has(action)) {
+		const { components } = buildHorseSelectMenu(action, 0);
+		const embed = new EmbedBuilder()
+			.setColor("#ff6600")
+			.setTitle("\u{1F3AF} Select a Horse")
+			.setDescription(`Choose a horse for **${action}**:`);
+		await interaction.update({ embeds: [embed], components });
+		return;
+	}
+
 	// Actions that need a modal
 	const modal = buildModal(action);
 	if (!modal) {
@@ -699,14 +894,100 @@ export async function handleOrbitalAction(
 	await interaction.showModal(modal);
 }
 
-export async function handleOrbitalModal(
-	interaction: ModalSubmitInteraction,
+export async function handleOrbitalHorseSelect(
+	interaction: StringSelectMenuInteraction,
+): Promise<void> {
+	const parts = interaction.customId.split(":");
+	const action = parts[1];
+	// Parts[2] is the page number (embedded in the customId).
+	if (!action) {
+		await interaction
+			.reply({ content: "Invalid action.", flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
+		return;
+	}
+
+	const horseSlug = interaction.values[0];
+	if (!horseSlug) {
+		await interaction
+			.reply({ content: "No horse selected.", flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
+		return;
+	}
+
+	// Build modal for remaining fields (without horse field)
+	const modalFields = getModalFieldsForHorseAction(action);
+	if (!modalFields) {
+		await interaction
+			.reply({ content: "Unknown action.", flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
+		return;
+	}
+
+	const modal = new ModalBuilder()
+		.setCustomId(`orbital_modal:${action}:${horseSlug}`)
+		.setTitle(action);
+
+	for (const field of modalFields) {
+		const input = new TextInputBuilder()
+			.setCustomId(field.id)
+			.setStyle(field.style)
+			.setRequired(field.required);
+
+		if (field.placeholder) {
+			input.setPlaceholder(field.placeholder);
+		}
+
+		if (field.maxLength) {
+			input.setMaxLength(field.maxLength);
+		}
+
+		const label = new LabelBuilder()
+			.setLabel(field.label)
+			.setTextInputComponent(input);
+		modal.addLabelComponents(label);
+	}
+
+	await interaction.showModal(modal);
+}
+
+export async function handleOrbitalHorsePage(
+	interaction: ButtonInteraction,
 ): Promise<void> {
 	const parts = interaction.customId.split(":");
 	const action = parts[1];
 	if (!action) return;
 
+	const page = Number(parts[2]) || 0;
+	const { components } = buildHorseSelectMenu(action, page);
+	await interaction.update({ components });
+}
+
+export async function handleOrbitalModal(
+	interaction: ModalSubmitInteraction,
+): Promise<void> {
+	const parts = interaction.customId.split(":");
+	const action = parts[1];
+	if (!action) {
+		await interaction
+			.reply({ content: "Invalid action.", flags: [MessageFlags.Ephemeral] })
+			.catch(() => undefined);
+		return;
+	}
+
+	const horseSlug = parts[2]; // May be undefined for non-horse actions
 	const payload = parseModalValues(action, interaction);
+
+	// If a horse was selected via dropdown, add it to the payload
+	if (horseSlug && horseSlug !== "__random__") {
+		if (action.startsWith("horses.")) {
+			payload.horseName = HORSE_VALUES[horseSlug]?.name ?? horseSlug;
+		} else if (action === "spawn.force") {
+			payload.horseSlug = horseSlug;
+		} else if (action === "spawn.oneshot") {
+			payload.horseName = HORSE_VALUES[horseSlug]?.name ?? horseSlug;
+		}
+	}
 
 	try {
 		await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });

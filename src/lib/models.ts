@@ -54,6 +54,7 @@ export type IUserHorses = {
 	lastGamble: number;
 	horseCoins: number;
 	horses: Map<string, number>;
+	lastHorse?: string;
 } & mongoose.Document;
 export type IMessageCache = {
 	userId: string;
@@ -186,6 +187,7 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 		max: 9_007_199_254_740_991,
 	},
 	horses: { type: Map, of: Number, default: {} },
+	lastHorse: { type: String, default: undefined },
 });
 userHorsesSchema.index({ userId: 1 });
 // eslint-disable-next-line @typescript-eslint/naming-convention

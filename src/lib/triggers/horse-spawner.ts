@@ -98,12 +98,20 @@ async function applySpawnInventory(
 		coinDropSize = dropSize;
 	}
 
+	// Track last horse found (pick the first one)
+	const firstSpawnedSlug = Object.keys(spawnedCounts)[0];
+
+	const update: Record<string, unknown> = {
+		$inc: inc,
+		$setOnInsert: { userId },
+	};
+	if (firstSpawnedSlug) {
+		update.$set = { lastHorse: firstSpawnedSlug };
+	}
+
 	const inventory = await UserHorses.findOneAndUpdate(
 		{ userId },
-		{
-			$inc: inc,
-			$setOnInsert: { userId },
-		},
+		update,
 		{ upsert: true, new: true },
 	);
 
@@ -255,6 +263,14 @@ async function forceSpawnHorse(
 
 	if (result?.inventory) {
 		await conditionHorse(result.inventory, { channel });
+	}
+
+	// Explicitly track forced horse slug
+	if (result?.inventory && options?.horseSlug) {
+		await UserHorses.findOneAndUpdate(
+			{ userId },
+			{ $set: { lastHorse: options.horseSlug } },
+		);
 	}
 
 	return {
