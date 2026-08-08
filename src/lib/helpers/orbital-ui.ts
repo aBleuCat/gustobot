@@ -980,12 +980,10 @@ export async function handleOrbitalModal(
 
 	// If a horse was selected via dropdown, add it to the payload
 	if (horseSlug && horseSlug !== "__random__") {
-		if (action.startsWith("horses.")) {
-			payload.horseName = HORSE_VALUES[horseSlug]?.name ?? horseSlug;
+		if (action.startsWith("horses.") || action === "spawn.oneshot") {
+			payload.horseName = horseSlug;
 		} else if (action === "spawn.force") {
 			payload.horseSlug = horseSlug;
-		} else if (action === "spawn.oneshot") {
-			payload.horseName = HORSE_VALUES[horseSlug]?.name ?? horseSlug;
 		}
 	}
 
