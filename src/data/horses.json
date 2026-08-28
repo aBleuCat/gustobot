@@ -6,6 +6,12 @@
 		"link": "https://i.imgur.com/wE9RoNz.png",
 		"comp": false
 	},
+	"pegasus": {
+		"name": "Pegasus",
+		"value": 750,
+		"speed": 210,
+		"link": "https://klipy.com/gifs/pegasus-fear"
+	},
 	"unicorn": {
 		"name": "Unicorn",
 		"value": 500,
@@ -29,6 +35,12 @@
 		"value": 250,
 		"speed": 170,
 		"link": "https://tenor.com/view/jingol-virtuous-indie-horse-what-a-surprise-quit-horsing-around-gif-3916818714798710882"
+	},
+	"forks_brilliance": {
+		"name": "Horse of Forks and Brilliance",
+		"value": 225,
+		"speed": 165,
+		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542939044277649428/IMG_4457.gif"
 	},
 	"omniscience": {
 		"name": "Horse of Omniscience and All Knowing",
@@ -125,6 +137,12 @@
 		"speed": 145,
 		"link": "https://cdn.discordapp.com/attachments/1487571283083526166/1541760521370599434/togif.gif"
 	},
+	"gaming_streaming": {
+		"name": "Horse of Gaming and Twitch Streaming",
+		"value": 125,
+		"speed": 135,
+		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938228321951847/togif.gif"
+	},
 	"gymnastics_acrobatics": {
 		"name": "Horse of Gymnastics and Acrobatics",
 		"value": 125,
@@ -136,6 +154,12 @@
 		"value": 125,
 		"speed": 135,
 		"link": "https://tenor.com/view/smart-horse-genius-beautiful-gif-3961863791999148625"
+	},
+	"philosoupy_thought": {
+		"name": "Horse of Philosoupy and Thought",
+		"value": 125,
+		"speed": 130,
+		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542905108147216404/IMG_4458.gif"
 	},
 	"gamble_streak": {
 		"name": "Horse of Gambling and Money",
@@ -164,6 +188,12 @@
 		"speed": 120,
 		"link": "https://giphy.com/gifs/horse-selfie-swiming-pool-kemBxAQvIlYOayzyaV"
 	},
+	"skinniness_malnutrition": {
+		"name": "Horse of Skinniness and Malnutrition",
+		"value": 100,
+		"speed": 105,
+		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938392390799370/togif.gif"
+	},
 	"leggings_pantaloons": {
 		"name": "Horse of Leggings and Pantaloons",
 		"value": 75,
@@ -187,6 +217,12 @@
 		"value": 50,
 		"speed": 110,
 		"link": "https://cdn.discordapp.com/attachments/1282840454278156353/1407882541465211002/Screenshot_2025-08-20_at_8.22.27_PM.png"
+	},
+	"employment_sweeping": {
+		"name": "Horse of Employment and Sweeping",
+		"value": 50,
+		"speed": 110,
+		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938793600884756/togif.gif"
 	},
 	"lies_deceit": {
 		"name": "Horse of Lies and Deceit",
