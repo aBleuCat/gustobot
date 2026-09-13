@@ -64,13 +64,14 @@ function buildHorseInvList(inventory: IUserHorses) {
 	const ownedSlugs = new Set<string>();
 
 	for (const [slug, count] of inventory.horses) {
-		if (count <= 0 || !HORSE_VALUES[slug]) {
+		const horse = HORSE_VALUES[slug];
+		if (count <= 0 || !horse) {
 			continue;
 		}
 
-		const { value } = HORSE_VALUES[slug];
+		const { value } = horse;
 		const display = horseName(slug);
-		const isComp = HORSE_VALUES[slug].comp !== false;
+		const isComp = horse.comp !== false;
 		const prefix =
 			slug === "dung_beetle"
 				? "🪲"
@@ -146,13 +147,10 @@ export async function execute(
 	const inventory = allUsers.find(
 		(u) => u.userId === targetUser.id,
 	);
-	const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
-		(k) => HORSE_VALUES[k]?.comp !== false,
-	);
 
 	if (
 		!inventory?.horses ||
-		[...inventory.horses.values()].every((v) => v === 0)
+		inventory.horses.values().every((v) => v === 0)
 	) {
 		return interaction.editReply({
 			content: isSelf
@@ -160,6 +158,10 @@ export async function execute(
 				: `${targetUser.username}'s stables are empty.`,
 		});
 	}
+	
+	const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
+		(k) => HORSE_VALUES[k]?.comp !== false,
+	);
 
 	const { rank, userWorth } = leaderboardStats(
 		allUsers,
