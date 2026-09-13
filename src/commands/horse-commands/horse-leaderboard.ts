@@ -5,8 +5,10 @@ import {
 	ButtonBuilder,
 	ButtonStyle,
 	MessageFlags,
+	StringSelectMenuBuilder,
 	type ChatInputCommandInteraction,
 	type ButtonInteraction,
+	type StringSelectMenuInteraction,
 	type User,
 } from "discord.js";
 import { UserHorses } from "../../lib/models.js";
@@ -179,26 +181,68 @@ export async function execute(
 			);
 	}
 
-	function getButtons(
+	function getComponents(
 		page: number,
-	): ActionRowBuilder<ButtonBuilder> {
-		return new ActionRowBuilder<ButtonBuilder>().addComponents(
+	): Array<
+		ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+	> {
+		const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId(`hlb_first_${page}`)
+				.setLabel("⏮")
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page === 0),
 			new ButtonBuilder()
 				.setCustomId(`hlb_prev_${page}`)
-				.setLabel("⬅️")
+				.setLabel("⬅")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page === 0),
 			new ButtonBuilder()
 				.setCustomId(`hlb_next_${page}`)
-				.setLabel("➡️")
+				.setLabel("➡")
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page >= totalPages - 1),
+			new ButtonBuilder()
+				.setCustomId(`hlb_last_${page}`)
+				.setLabel("⏭")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= totalPages - 1),
 		);
+
+		const rows: Array<
+			ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+		> = [navRow];
+
+		if (totalPages > 1) {
+			const maxDropdownPages = Math.min(totalPages, 25);
+			const select = new StringSelectMenuBuilder()
+				.setCustomId(`hlb_jump_${page}`)
+				.setPlaceholder(
+					`Page ${page + 1} of ${totalPages}`,
+				)
+				.addOptions(
+					...Array.from(
+						{ length: maxDropdownPages },
+						(_, i) => ({
+							label: `Page ${i + 1}`,
+							value: String(i),
+							default: i === page,
+						}),
+					),
+				);
+			rows.push(
+				new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+					select,
+				),
+			);
+		}
+
+		return rows;
 	}
 
 	await interaction.editReply({
 		embeds: [await buildEmbed(currentPage)],
-		components: [getButtons(currentPage)],
+		components: getComponents(currentPage),
 	});
 
 	const reply = await interaction.fetchReply();
@@ -206,45 +250,79 @@ export async function execute(
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on("collect", (i: ButtonInteraction) => {
-		void (async () => {
-			if (i.user.id !== interaction.user.id) {
-				await i
-					.reply({
-						content:
-							"Only the command user can use these buttons.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-				return;
-			}
+	collector.on(
+		"collect",
+		(i: ButtonInteraction | StringSelectMenuInteraction) => {
+			void (async () => {
+				if (i.user.id !== interaction.user.id) {
+					await i
+						.reply({
+							content:
+								"Only the command user can use these controls.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+					return;
+				}
 
-			const [, direction, page] = i.customId.split("_");
-			let parsedPage = Number(page);
-			if (Number.isNaN(parsedPage)) parsedPage = 0;
-			currentPage =
-				direction === "next"
-					? parsedPage + 1
-					: parsedPage - 1;
-			if (currentPage < 0) currentPage = 0;
-			if (currentPage >= totalPages)
-				{currentPage = totalPages - 1;}
+				let parsedPage = currentPage;
+				const parts = i.customId.split("_");
+				const direction = parts[1];
 
-			try {
-				await i.update({
-					embeds: [await buildEmbed(currentPage)],
-					components: [getButtons(currentPage)],
-				});
-			} catch {
-				await i
-					.reply({
-						content: "Failed to update leaderboard page.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-			}
-		})().catch(() => undefined);
-	});
+				switch (direction) {
+					case "first": {
+						parsedPage = 0;
+						break;
+					}
+
+					case "prev": {
+						parsedPage = currentPage - 1;
+						break;
+					}
+
+					case "next": {
+						parsedPage = currentPage + 1;
+						break;
+					}
+
+					case "last": {
+						parsedPage = totalPages - 1;
+						break;
+					}
+
+					case "jump": {
+						if ("values" in i) {
+							parsedPage = Number(i.values[0]) || 0;
+						}
+
+						break;
+					}
+				}
+
+				if (parsedPage < 0) parsedPage = 0;
+				if (parsedPage >= totalPages) {
+					parsedPage = totalPages - 1;
+				}
+
+				currentPage = parsedPage;
+
+				try {
+					await i.update({
+						embeds: [await buildEmbed(currentPage)],
+						components: getComponents(currentPage),
+					});
+				} catch {
+					await i
+						.reply({
+							content:
+								"Failed to update leaderboard page.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+				}
+			})().catch(() => undefined);
+		},
+	);
 
 	collector.on("end", () => {
 		void (async () => {

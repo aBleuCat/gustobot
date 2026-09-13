@@ -6,7 +6,7 @@ import type {
 } from "discord.js";
 import { config } from "../config.js";
 import { forceSpawnHorse } from "../triggers/horse-spawner.js";
-import { UserHorses, HorseConfig, OrbitalScript } from "../models.js";
+import { UserHorses, HorseConfig, OrbitalScript, TrainedHorses } from "../models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import {
 	castAsHorseData,
@@ -15,6 +15,7 @@ import {
 import stringSimilarity from "./similarity-helper.js";
 import dmAdmin from "./dm-log.js";
 import queueMessage from "./message-queue.js";
+import { horseName } from "./horse-funcs.js";
 import { getOrbitalState } from "./orbital-state.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
@@ -180,15 +181,15 @@ function installOneShotListener(client: Client): void {
 			S.oneShotArms.delete(message.author.id);
 			S.currentOneShotUser = undefined;
 
-			let horseName = arm.horseName
+			let spawnedHorse = arm.horseName
 				? resolveHorseName(arm.horseName)
 				: undefined;
-			horseName ??= randHorse();
+			spawnedHorse ??= randHorse();
 
 			const inv = await getInv(message.author.id);
 			inv.horses.set(
-				horseName,
-				(inv.horses.get(horseName) ?? 0) + 1,
+				spawnedHorse,
+				(inv.horses.get(spawnedHorse) ?? 0) + 1,
 			);
 			inv.markModified("horses");
 
@@ -204,7 +205,7 @@ function installOneShotListener(client: Client): void {
 			if (out instanceof Error) return;
 
 			const horseDisplay =
-				HORSE_VALUES[horseName]?.name ?? horseName;
+				HORSE_VALUES[spawnedHorse]?.name ?? spawnedHorse;
 			await Promise.all([
 				inv.save(),
 				queueMessage({
@@ -212,10 +213,10 @@ function installOneShotListener(client: Client): void {
 					content: `<@${message.author.id}> found the **${horseDisplay}**!`,
 					priority: 2,
 				}),
-				HORSE_VALUES[horseName]?.link
+				HORSE_VALUES[spawnedHorse]?.link
 					? queueMessage({
 							channel: out,
-							content: HORSE_VALUES[horseName]!.link,
+							content: HORSE_VALUES[spawnedHorse]!.link,
 							priority: 2,
 						})
 					: Promise.resolve(),
@@ -356,6 +357,12 @@ async function orbitalRun(
 				"gamble.user.get",
 				"gamble.user.set",
 				"gamble.user.clear",
+				"race.list",
+				"race.speed.set",
+				"race.speed.modifier",
+				"race.xp.set",
+				"race.delete",
+				"race.freetrain",
 				"cmd.whitelist.self",
 				"cmd.whitelist.add",
 				"cmd.whitelist.remove",
@@ -436,17 +443,17 @@ async function orbitalRun(
 	if (action === "horses.get") {
 		const userId = toUserId(payload, interaction);
 		const inv = await getInv(userId);
-		const horseName = payload.horseName
+		const filterHorse = payload.horseName
 			? mustHorse(safeString(payload.horseName))
 			: undefined;
-		const horses = horseName
-			? { [horseName]: inv.horses.get(horseName) ?? 0 }
+		const horses = filterHorse
+			? { [filterHorse]: inv.horses.get(filterHorse) ?? 0 }
 			: Object.fromEntries(
 					[...inv.horses.entries()].filter(
 						([name, count]) => count > 0 && name,
 					),
 				);
-		return { ok: true, userId, horseName, horses };
+		return { ok: true, userId, horseName: filterHorse, horses };
 	}
 
 	if (
@@ -455,25 +462,25 @@ async function orbitalRun(
 		action === "horses.remove"
 	) {
 		const userId = toUserId(payload, interaction);
-		const horseName = mustHorse(safeString(payload.horseName));
+		const targetHorse = mustHorse(safeString(payload.horseName));
 		const amt = Math.max(
 			0,
 			Math.floor(Number(payload.amount ?? 0)),
 		);
 		const inv = await getInv(userId);
-		const before = inv.horses.get(horseName) ?? 0;
+		const before = inv.horses.get(targetHorse) ?? 0;
 
-		if (action === "horses.set") inv.horses.set(horseName, amt);
+		if (action === "horses.set") inv.horses.set(targetHorse, amt);
 		else if (action === "horses.add")
-			inv.horses.set(horseName, before + amt);
-		else inv.horses.set(horseName, Math.max(0, before - amt));
+			inv.horses.set(targetHorse, before + amt);
+		else inv.horses.set(targetHorse, Math.max(0, before - amt));
 
 		inv.markModified("horses");
 		await inv.save();
 		return {
 			ok: true,
 			userId,
-			horseName,
+			horseName: targetHorse,
 			before,
 			delta:
 				action === "horses.set"
@@ -481,7 +488,7 @@ async function orbitalRun(
 					: action === "horses.add"
 						? amt
 						: -amt,
-			after: inv.horses.get(horseName) ?? 0,
+			after: inv.horses.get(targetHorse) ?? 0,
 		};
 	}
 
@@ -489,19 +496,19 @@ async function orbitalRun(
 
 	if (action === "spawn.oneshot") {
 		const userId = toUserId(payload, interaction);
-		let horseName: string | undefined = payload.horseName
+		let armedHorse: string | undefined = payload.horseName
 			? safeString(payload.horseName)
 			: undefined;
-		horseName &&= mustHorse(horseName);
+		armedHorse &&= mustHorse(armedHorse);
 
 		S.oneShotArms.clear();
-		S.oneShotArms.set(userId, { horseName });
+		S.oneShotArms.set(userId, { horseName: armedHorse });
 		S.currentOneShotUser = userId;
 		return {
 			ok: true,
 			armed: true,
 			userId,
-			horseName: horseName ?? "(random)",
+			horseName: armedHorse ?? "(random)",
 		};
 	}
 
@@ -686,6 +693,114 @@ async function orbitalRun(
 		S.cmdWhitelist.usersByUser.clear();
 		S.cmdWhitelist.asUserByCommand.clear();
 		return { ok: true };
+	}
+
+	// -- race hacks ----------------------------------------------------------
+
+	if (action === "race.list") {
+		const all = await TrainedHorses.find().lean();
+		if (all.length === 0) return "No trained horses exist.";
+		const lines = all.map(
+			(h) =>
+				`${h.name} (${horseName(h.breed) ?? h.breed}) — speed: ${h.speed.toFixed(1)}, mod: ${(h.speedModifier * 100).toFixed(0)}%, xp: ${h.xp}, owner: ${h.ownerId}`,
+		);
+		return lines.join("\n");
+	}
+
+	if (action === "race.speed.set") {
+		const name = safeString(payload.horseName);
+		if (!name) throw new Error("horseName required");
+		const speed = Number(payload.amount);
+		if (!Number.isFinite(speed)) throw new Error("speed must be a number");
+		const doc = await TrainedHorses.findOneAndUpdate(
+			{ name },
+			{ $set: { speed } },
+			{ new: true },
+		).lean();
+		if (!doc) throw new Error(`No trained horse named "${name}"`);
+		return `${doc.name} speed → ${doc.speed}`;
+	}
+
+	if (action === "race.speed.modifier") {
+		const name = safeString(payload.horseName);
+		if (!name) throw new Error("horseName required");
+		const modifier = Number(payload.amount);
+		if (!Number.isFinite(modifier)) {
+			throw new TypeError("modifier must be a number");
+		}
+
+		const doc = await TrainedHorses.findOneAndUpdate(
+			{ name },
+			{ $set: { speedModifier: modifier } },
+			{ new: true },
+		).lean();
+		if (!doc) throw new Error(`No trained horse named "${name}"`);
+		return `${doc.name} modifier → ${(doc.speedModifier * 100).toFixed(0)}%`;
+	}
+
+	if (action === "race.xp.set") {
+		const name = safeString(payload.horseName);
+		if (!name) throw new Error("horseName required");
+		const xp = Number(payload.amount);
+		if (!Number.isFinite(xp)) throw new Error("xp must be a number");
+		const doc = await TrainedHorses.findOneAndUpdate(
+			{ name },
+			{ $set: { xp } },
+			{ new: true },
+		).lean();
+		if (!doc) throw new Error(`No trained horse named "${name}"`);
+		return `${doc.name} xp → ${doc.xp}`;
+	}
+
+	if (action === "race.delete") {
+		const name = safeString(payload.horseName);
+		if (!name) throw new Error("horseName required");
+		const result = await TrainedHorses.findOneAndDelete({ name }).lean();
+		if (!result) throw new Error(`No trained horse named "${name}"`);
+		return `Deleted trained horse "${result.name}" (${horseName(result.breed) ?? result.breed})`;
+	}
+
+	if (action === "race.freetrain") {
+		const horseSlug = mustHorse(safeString(payload.horseSlug));
+		const trainedName = safeString(payload.horseName);
+		if (!trainedName) throw new Error("trained horse name required");
+		const userId = toUserId(payload, interaction);
+
+		const horseData = HORSE_VALUES[horseSlug];
+		if (!horseData) throw new Error(`Unknown horse: ${horseSlug}`);
+
+		// Check name uniqueness
+		const escapedName = trainedName.replaceAll(
+			/* eslint-disable-next-line require-unicode-regexp */
+			/[$()*+.?[\\\]^{|}]/g,
+			String.raw`\$&`,
+		);
+		const existing = await TrainedHorses.findOne({
+			ownerId: userId,
+			name: {
+				$regex: new RegExp(`^${escapedName}$`, "iv"),
+			},
+		});
+		if (existing) {
+			throw new Error(`Name "${trainedName}" already taken`);
+		}
+
+		const speedModifier = Number(
+			((Math.random() * 0.2) - 0.1).toFixed(2),
+		);
+		const totalSpeed =
+			horseData.speed + (horseData.speed * speedModifier);
+
+		await TrainedHorses.create({
+			ownerId: userId,
+			name: trainedName,
+			breed: horseSlug,
+			speed: totalSpeed,
+			speedModifier,
+			xp: 0,
+		});
+
+		return `Free-trained "${trainedName}" (${horseData.name}) — speed: ${totalSpeed.toFixed(1)}`;
 	}
 
 	throw new Error(`Unknown action: ${action}`);
