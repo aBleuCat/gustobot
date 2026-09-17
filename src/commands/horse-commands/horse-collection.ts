@@ -8,11 +8,8 @@ import mongoose from "mongoose";
 import type { IUserHorses, ITrainedHorses } from "../../lib/models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
-import { config } from "../../lib/config.js";
-import {
-	horseName,
-	conditionHorse,
-} from "../../lib/helpers/horse-funcs.js";
+import { horseName, trainedHorseValue } from "../../lib/helpers/horse-funcs.js";
+import { immutConfig } from "../../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
@@ -74,88 +71,209 @@ function leaderboardStats(
 	return { rank, userWorth };
 }
 
-function buildHorseInvList(inventory: IUserHorses | undefined, trainedForUser: ITrainedHorses[] = []) {
-	let compHorseText = "";
-	let nonCompHorseText = "";
-	let ownedUniqueCount = 0;
-	const ownedSlugs = new Set<string>();
+type PageData = {
+	title: string;
+	color: `#${string}`;
+	lines: string[];
+	isMasteredPage?: boolean;
+};
 
-	if (inventory) {
-		for (const [slug, count] of inventory.horses) {
-			const horse = HORSE_VALUES[slug];
-			if (count <= 0 || !horse) {
-				continue;
-			}
-
-			const { value } = horse;
-			const display = horseName(slug);
-			const isComp = horse.comp !== false;
-			const prefix = slug === "dung_beetle" ? "🪲" : "🐎";
-
-			if (isComp) {
-				compHorseText += `* ${prefix} **${display}**: \`x${count}\` — ($${value.toLocaleString()})\n`;
-				ownedSlugs.add(slug);
-				ownedUniqueCount++;
-			} else {
-				// If comp:false, show if owned, counts to wealth but not completion
-				nonCompHorseText += `* 👻 **${display}**: \`x${count}\` — ($${value.toLocaleString()})\n`;
-			}
-		}
-	}
-
-	// Trained horses section (separate display). They also count toward completion if their breed
-	// is completion-eligible and not already owned.
-	let trainedHorseText = "";
-	for (const t of trainedForUser) {
-		const { breed } = t;
-		const trainedValue = trainedHorseValue(breed);
-		const displayName = t.name ?? horseName(breed);
-		trainedHorseText += `* 🏅 **${displayName}** (${horseName(breed)}): ($${Math.round(trainedValue).toLocaleString()})\n`;
-		if (!ownedSlugs.has(breed) && HORSE_VALUES[breed]?.comp !== false) {
-			ownedSlugs.add(breed);
-			ownedUniqueCount++;
-		}
-	}
-
-	const horseListText =
-		compHorseText +
-		(nonCompHorseText
-			? `\n### 👻 Specials and Secrets\n${nonCompHorseText}`
-			: "") +
-		(trainedHorseText ? `\n### 🏅 Trained Horses\n${trainedHorseText}` : "");
-
-	return { horseListText, ownedUniqueCount, ownedSlugs };
+function formatOwnedHorseLine(
+	slug: string,
+	count: number,
+	value: number,
+): string {
+	const display = horseName(slug);
+	const prefix =
+		slug === "dung_beetle"
+			? "🪲"
+			: slug.includes("providence")
+				? "✨"
+				: "🐎";
+	return `${prefix} **${display}** ×${count} — $${value.toLocaleString()}`;
 }
 
-function buildMissingList(
+// Splits an inventory into competition-eligible and non-eligible display
+// lines, and tracks which slugs the inventory alone already covers.
+function categorizeOwnedHorses(inventory: IUserHorses | undefined): {
+	compLines: string[];
+	nonCompLines: string[];
+	ownedSlugs: Set<string>;
+} {
+	const compLines: string[] = [];
+	const nonCompLines: string[] = [];
+	const ownedSlugs = new Set<string>();
+
+	if (!inventory) {
+		return { compLines, nonCompLines, ownedSlugs };
+	}
+
+	for (const [slug, count] of inventory.horses) {
+		const horseData = HORSE_VALUES[slug];
+		if (count <= 0 || !horseData) continue;
+
+		const line = formatOwnedHorseLine(slug, count, horseData.value);
+		if (horseData.comp === false) {
+			nonCompLines.push(line);
+		} else {
+			compLines.push(line);
+			ownedSlugs.add(slug);
+		}
+	}
+
+	return { compLines, nonCompLines, ownedSlugs };
+}
+
+// Builds the trained-horse display lines and folds any newly-completed
+// (comp-eligible, not already owned) breeds into ownedSlugs.
+function buildTrainedLines(
+	trainedForUser: ITrainedHorses[],
+	ownedSlugs: Set<string>,
+): string[] {
+	const trainedLines: string[] = [];
+
+	for (const t of trainedForUser) {
+		const { breed } = t;
+		const value = trainedHorseValue(breed);
+		const displayName = t.name ?? horseName(breed);
+		trainedLines.push(
+			`🏅 **${displayName}** (${horseName(breed)}) — $${Math.round(value).toLocaleString()}`,
+		);
+		if (!ownedSlugs.has(breed) && HORSE_VALUES[breed]?.comp !== false) {
+			ownedSlugs.add(breed);
+		}
+	}
+
+	return trainedLines;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let i = 0; i < items.length; i += size) {
+		chunks.push(items.slice(i, i + size));
+	}
+
+	return chunks;
+}
+
+// Splits a flat list of lines into one PageData per HORSES_PER_PAGE lines.
+// Returns [] for an empty list, so callers can spread the result directly.
+function paginateLines(
+	lines: string[],
+	titleFor: (pageNumber: number, totalPages: number) => string,
+	color: `#${string}`,
+): PageData[] {
+	if (lines.length === 0) return [];
+
+	const chunks = chunk(lines, HORSES_PER_PAGE);
+	return chunks.map((pageLines, i) => ({
+		title: titleFor(i + 1, chunks.length),
+		color,
+		lines: pageLines,
+	}));
+}
+
+function buildMissingPages(
 	allPossibleSlugs: string[],
 	ownedSlugs: Set<string>,
 	isSelf: boolean,
 	username: string,
-) {
+): PageData[] {
 	const missing = allPossibleSlugs.filter(
 		(slug) => !ownedSlugs.has(slug),
 	);
-	const missingHeader = isSelf
-		? "### Missing Thingamabobs"
-		: `### Missing from ${username}'s Stable`;
-	let missingText: string;
-	if (missing.length > 0) {
-		missingText =
-			`\n${missingHeader}\n` +
-			missing
-				.map((slug) => {
-					const mValue = HORSE_VALUES[slug]?.value ?? 0;
-					return `* *${horseName(slug)}* ($${mValue.toLocaleString()})`;
-				})
-				.join("\n");
-	} else {
-		missingText = isSelf
-			? "\n### ✨ You have mastered the gustovian stables! ✨"
-			: `\n### ✨ ${username} has mastered the stables! ✨`;
+
+	if (missing.length === 0) {
+		return [
+			{
+				title: isSelf
+					? "✨ Mastered!"
+					: `✨ ${username} has mastered the stables!`,
+				color: "#a6e3a1",
+				lines: [],
+				isMasteredPage: true,
+			},
+		];
 	}
 
-	return missingText;
+	const missingLines = missing.map((slug) => {
+		const mValue = HORSE_VALUES[slug]?.value ?? 0;
+		return `*${horseName(slug)}* ($${mValue.toLocaleString()})`;
+	});
+
+	return paginateLines(
+		missingLines,
+		(page, total) =>
+			total > 1
+				? `❓ Missing (${page}/${total})`
+				: isSelf
+					? "❓ Missing"
+					: `❓ Missing from ${username}`,
+		"#6c7086",
+	);
+}
+
+function buildPages(
+	inventory: IUserHorses | undefined,
+	trainedForUser: ITrainedHorses[],
+	allPossibleSlugs: string[],
+	isSelf: boolean,
+	username: string,
+): { pages: PageData[]; ownedUniqueCount: number } {
+	const { compLines, nonCompLines, ownedSlugs } =
+		categorizeOwnedHorses(inventory);
+
+	const pages: PageData[] = paginateLines(
+		compLines,
+		(page, total) => `🐎 Horses (${page}/${total})`,
+		"#954535",
+	);
+
+	if (nonCompLines.length > 0) {
+		pages.push({
+			title: "👻 Specials & Secrets",
+			color: "#cba6f7",
+			lines: nonCompLines,
+		});
+	}
+
+	const trainedLines = buildTrainedLines(trainedForUser, ownedSlugs);
+	if (trainedLines.length > 0) {
+		pages.push({
+			title: "🏅 Trained Horses",
+			color: "#f9e2af",
+			lines: trainedLines,
+		});
+	}
+
+	pages.push(
+		...buildMissingPages(allPossibleSlugs, ownedSlugs, isSelf, username),
+	);
+
+	return { pages, ownedUniqueCount: ownedSlugs.size };
+}
+
+type NavDirection = "first" | "prev" | "next" | "last" | "jump";
+
+function parseNavDirection(customId: string): NavDirection | undefined {
+	const direction = customId.split("_", 2)[1];
+	switch (direction) {
+		case "first":
+		case "prev":
+		case "next":
+		case "last":
+		case "jump": {
+			return direction;
+		}
+
+		case undefined: {
+			return undefined;
+		}
+
+		default: {
+			return undefined;
+		}
+	}
 }
 
 export async function execute(
@@ -178,7 +296,9 @@ export async function execute(
 	);
 
 	// Fetch trained horses and group by ownerId so we can factor them into worth and completion
-	const allTrained = await mongoose.model<ITrainedHorses>("TrainedHorses").find();
+	const allTrained = await mongoose
+		.model<ITrainedHorses>("TrainedHorses")
+		.find();
 	const trainedMap = new Map<string, ITrainedHorses[]>();
 	for (const t of allTrained) {
 		const array = trainedMap.get(t.ownerId) ?? [];
@@ -190,7 +310,7 @@ export async function execute(
 
 	if (
 		(!inventory?.horses ||
-			[...inventory.horses.values()].every((v) => v === 0)) &&
+			inventory.horses.values().every((v) => v === 0)) &&
 		targetTrained.length === 0
 	) {
 		return interaction.editReply({
@@ -209,46 +329,185 @@ export async function execute(
 		trainedMap,
 		targetUser.id,
 	);
-	const { horseListText, ownedUniqueCount, ownedSlugs } =
-		buildHorseInvList(inventory, targetTrained);
-	const completionPercentage = Math.round(
-		(ownedUniqueCount / allPossibleSlugs.length) * 100,
-	);
-	const missingText = buildMissingList(
+	const { pages, ownedUniqueCount } = buildPages(
+		inventory,
+		targetTrained,
 		allPossibleSlugs,
-		ownedSlugs,
 		isSelf,
 		targetUser.username,
 	);
+	const completionPercentage = Math.round(
+		(ownedUniqueCount / allPossibleSlugs.length) * 100,
+	);
+	let currentPage = 0;
 
-	const title = isSelf
-		? "## 🐎 Your Collection 🐎"
-		: `## 🐎 ${targetUser.username}'s Collection 🐎`;
-	const summary = `${title}\n**Rank:** #${rank} | **Net Worth:** $${userWorth.toLocaleString()}\n**Completion:** ${completionPercentage}%\n`;
-	const message = `${summary}${horseListText}${missingText}`;
-
-	const DISCORD_MESSAGE_LIMIT = 2000;
-	if (message.length > DISCORD_MESSAGE_LIMIT) {
-		// Collection is too large for a single message; keep the summary inline
-		// and attach the full list as a text file instead of truncating it.
-		const attachment = new AttachmentBuilder(
-			Buffer.from(`${horseListText}${missingText}`, "utf-8"),
-			{ name: `${targetUser.username}-collection.md` },
-		);
-		await interaction.editReply({
-			content: `${summary}\n*Your collection is too large to display inline — see the attached file.*`,
-			files: [attachment],
-		});
-	} else {
-		await interaction.editReply(message);
+	function getHeaderEmbed() {
+		return new EmbedBuilder()
+			.setColor("#f1c40f")
+			.setTitle(
+				isSelf
+					? "🐎 Your Collection 🐎"
+					: `🐎 ${targetUser.username}'s Collection 🐎`,
+			)
+			.addFields(
+				{ name: "Rank", value: `#${rank}`, inline: true },
+				{
+					name: "Net Worth",
+					value: `$${userWorth.toLocaleString()}`,
+					inline: true,
+				},
+				{
+					name: "Completion",
+					value: `${completionPercentage}%`,
+					inline: true,
+				},
+			);
 	}
 
-	// Run after reply so it never blocks the interaction response
-	if (inventory) {
-		conditionHorse(inventory, { interaction }).catch(
-			(error: unknown) => {
-				console.error("conditionHorse error:", error);
-			},
-		);
+	function getContentEmbed(page: number) {
+		const p = pages[page];
+		if (!p) {
+			return new EmbedBuilder()
+				.setColor("#6c7086")
+				.setDescription("No data.");
+		}
+
+		const embed = new EmbedBuilder()
+			.setColor(p.color)
+			.setTitle(p.title);
+
+		if (p.lines.length > 0) {
+			embed.setDescription(p.lines.join("\n"));
+		} else if (p.isMasteredPage) {
+			embed.setDescription("🎉");
+		}
+
+		return embed;
 	}
+
+	function getComponents(page: number) {
+		const rows: Array<ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>> = [];
+		if (pages.length > 1) {
+			const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+				new ButtonBuilder()
+					.setCustomId(`hc_first_${page}`)
+					.setLabel("⏮")
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(page === 0),
+				new ButtonBuilder()
+					.setCustomId(`hc_prev_${page}`)
+					.setLabel("⬅")
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(page === 0),
+				new ButtonBuilder()
+					.setCustomId(`hc_next_${page}`)
+					.setLabel("➡")
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(page >= pages.length - 1),
+				new ButtonBuilder()
+					.setCustomId(`hc_last_${page}`)
+					.setLabel("⏭")
+					.setStyle(ButtonStyle.Secondary)
+					.setDisabled(page >= pages.length - 1),
+			);
+			rows.push(navRow);
+
+			const maxDropdown = Math.min(pages.length, 25);
+			const select = new StringSelectMenuBuilder()
+				.setCustomId(`hc_jump_${page}`)
+				.setPlaceholder(`Page ${page + 1} of ${pages.length}`)
+				.addOptions(
+					...Array.from({ length: maxDropdown }, (_, i) => ({
+						label: pages[i]?.title ?? `Page ${i + 1}`,
+						value: String(i),
+						default: i === page,
+					})),
+				);
+			rows.push(
+				new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
+			);
+		}
+
+		return rows;
+	}
+
+	const reply = await interaction.editReply({
+		embeds: [getHeaderEmbed(), getContentEmbed(currentPage)],
+		components: getComponents(currentPage),
+	});
+
+	if (pages.length <= 1) return;
+
+	const collector = reply.createMessageComponentCollector({
+		time: 5 * immutConfig.MINUTE_MS,
+	});
+
+	collector.on("collect", (i: ButtonInteraction | StringSelectMenuInteraction) => {
+		void (async () => {
+			if (i.user.id !== interaction.user.id) {
+				await i.reply({
+					content: "Only the command user can navigate.",
+					flags: [MessageFlags.Ephemeral],
+				}).catch(() => undefined);
+				return;
+			}
+
+			let parsedPage = currentPage;
+			const direction = parseNavDirection(i.customId);
+
+			switch (direction) {
+				case "first": {
+					parsedPage = 0;
+					break;
+				}
+
+				case "prev": {
+					parsedPage = currentPage - 1;
+					break;
+				}
+
+				case "next": {
+					parsedPage = currentPage + 1;
+					break;
+				}
+
+				case "last": {
+					parsedPage = pages.length - 1;
+					break;
+				}
+
+				case "jump": {
+					if ("values" in i) parsedPage = Number(i.values[0]) || 0;
+					break;
+				}
+
+				case undefined: {
+					break;
+				}
+			}
+
+			if (parsedPage < 0) parsedPage = 0;
+			if (parsedPage >= pages.length) parsedPage = pages.length - 1;
+			currentPage = parsedPage;
+
+			try {
+				await i.update({
+					embeds: [getHeaderEmbed(), getContentEmbed(currentPage)],
+					components: getComponents(currentPage),
+				});
+			} catch {
+				await i.reply({
+					content: "Failed to update page.",
+					flags: [MessageFlags.Ephemeral],
+				}).catch(() => undefined);
+			}
+		})().catch(() => undefined);
+	});
+
+	collector.on("end", () => {
+		void interaction.editReply({
+			embeds: [getHeaderEmbed(), getContentEmbed(currentPage)],
+			components: [],
+		}).catch(() => undefined);
+	});
 }

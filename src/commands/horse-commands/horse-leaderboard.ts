@@ -9,10 +9,11 @@ import {
 	type ButtonInteraction,
 	type User,
 } from "discord.js";
-import { UserHorses } from "../../lib/models.js";
+import { TrainedHorses, UserHorses } from "../../lib/models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 import { immutConfig } from "../../lib/config.js";
+import { trainedHorseValue } from "../../lib/helpers/horse-funcs.js";
 import { fetchWithTimeout } from "../../lib/helpers/timeout-helpers.js";
 
 type SortList = Array<{
@@ -33,6 +34,26 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setDescription("Page number to view (starts at 1)")
 			.setMinValue(1),
 	);
+type NavDirection = "first" | "prev" | "next" | "last" | "jump";
+
+function parseNavDirection(customId: string): NavDirection | undefined {
+	const direction = customId.split("_", 2)[1];
+	switch (direction) {
+		case "first":
+		case "prev":
+		case "next":
+		case "last":
+		case "jump": {
+			return direction;
+		}
+
+		case undefined:
+		default: {
+			return undefined;
+		}
+	}
+}
+
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
@@ -42,23 +63,47 @@ export async function execute(
 		{},
 		{ userId: 1, horses: 1, horseCoins: 1 },
 	);
+	const allTrained = await TrainedHorses.find({});
+	const trainedByUser = new Map<string, typeof allTrained>();
+	for (const horse of allTrained) {
+		const userId = horse.ownerId;
+		const array = trainedByUser.get(userId) ?? [];
+		array.push(horse);
+		trainedByUser.set(userId, array);
+	}
+
 	const totalPossibleItems = Object.values(HORSE_VALUES).filter(
 		(v) => v.comp !== false,
 	).length;
 
 	// Precompute leaderboard data
-	const data = allUsers.map((u) => {
+	const leaderboardData = allUsers.map((u) => {
 		let worth = 0;
 		let unique = 0;
+		const seenBreedIds = new Set<string>();
 		for (const [name, count] of u.horses) {
-			if (!(count > 0)) {
+			if (count <= 0) {
 				continue;
 			}
 
 			const horseData = HORSE_VALUES[name];
 			if (!horseData) continue;
 			worth += horseData.value * count;
-			if (horseData.comp !== false) unique++;
+			if (horseData.comp !== false && !seenBreedIds.has(name)) {
+				seenBreedIds.add(name);
+				unique++;
+			}
+		}
+
+		for (const trainedHorse of trainedByUser.get(u.userId) ?? []) {
+			worth += trainedHorseValue(trainedHorse.breed);
+			if (
+				HORSE_VALUES[trainedHorse.breed]?.comp !== false &&
+				!seenBreedIds.has(trainedHorse.breed)
+			) {
+				seenBreedIds.add(trainedHorse.breed);
+				unique++;
+			}
 		}
 
 		return {
@@ -71,19 +116,19 @@ export async function execute(
 		};
 	});
 
-	const worthSort: SortList = data.toSorted(
+	const worthSort: SortList = leaderboardData.toSorted(
 		(a, b) => b.worth - a.worth,
 	);
-	const compSort: SortList = data.toSorted(
+	const compSort: SortList = leaderboardData.toSorted(
 		(a, b) => b.completion - a.completion,
 	);
-	const coinSort: SortList = data.toSorted(
+	const coinSort: SortList = leaderboardData.toSorted(
 		(a, b) => b.horseCoins - a.horseCoins,
 	);
 
 	const totalPages = Math.max(
 		1,
-		Math.ceil(data.length / PAGE_SIZE),
+		Math.ceil(leaderboardData.length / PAGE_SIZE),
 	);
 	// Get page from option, default to 1
 	let currentPage =
@@ -100,8 +145,8 @@ export async function execute(
 		// Fetch all users in parallel, but with a timeout and cache
 		const results = await Promise.all(
 			ids.map(async (userId) => {
-				if (userCache.has(userId))
-					{return userCache.get(userId);}
+				const cached = userCache.get(userId);
+				if (cached) return cached;
 
 				try {
 					const user = await fetchWithTimeout<User>(
@@ -155,6 +200,14 @@ export async function execute(
 	}
 
 	async function buildEmbed(page: number) {
+		// These are independent, so run them concurrently rather than
+		// paying each list's (cached) fetch-timeout cost in sequence.
+		const [worthList, compList, coinList] = await Promise.all([
+			buildList(worthSort, "worth", page),
+			buildList(compSort, "comp", page),
+			buildList(coinSort, "coins", page),
+		]);
+
 		return new EmbedBuilder()
 			.setTitle(
 				`🐎 Horse Collector Leaderboards (Page ${page + 1}/${totalPages})`,
@@ -163,17 +216,17 @@ export async function execute(
 			.addFields(
 				{
 					name: "💰 Horse Net Worth",
-					value: await buildList(worthSort, "worth", page),
+					value: worthList,
 					inline: true,
 				},
 				{
 					name: "🏆 Completion",
-					value: await buildList(compSort, "comp", page),
+					value: compList,
 					inline: true,
 				},
 				{
 					name: "🪙 Horse Coins",
-					value: await buildList(coinSort, "coins", page),
+					value: coinList,
 					inline: true,
 				},
 			);
@@ -194,14 +247,43 @@ export async function execute(
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= totalPages - 1),
 		);
+
+		const rows: Array<
+			ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+		> = [navRow];
+
+		if (totalPages > 1) {
+			const maxDropdownPages = Math.min(totalPages, 25);
+			const select = new StringSelectMenuBuilder()
+				.setCustomId(`hlb_jump_${page}`)
+				.setPlaceholder(
+					`Page ${page + 1} of ${totalPages}`,
+				)
+				.addOptions(
+					...Array.from(
+						{ length: maxDropdownPages },
+						(_, i) => ({
+							label: `Page ${i + 1}`,
+							value: String(i),
+							default: i === page,
+						}),
+					),
+				);
+			rows.push(
+				new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+					select,
+				),
+			);
+		}
+
+		return rows;
 	}
 
-	await interaction.editReply({
+	const reply = await interaction.editReply({
 		embeds: [await buildEmbed(currentPage)],
 		components: [getButtons(currentPage)],
 	});
 
-	const reply = await interaction.fetchReply();
 	const collector = reply.createMessageComponentCollector({
 		time: 2 * immutConfig.MINUTE_MS,
 	});
@@ -219,16 +301,49 @@ export async function execute(
 				return;
 			}
 
-			const [, direction, page] = i.customId.split("_");
-			let parsedPage = Number(page);
-			if (Number.isNaN(parsedPage)) parsedPage = 0;
-			currentPage =
-				direction === "next"
-					? parsedPage + 1
-					: parsedPage - 1;
-			if (currentPage < 0) currentPage = 0;
-			if (currentPage >= totalPages)
-				{currentPage = totalPages - 1;}
+				let parsedPage = currentPage;
+				const direction = parseNavDirection(i.customId);
+
+				switch (direction) {
+					case "first": {
+						parsedPage = 0;
+						break;
+					}
+
+					case "prev": {
+						parsedPage = currentPage - 1;
+						break;
+					}
+
+					case "next": {
+						parsedPage = currentPage + 1;
+						break;
+					}
+
+					case "last": {
+						parsedPage = totalPages - 1;
+						break;
+					}
+
+					case "jump": {
+						if ("values" in i) {
+							parsedPage = Number(i.values[0]) || 0;
+						}
+
+						break;
+					}
+
+					case undefined: {
+						break;
+					}
+				}
+
+				if (parsedPage < 0) parsedPage = 0;
+				if (parsedPage >= totalPages) {
+					parsedPage = totalPages - 1;
+				}
+
+				currentPage = parsedPage;
 
 			try {
 				await i.update({
