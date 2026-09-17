@@ -2,7 +2,13 @@ import {
 	SlashCommandSubcommandBuilder,
 	type ChatInputCommandInteraction,
 	MessageFlags,
-	AttachmentBuilder,
+	EmbedBuilder,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
+	StringSelectMenuBuilder,
+	type ButtonInteraction,
+	type StringSelectMenuInteraction,
 } from "discord.js";
 import mongoose from "mongoose";
 import type { IUserHorses, ITrainedHorses } from "../../lib/models.js";
@@ -12,15 +18,7 @@ import { horseName, trainedHorseValue } from "../../lib/helpers/horse-funcs.js";
 import { immutConfig } from "../../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
-
-// Shared by leaderboardStats and buildHorseInvList so the two never drift apart.
-function trainedHorseValue(breed: string): number {
-	const base = HORSE_VALUES[breed]?.value ?? 0;
-	const trainedBonus =
-		Math.floor(base / config.TRAINING_PRICE_DIVISOR) +
-		config.TRAINING_PRICE_CONSTANT;
-	return base + trainedBonus / 2;
-}
+const HORSES_PER_PAGE = 10;
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("collection")
@@ -319,7 +317,7 @@ export async function execute(
 				: `${targetUser.username}'s stables are empty.`,
 		});
 	}
-
+	
 	const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
 		(k) => HORSE_VALUES[k]?.comp !== false,
 	);

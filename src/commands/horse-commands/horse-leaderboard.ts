@@ -5,8 +5,10 @@ import {
 	ButtonBuilder,
 	ButtonStyle,
 	MessageFlags,
+	StringSelectMenuBuilder,
 	type ChatInputCommandInteraction,
 	type ButtonInteraction,
+	type StringSelectMenuInteraction,
 	type User,
 } from "discord.js";
 import { TrainedHorses, UserHorses } from "../../lib/models.js";
@@ -232,18 +234,30 @@ export async function execute(
 			);
 	}
 
-	function getButtons(
+	function getComponents(
 		page: number,
-	): ActionRowBuilder<ButtonBuilder> {
-		return new ActionRowBuilder<ButtonBuilder>().addComponents(
+	): Array<
+		ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>
+	> {
+		const navRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId(`hlb_first_${page}`)
+				.setLabel("⏮")
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page === 0),
 			new ButtonBuilder()
 				.setCustomId(`hlb_prev_${page}`)
-				.setLabel("⬅️")
+				.setLabel("⬅")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page === 0),
 			new ButtonBuilder()
 				.setCustomId(`hlb_next_${page}`)
-				.setLabel("➡️")
+				.setLabel("➡")
+				.setStyle(ButtonStyle.Secondary)
+				.setDisabled(page >= totalPages - 1),
+			new ButtonBuilder()
+				.setCustomId(`hlb_last_${page}`)
+				.setLabel("⏭")
 				.setStyle(ButtonStyle.Secondary)
 				.setDisabled(page >= totalPages - 1),
 		);
@@ -281,25 +295,27 @@ export async function execute(
 
 	const reply = await interaction.editReply({
 		embeds: [await buildEmbed(currentPage)],
-		components: [getButtons(currentPage)],
+		components: getComponents(currentPage),
 	});
 
 	const collector = reply.createMessageComponentCollector({
 		time: 2 * immutConfig.MINUTE_MS,
 	});
 
-	collector.on("collect", (i: ButtonInteraction) => {
-		void (async () => {
-			if (i.user.id !== interaction.user.id) {
-				await i
-					.reply({
-						content:
-							"Only the command user can use these buttons.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-				return;
-			}
+	collector.on(
+		"collect",
+		(i: ButtonInteraction | StringSelectMenuInteraction) => {
+			void (async () => {
+				if (i.user.id !== interaction.user.id) {
+					await i
+						.reply({
+							content:
+								"Only the command user can use these controls.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+					return;
+				}
 
 				let parsedPage = currentPage;
 				const direction = parseNavDirection(i.customId);
@@ -345,21 +361,23 @@ export async function execute(
 
 				currentPage = parsedPage;
 
-			try {
-				await i.update({
-					embeds: [await buildEmbed(currentPage)],
-					components: [getButtons(currentPage)],
-				});
-			} catch {
-				await i
-					.reply({
-						content: "Failed to update leaderboard page.",
-						flags: [MessageFlags.Ephemeral],
-					})
-					.catch(() => undefined);
-			}
-		})().catch(() => undefined);
-	});
+				try {
+					await i.update({
+						embeds: [await buildEmbed(currentPage)],
+						components: getComponents(currentPage),
+					});
+				} catch {
+					await i
+						.reply({
+							content:
+								"Failed to update leaderboard page.",
+							flags: [MessageFlags.Ephemeral],
+						})
+						.catch(() => undefined);
+				}
+			})().catch(() => undefined);
+		},
+	);
 
 	collector.on("end", () => {
 		void (async () => {
