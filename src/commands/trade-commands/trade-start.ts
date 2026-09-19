@@ -15,6 +15,7 @@ import {
 	buildAcceptedEmbed,
 	buildFailedEmbed,
 	buildExpiredEmbed,
+	buildCancelledEmbed,
 	buildDeclinedEmbed,
 	buildConfirmTimeoutEmbed,
 	type ResolvedTrade,
@@ -175,8 +176,11 @@ export async function execute(
 	const offerCollector = message.createMessageComponentCollector({
 		componentType: ComponentType.Button,
 		filter: (buttonInteraction) =>
-			buttonInteraction.customId === "trade_lock" ||
-			buttonInteraction.customId === "trade_reset",
+			[
+				"trade_lock",
+				"trade_reset",
+				"trade_cancel",
+			].includes(buttonInteraction.customId),
 		time: config.TRADE_DURATION,
 	});
 
@@ -189,8 +193,21 @@ export async function execute(
 	const result = await trade.promise;
 
 	if (!result) {
+		const isCancelled = trade.cancelReason === "cancelled";
+		let cancellerName: string | undefined;
+		if (isCancelled && trade.cancellerId) {
+			cancellerName =
+				trade.red.id === trade.cancellerId
+					? trade.red.name
+					: trade.blue.name;
+		}
+
+		const embed =
+			cancellerName !== undefined
+				? buildCancelledEmbed(cancellerName)
+				: buildExpiredEmbed();
 		void interaction.editReply({
-			embeds: [buildExpiredEmbed()],
+			embeds: [embed],
 			components: [],
 		});
 		return;

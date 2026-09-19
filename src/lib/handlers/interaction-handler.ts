@@ -24,6 +24,8 @@ import {
 	handleOrbitalCategory,
 	handleOrbitalAction,
 	handleOrbitalModal,
+	handleOrbitalHorseSelect,
+	handleOrbitalHorsePage,
 } from "../helpers/orbital-ui.js";
 import { OrbitalScript } from "../models.js";
 import { handleCommandError } from "../helpers/error-handlers.js";
@@ -102,11 +104,29 @@ async function handleInteraction(
 	}
 
 	if (
+		interaction.isStringSelectMenu() &&
+		interaction.customId.startsWith("orbital_horse:")
+	) {
+		return handleOrbitalUiInteraction(interaction, async () =>
+			handleOrbitalHorseSelect(interaction),
+		);
+	}
+
+	if (
 		interaction.isButton() &&
 		interaction.customId.startsWith("orbital_act:")
 	) {
 		return handleOrbitalUiInteraction(interaction, async () =>
 			handleOrbitalAction(interaction),
+		);
+	}
+
+	if (
+		interaction.isButton() &&
+		interaction.customId.startsWith("orbital_horse_page:")
+	) {
+		return handleOrbitalUiInteraction(interaction, async () =>
+			handleOrbitalHorsePage(interaction),
 		);
 	}
 
@@ -457,6 +477,7 @@ export async function runNukeCode(
 	const context = vm.createContext({
 		interaction,
 		console,
+		globalThis,
 	});
 
 	const scriptText = `
