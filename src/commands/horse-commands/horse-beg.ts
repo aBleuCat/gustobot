@@ -18,15 +18,23 @@ const begFlavorText: Record<BegRewardQuality, string[]> = {
 		"You were begging on the streets and everyone ignored you. One person looked at you like you were a broke lunatic, which you probably are.",
 		"You went up to a person and asked him to spare some horse coins. He spat in your face.",
 		"You went up to a person and asked for some horses. He looked nice enough, which is why he was also broke and couldn't give you anything.",
+		"Someone saw you begging and told you to get a job. You tried to explain to him about the job market and stuff, but he just slapped you and left.",
+		"You saw a dream from a heavenly being. He told you to suck it up like a good boy.",
+		"A kid pointed to you and asked his mom if this is what happens if you don't do your homework.",
 	],
 	successful: [
+		"A tourist mistook you for a bad street performer. You didn't correct him",
 		"Someone felt bad for you and your broke ass.",
 		"You got your tax refunds back.",
+		"An old woman put some money in your hand and whispered in your ear to get help",
+		"Begging just got you some weird looks, but you found something between the couch cushions",
 	],
 	verySuccessful: [
 		"Yo MrBeast showed up and gave everyone a million dollars. He gave you some stuff as well.",
 		"You won the lottery! Your gambling addiction will never end.",
-		"John Capitalism flew in with a Pegasus and dropped you a gift."
+		"John Capitalism flew in with a Pegasus and dropped you a gift.",
+		"Your maternal great uncle died and you were in the inheritance because he felt pity for you.",
+		"Some privileged kids made a bet where the loser would give money to the most helpless stranger they found.",
 	],
 }
 
