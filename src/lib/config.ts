@@ -111,6 +111,9 @@ export const config = {
 	TRADE_DURATION: 10 * MINUTE_MS,
 	TRADE_CONFIRM_DURATION: 3 * MINUTE_MS,
 
+	// For horse-beg.ts
+	BEG_COOLDOWN: DAY_MS,
+
 	// Changeable with /hacks lists
 	lists: {
 		// Triggers for message-handler.ts
@@ -211,4 +214,6 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How long people should be allowed to place their offers in trades (in ms)",
 	TRADE_CONFIRM_DURATION:
 		"How long the bot should wait for both players to confirm a trade (in ms)",
+	BEG_COOLDOWN:
+		"How frequently you are able to beg for a horse (in ms)",
 };

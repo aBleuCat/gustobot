@@ -55,6 +55,7 @@ export type IUserHorses = {
 	horseCoins: number;
 	horses: Map<string, number>;
 	lastHorse?: string;
+	lastBeg?: Date;
 } & mongoose.Document;
 export type IMessageCache = {
 	userId: string;
@@ -177,7 +178,7 @@ export const HorseConfig = mongoose.model(
 );
 
 const userHorsesSchema = new mongoose.Schema<IUserHorses>({
-	userId: String,
+	userId: { type: String, required: true, unique: true},
 	optIn: { type: Boolean, default: false },
 	lastGamble: { type: Number, default: 0 },
 	horseCoins: {
@@ -188,6 +189,7 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	},
 	horses: { type: Map, of: Number, default: {} },
 	lastHorse: { type: String, default: undefined },
+	lastBeg: { type: Date },
 });
 userHorsesSchema.index({ userId: 1 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
