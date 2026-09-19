@@ -4,6 +4,7 @@ import type {
 } from "discord.js";
 import type { IUserHorses } from "../models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { config } from "../config.js";
 import { castAsHorseData } from "../../type-utils.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
@@ -68,4 +69,12 @@ export async function conditionHorse(
 		options,
 	);
 	if (isEqualityModified) await user.save();
+}
+
+export function trainedHorseValue(breed: string): number {
+	const base = HORSE_VALUES[breed]?.value ?? 0;
+	const trainedBonus =
+		Math.floor(base / config.TRAINING_PRICE_DIVISOR) +
+		config.TRAINING_PRICE_CONSTANT;
+	return 0; // Wait for poll to finish to decide if they count or not
 }
