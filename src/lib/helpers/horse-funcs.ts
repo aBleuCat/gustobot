@@ -76,5 +76,5 @@ export function trainedHorseValue(breed: string): number {
 	const trainedBonus =
 		Math.floor(base / config.TRAINING_PRICE_DIVISOR) +
 		config.TRAINING_PRICE_CONSTANT;
-	return base + (trainedBonus / 2);
+	return 0; // Wait for poll to finish to decide if they count or not
 }
