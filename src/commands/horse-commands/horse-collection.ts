@@ -11,10 +11,10 @@ import {
 	type StringSelectMenuInteraction,
 } from "discord.js";
 import mongoose from "mongoose";
-import type { IUserHorses } from "../../lib/models.js";
+import type { IUserHorses, ITrainedHorses } from "../../lib/models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
-import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { horseName, trainedHorseValue } from "../../lib/helpers/horse-funcs.js";
 import { immutConfig } from "../../lib/config.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
@@ -41,6 +41,7 @@ export const data = new SlashCommandSubcommandBuilder()
 
 function leaderboardStats(
 	allUsers: IUserHorses[],
+	trainedMap: Map<string, ITrainedHorses[]>,
 	targetUserId: string,
 ) {
 	const leaderboard = allUsers
@@ -48,6 +49,11 @@ function leaderboardStats(
 			let worth = 0;
 			for (const [slug, count] of u.horses) {
 				worth += (HORSE_VALUES[slug]?.value ?? 0) * count;
+			}
+
+			const trained = trainedMap.get(u.userId) ?? [];
+			for (const t of trained) {
+				worth += trainedHorseValue(t.breed);
 			}
 
 			return { userId: u.userId, worth };
@@ -65,58 +71,162 @@ function leaderboardStats(
 
 type PageData = {
 	title: string;
-	color: string;
+	color: `#${string}`;
 	lines: string[];
+	isMasteredPage?: boolean;
 };
 
-function buildPages(
-	inventory: IUserHorses,
-	allPossibleSlugs: string[],
-	isSelf: boolean,
-	username: string,
-): PageData[] {
-	const pages: PageData[] = [];
+function formatOwnedHorseLine(
+	slug: string,
+	count: number,
+	value: number,
+): string {
+	const display = horseName(slug);
+	const prefix =
+		slug === "dung_beetle"
+			? "🪲"
+			: slug.includes("providence")
+				? "✨"
+				: "🐎";
+	return `${prefix} **${display}** ×${count} — $${value.toLocaleString()}`;
+}
+
+// Splits an inventory into competition-eligible and non-eligible display
+// lines, and tracks which slugs the inventory alone already covers.
+function categorizeOwnedHorses(inventory: IUserHorses | undefined): {
+	compLines: string[];
+	nonCompLines: string[];
+	ownedSlugs: Set<string>;
+} {
 	const compLines: string[] = [];
 	const nonCompLines: string[] = [];
 	const ownedSlugs = new Set<string>();
 
+	if (!inventory) {
+		return { compLines, nonCompLines, ownedSlugs };
+	}
+
 	for (const [slug, count] of inventory.horses) {
 		const horseData = HORSE_VALUES[slug];
 		if (count <= 0 || !horseData) continue;
-		const { value } = horseData;
-		const display = horseName(slug);
-		const isComp = horseData.comp !== false;
-		const prefix =
-			slug === "dung_beetle"
-				? "🪲"
-				: slug.includes("providence")
-					? "✨"
-					: "🐎";
-		const line = `${prefix} **${display}** ×${count} — $${value.toLocaleString()}`;
 
-		if (isComp) {
+		const line = formatOwnedHorseLine(slug, count, horseData.value);
+		if (horseData.comp === false) {
+			nonCompLines.push(line);
+		} else {
 			compLines.push(line);
 			ownedSlugs.add(slug);
-		} else {
-			nonCompLines.push(line);
 		}
 	}
 
-	// Competitive horses pages
-	if (compLines.length > 0) {
-		const totalPages = Math.ceil(compLines.length / HORSES_PER_PAGE);
-		for (let i = 0; i < totalPages; i++) {
-			const start = i * HORSES_PER_PAGE;
-			const chunk = compLines.slice(start, start + HORSES_PER_PAGE);
-			pages.push({
-				title: `🐎 Horses (${i + 1}/${totalPages})`,
-				color: "#954535",
-				lines: chunk,
-			});
+	return { compLines, nonCompLines, ownedSlugs };
+}
+
+// Builds the trained-horse display lines and folds any newly-completed
+// (comp-eligible, not already owned) breeds into ownedSlugs.
+function buildTrainedLines(
+	trainedForUser: ITrainedHorses[],
+	ownedSlugs: Set<string>,
+): string[] {
+	const trainedLines: string[] = [];
+
+	for (const t of trainedForUser) {
+		const { breed } = t;
+		const value = trainedHorseValue(breed);
+		const displayName = t.name ?? horseName(breed);
+		trainedLines.push(
+			`🏅 **${displayName}** (${horseName(breed)}) — $${Math.round(value).toLocaleString()}`,
+		);
+		if (!ownedSlugs.has(breed) && HORSE_VALUES[breed]?.comp !== false) {
+			ownedSlugs.add(breed);
 		}
 	}
 
-	// Specials page
+	return trainedLines;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let i = 0; i < items.length; i += size) {
+		chunks.push(items.slice(i, i + size));
+	}
+
+	return chunks;
+}
+
+// Splits a flat list of lines into one PageData per HORSES_PER_PAGE lines.
+// Returns [] for an empty list, so callers can spread the result directly.
+function paginateLines(
+	lines: string[],
+	titleFor: (pageNumber: number, totalPages: number) => string,
+	color: `#${string}`,
+): PageData[] {
+	if (lines.length === 0) return [];
+
+	const chunks = chunk(lines, HORSES_PER_PAGE);
+	return chunks.map((pageLines, i) => ({
+		title: titleFor(i + 1, chunks.length),
+		color,
+		lines: pageLines,
+	}));
+}
+
+function buildMissingPages(
+	allPossibleSlugs: string[],
+	ownedSlugs: Set<string>,
+	isSelf: boolean,
+	username: string,
+): PageData[] {
+	const missing = allPossibleSlugs.filter(
+		(slug) => !ownedSlugs.has(slug),
+	);
+
+	if (missing.length === 0) {
+		return [
+			{
+				title: isSelf
+					? "✨ Mastered!"
+					: `✨ ${username} has mastered the stables!`,
+				color: "#a6e3a1",
+				lines: [],
+				isMasteredPage: true,
+			},
+		];
+	}
+
+	const missingLines = missing.map((slug) => {
+		const mValue = HORSE_VALUES[slug]?.value ?? 0;
+		return `*${horseName(slug)}* ($${mValue.toLocaleString()})`;
+	});
+
+	return paginateLines(
+		missingLines,
+		(page, total) =>
+			total > 1
+				? `❓ Missing (${page}/${total})`
+				: isSelf
+					? "❓ Missing"
+					: `❓ Missing from ${username}`,
+		"#6c7086",
+	);
+}
+
+function buildPages(
+	inventory: IUserHorses | undefined,
+	trainedForUser: ITrainedHorses[],
+	allPossibleSlugs: string[],
+	isSelf: boolean,
+	username: string,
+): { pages: PageData[]; ownedUniqueCount: number } {
+	const { compLines, nonCompLines, ownedSlugs } =
+		categorizeOwnedHorses(inventory);
+
+	const pages: PageData[] = paginateLines(
+		compLines,
+		(page, total) => `🐎 Horses (${page}/${total})`,
+		"#954535",
+	);
+
 	if (nonCompLines.length > 0) {
 		pages.push({
 			title: "👻 Specials & Secrets",
@@ -125,36 +235,43 @@ function buildPages(
 		});
 	}
 
-	// Missing page
-	const missing = allPossibleSlugs.filter(
-		(slug) => !ownedSlugs.has(slug),
-	);
-	if (missing.length > 0) {
-		const missingLines = missing.map((slug) => {
-			const mValue = HORSE_VALUES[slug]?.value ?? 0;
-			return `*${horseName(slug)}* ($${mValue.toLocaleString()})`;
-		});
-		const missingPages = Math.ceil(missingLines.length / HORSES_PER_PAGE);
-		for (let i = 0; i < missingPages; i++) {
-			const start = i * HORSES_PER_PAGE;
-			const chunk = missingLines.slice(start, start + HORSES_PER_PAGE);
-			pages.push({
-				title: missingPages > 1
-					? `❓ Missing (${i + 1}/${missingPages})`
-					: (isSelf ? "❓ Missing" : `❓ Missing from ${username}`),
-				color: "#6c7086",
-				lines: chunk,
-			});
-		}
-	} else {
+	const trainedLines = buildTrainedLines(trainedForUser, ownedSlugs);
+	if (trainedLines.length > 0) {
 		pages.push({
-			title: isSelf ? "✨ Mastered!" : `✨ ${username} has mastered the stables!`,
-			color: "#a6e3a1",
-			lines: [],
+			title: "🏅 Trained Horses",
+			color: "#f9e2af",
+			lines: trainedLines,
 		});
 	}
 
-	return pages;
+	pages.push(
+		...buildMissingPages(allPossibleSlugs, ownedSlugs, isSelf, username),
+	);
+
+	return { pages, ownedUniqueCount: ownedSlugs.size };
+}
+
+type NavDirection = "first" | "prev" | "next" | "last" | "jump";
+
+function parseNavDirection(customId: string): NavDirection | undefined {
+	const direction = customId.split("_", 2)[1];
+	switch (direction) {
+		case "first":
+		case "prev":
+		case "next":
+		case "last":
+		case "jump": {
+			return direction;
+		}
+
+		case undefined: {
+			return undefined;
+		}
+
+		default: {
+			return undefined;
+		}
+	}
 }
 
 export async function execute(
@@ -176,9 +293,23 @@ export async function execute(
 		(u) => u.userId === targetUser.id,
 	);
 
+	// Fetch trained horses and group by ownerId so we can factor them into worth and completion
+	const allTrained = await mongoose
+		.model<ITrainedHorses>("TrainedHorses")
+		.find();
+	const trainedMap = new Map<string, ITrainedHorses[]>();
+	for (const t of allTrained) {
+		const array = trainedMap.get(t.ownerId) ?? [];
+		array.push(t);
+		trainedMap.set(t.ownerId, array);
+	}
+
+	const targetTrained = trainedMap.get(targetUser.id) ?? [];
+
 	if (
-		!inventory?.horses ||
-		inventory.horses.values().every((v) => v === 0)
+		(!inventory?.horses ||
+			inventory.horses.values().every((v) => v === 0)) &&
+		targetTrained.length === 0
 	) {
 		return interaction.editReply({
 			content: isSelf
@@ -193,17 +324,19 @@ export async function execute(
 
 	const { rank, userWorth } = leaderboardStats(
 		allUsers,
+		trainedMap,
 		targetUser.id,
 	);
-	const ownedUniqueCount = [...inventory.horses]
-		.filter(
-			([slug, count]) => count > 0 && HORSE_VALUES[slug] && HORSE_VALUES[slug].comp !== false,
-		).length;
+	const { pages, ownedUniqueCount } = buildPages(
+		inventory,
+		targetTrained,
+		allPossibleSlugs,
+		isSelf,
+		targetUser.username,
+	);
 	const completionPercentage = Math.round(
 		(ownedUniqueCount / allPossibleSlugs.length) * 100,
 	);
-
-	const pages = buildPages(inventory, allPossibleSlugs, isSelf, targetUser.username);
 	let currentPage = 0;
 
 	function getHeaderEmbed() {
@@ -238,12 +371,12 @@ export async function execute(
 		}
 
 		const embed = new EmbedBuilder()
-			.setColor(p.color as `#${string}`)
+			.setColor(p.color)
 			.setTitle(p.title);
 
 		if (p.lines.length > 0) {
 			embed.setDescription(p.lines.join("\n"));
-		} else if (p.title.includes("Mastered")) {
+		} else if (p.isMasteredPage) {
 			embed.setDescription("🎉");
 		}
 
@@ -318,8 +451,7 @@ export async function execute(
 			}
 
 			let parsedPage = currentPage;
-			const parts = i.customId.split("_");
-			const direction = parts[1];
+			const direction = parseNavDirection(i.customId);
 
 			switch (direction) {
 				case "first": {
@@ -348,10 +480,6 @@ export async function execute(
 				}
 
 				case undefined: {
-					break;
-				}
-
-				default: {
 					break;
 				}
 			}

@@ -8,7 +8,7 @@ const HORSE_VALUES = castAsHorseData(rawHorseValues, "all");
 const BASELINE_SUM = 0.2; // I like rounded better
 const currentInverseSum = Object.entries(HORSE_VALUES)
 	.filter(([, data]) => data.spawn !== false)
-	.reduce((sum, [, data]) => sum + 1 / data.value, 0);
+	.reduce((sum, [, data]) => sum + (1 / data.value), 0);
 const antiinflator = currentInverseSum / BASELINE_SUM;
 
 const SECOND_MS = 1000;
