@@ -161,7 +161,7 @@ async function topOrBottomBulkSell(
 		)
 		.map(
 			([slug, cnt]) =>
-				`* ${cnt}x **${horseName(slug)}** → ${(coinValueForSlug(slug) ?? 0) * cnt} 🪙`,
+				`* ${cnt}x **${horseName(slug)}** → 🪙 ${(coinValueForSlug(slug) ?? 0) * cnt}`,
 		)
 		.join("\n");
 
@@ -171,7 +171,7 @@ async function topOrBottomBulkSell(
 		handleCommandError(error, interaction),
 	);
 	return interaction.editReply(
-		`Sold **${totalTaken}** ${label} horse${totalTaken === 1 ? "" : "s"} for **${totalCoins}** 🪙 total!\n${lines}`,
+		`Sold **${totalTaken}** ${label} horse${totalTaken === 1 ? "" : "s"} for 🪙 **${totalCoins}** total!\n${lines}`,
 	);
 }
 
@@ -202,7 +202,7 @@ async function standardHorseSell(
 		handleCommandError(error, interaction),
 	);
 	return interaction.editReply(
-		`You sold ${sellAmount > 1 ? `**${sellAmount}x** ` : "your "}**${horseName(horseSlug)}** for **${coinsEarned}** 🪙 Horse Coin${coinsEarned === 1 ? "" : "s"}!`,
+		`You sold ${sellAmount > 1 ? `**${sellAmount}x** ` : "your "}**${horseName(horseSlug)}** for 🪙 **${coinsEarned}** Horse Coin${coinsEarned === 1 ? "" : "s"}!`,
 	);
 }
 

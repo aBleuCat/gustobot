@@ -55,7 +55,7 @@ const forceCoinsCommand = {
 		await inventory.save();
 
 		return interaction.reply(
-			`<@${target.id}> has been given **${amount}** 🪙 Horse Coin${amount === 1 ? "" : "s"}!`,
+			`<@${target.id}> has been given 🪙 **${amount}** Horse Coin${amount === 1 ? "" : "s"}!`,
 		);
 	},
 };

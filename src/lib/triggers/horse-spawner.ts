@@ -165,7 +165,7 @@ function sendSpawnMessages(
 	if (typeof coinDropSize === "number") {
 		queueMessage({
 			channel,
-			content: `<@${userId}> acquired **${coinDropSize} Horse Coins** 🪙!`,
+			content: `<@${userId}> acquired 🪙 **${coinDropSize} Horse Coins**!`,
 		}).catch((error: unknown) => {
 			console.error(
 				"QueueMessage error while spawning horse:",

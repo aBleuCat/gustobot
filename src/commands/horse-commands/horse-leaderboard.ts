@@ -193,7 +193,7 @@ export async function execute(
 				type === "worth"
 					? `$${item.worth.toLocaleString()}`
 					: type === "coins"
-						? `${item.horseCoins.toLocaleString()} 🪙`
+						? `🪙 ${item.horseCoins.toLocaleString()}`
 						: `${item.completion}%`;
 			listString += `**${rank}.** ${name}: ${value}\n`;
 		}

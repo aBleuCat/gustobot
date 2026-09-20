@@ -26,6 +26,6 @@ export async function execute(
 	const coins = inventory?.horseCoins ?? 0;
 
 	return interaction.reply({
-		content: `<@${targetUser.id}> has **${coins}** 🪙 Horse Coin${coins === 1 ? "" : "s"}`,
+		content: `<@${targetUser.id}> has 🪙 **${coins}** Horse Coin${coins === 1 ? "" : "s"}`,
 	});
 }

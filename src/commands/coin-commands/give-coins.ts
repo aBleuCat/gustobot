@@ -57,7 +57,7 @@ export async function execute(
 
 	if (!sender || (sender.horseCoins || 0) < amount) {
 		return interaction.reply({
-			content: `You don't have **${amount}** 🪙 to give!`,
+			content: `You don't have 🪙 **${amount}** to give!`,
 			flags: [MessageFlags.Ephemeral],
 		});
 	}
@@ -75,6 +75,6 @@ export async function execute(
 	await receiver.save();
 
 	return interaction.reply(
-		`<@${interaction.user.id}> gave **${amount}** 🪙 Horse Coin${amount === 1 ? "" : "s"} to <@${target.id}>!`,
+		`<@${interaction.user.id}> gave 🪙 **${amount}** Horse Coin${amount === 1 ? "" : "s"} to <@${target.id}>!`,
 	);
 }

@@ -37,7 +37,7 @@ export async function execute(
 
 	if (currentCoins < totalCost) {
 		return interaction.editReply({
-			content: `You need **${totalCost}** 🪙 Horse Coins to buy **${count}x** **${horseName(COMMON_SLUG)}**, but you only have **${currentCoins}**.`,
+			content: `You need 🪙 **${totalCost}** Horse Coins to buy **${count}x** **${horseName(COMMON_SLUG)}**, but you only have **${currentCoins}**.`,
 		});
 	}
 
@@ -60,6 +60,6 @@ export async function execute(
 		void handleCommandError(error, interaction);
 	});
 	return interaction.editReply(
-		`You bought ${count > 1 ? `**${count}x** ` : "a "}**${name}** for **${totalCost}** 🪙 Horse Coin${totalCost === 1 ? "" : "s"}\nBalance: **${inventory.horseCoins}** 🪙`,
+		`You bought ${count > 1 ? `**${count}x** ` : "a "}**${name}** for 🪙 **${totalCost}** Horse Coin${totalCost === 1 ? "" : "s"}\nBalance: 🪙 **${inventory.horseCoins}**`,
 	);
 }
