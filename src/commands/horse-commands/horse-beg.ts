@@ -1,11 +1,11 @@
 import { type ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
+import type { UpdateQuery } from "mongoose";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { config } from "../../lib/config.js";
 import { UserHorses, type IUserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
 import { randItem } from "../../lib/helpers/random-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
-import type { UpdateQuery } from "mongoose";
 
 type BegReward = undefined | number | string;
 type BegRewardQuality = "unsuccessful" | "successful" | "verySuccessful";
@@ -26,8 +26,8 @@ const begFlavorText: Record<BegRewardQuality, string[]> = {
 		"A tourist mistook you for a bad street performer. You didn't correct him",
 		"Someone felt bad for you and your broke ass.",
 		"You got your tax refunds back.",
-		"An old woman put some money in your hand and whispered in your ear to get help",
-		"Begging just got you some weird looks, but you found something between the couch cushions",
+		"An old woman put some money in your hand and whispered in your ear to get help.",
+		"Begging just got you some weird looks, but you found something between the couch cushions.",
 	],
 	verySuccessful: [
 		"Yo MrBeast showed up and gave everyone a million dollars. He gave you some stuff as well.",
@@ -52,7 +52,7 @@ type BegTier = Exclude<BegRewardQuality, "unsuccessful">;
 
 const BEG_TIERS: Record<BegTier, { coinMin: number; coinMax: number; horseMin: number; horseMax: number }> = {
 	successful: { coinMin: 2, coinMax: 5, horseMin: 25, horseMax: 75 },
-	verySuccessful: { coinMin: 5, coinMax: 15, horseMin: 75, horseMax: 150 },
+	verySuccessful: { coinMin: 6, coinMax: 15, horseMin: 100, horseMax: 150 },
 };
 
 function randInt(min: number, max: number): number {
@@ -74,6 +74,7 @@ function determineBegReward(): [BegReward, BegRewardQuality] {
 		const horse = randItem(candidates)?.[0];
 		if (horse !== undefined) return [horse, quality];
 	}
+
 	return [randInt(tier.coinMin, tier.coinMax), quality];
 }
 
@@ -89,7 +90,7 @@ async function tryClaimBeg(userId: string, reward: BegReward, now: number): Prom
 }
 
 function describeReward(reward: BegReward, rewardQuality: BegRewardQuality) {
-	const secondLine = reward ? (typeof reward === "number" ? `You got ${reward} Horse Coins` : `You got a **${horseName(reward)}**`) : "You got NOTHING";
+	const secondLine = reward ? (typeof reward === "number" ? `You got **🪙 ${reward} Horse Coins**!` : `You got a **${horseName(reward)}**!`) : "You got NOTHING";
 	const flavorText = randItem(begFlavorText[rewardQuality]) ?? "You begged";
 	return `${flavorText}\n\n${secondLine}`;
 }
