@@ -52,7 +52,7 @@ type BegTier = Exclude<BegRewardQuality, "unsuccessful">;
 
 const BEG_TIERS: Record<BegTier, { coinMin: number; coinMax: number; horseMin: number; horseMax: number }> = {
 	successful: { coinMin: 2, coinMax: 5, horseMin: 25, horseMax: 75 },
-	verySuccessful: { coinMin: 6, coinMax: 15, horseMin: 100, horseMax: 150 },
+	verySuccessful: { coinMin: 8, coinMax: 15, horseMin: 100, horseMax: 150 },
 };
 
 function randInt(min: number, max: number): number {
@@ -69,7 +69,7 @@ function determineBegReward(): [BegReward, BegRewardQuality] {
 
 	if (Math.random() < 0.5) {
 		const candidates = Object.entries(HORSE_VALUES).filter(
-			([, horse]) => horse.value >= tier.horseMin && horse.value <= tier.horseMax,
+			([, horse]) => horse.value >= tier.horseMin && horse.value <= tier.horseMax && horse.comp !== false && horse.spawn !== false,
 		);
 		const horse = randItem(candidates)?.[0];
 		if (horse !== undefined) return [horse, quality];
