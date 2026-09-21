@@ -26,6 +26,7 @@ export type Horse = {
 	value: number;
 	speed: number;
 	link: string;
+	thumbnail?: string;
 	comp?: boolean;
 	spawn?: boolean;
 	getByGamble?: boolean;

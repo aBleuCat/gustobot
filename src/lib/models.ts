@@ -191,7 +191,6 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	lastHorse: { type: String, default: undefined },
 	lastBeg: { type: Date },
 });
-userHorsesSchema.index({ userId: 1 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserHorses = mongoose.model(
 	"UserHorses",
@@ -250,6 +249,7 @@ export const TrainedHorses = mongoose.model(
 );
 
 // Ensure indexes are created in MongoDB
+/* yeah no we dont need this
 try {
 	await Promise.all([
 		Rule.collection.createIndex({ watchUser: 1 }),
@@ -262,4 +262,4 @@ try {
 	]);
 } catch (error: unknown) {
 	console.error("Index creation error:", error);
-}
+} */

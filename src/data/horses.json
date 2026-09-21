@@ -52,7 +52,7 @@
 		"name": "Horse of Equality and Parallelism",
 		"value": 200,
 		"speed": 160,
-		"link": "yes",
+		"link": "https://cdn.pixabay.com/photo/2022/06/06/08/01/horse-7245519_1280.jpg",
 		"spawn": false,
 		"getByGamble": false
 	},
@@ -60,7 +60,7 @@
 		"name": "Horse of Jokery and Confusion",
 		"value": 200,
 		"speed": 160,
-		"link": "muy confusado",
+		"link": "https://i.imgur.com/v7PAkXe.png",
 		"spawn": false,
 		"getByGamble": false,
 		"comp": false
@@ -135,7 +135,8 @@
 		"name": "Horse of Illusion and Trickery",
 		"value": 150,
 		"speed": 145,
-		"link": "‎"
+		"link": "‎",
+		"thumbnail": "https://c.tenor.com/xCpcc-qe6jUAAAAd/tenor.gif"
 	},
 	"handsomeness_masculinity": {
 		"name": "Horse of Handsomeness and Masculinity",
@@ -201,7 +202,7 @@
 		"name": "Horse of Gambling and Money",
 		"value": 100,
 		"speed": 160,
-		"link": "moola",
+		"link": "https://c.tenor.com/IT96yAilLqYAAAAd/tenor.gif",
 		"spawn": false,
 		"getByGamble": false,
 		"comp": false
