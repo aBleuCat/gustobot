@@ -16,7 +16,7 @@ function buildList(
 		lines.push("**Random Pool:**");
 		for (const poolItem of randomPool) {
 			lines.push(
-				`• \`${poolItem._id.toString()}\` — ${poolItem.message.slice(0, 80)}${poolItem.message.length > 80 ? "…" : ""}`,
+				`• \`${poolItem._id.toString()}\` (w:${poolItem.weight}) — ${poolItem.message.slice(0, 80)}${poolItem.message.length > 80 ? "…" : ""}`,
 			);
 		}
 	}
@@ -26,7 +26,7 @@ function buildList(
 		lines.push("**Triggers:**");
 		for (const triggerItem of triggeredPool) {
 			lines.push(
-				`• \`${triggerItem._id.toString()}\` \`${triggerItem.trigger.type}:${triggerItem.trigger.text}\`\n  → ${triggerItem.message.slice(0, 60)}${triggerItem.message.length > 60 ? "…" : ""}`,
+				`• \`${triggerItem._id.toString()}\` (w:${triggerItem.weight}) \`${triggerItem.trigger.type}:${triggerItem.trigger.text}\`\n  → ${triggerItem.message.slice(0, 60)}${triggerItem.message.length > 60 ? "…" : ""}`,
 			);
 		}
 	}
@@ -86,6 +86,15 @@ const pingTrigCommand = {
 							"Trigger text or user ID (required if trigger type is set)",
 						)
 						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName("weight")
+						.setDescription(
+							"Relative selection weight (default 1, higher = more likely)",
+						)
+						.setRequired(false)
+						.setMinValue(0),
 				),
 		)
 		.addSubcommand((sub) =>
@@ -126,6 +135,8 @@ const pingTrigCommand = {
 					interaction.options.getString("triggertype");
 				const triggerText =
 					interaction.options.getString("triggertext");
+				const weight =
+					interaction.options.getInteger("weight") ?? 1;
 
 				if (triggerType && !triggerText) {
 					return interaction.editReply(
@@ -135,6 +146,7 @@ const pingTrigCommand = {
 
 				const entry = await PingResponse.create({
 					message: response,
+					weight,
 					trigger: triggerType
 						? { type: triggerType, text: triggerText }
 						: {},
@@ -142,8 +154,8 @@ const pingTrigCommand = {
 
 				return interaction.editReply(
 					triggerType
-						? `Added trigger \`${entry._id.toString()}\`\n**Type:** \`${triggerType}\` **Text:** \`${triggerText}\`\n**Response:** ${response}`
-						: `Added to random pool \`${entry._id.toString()}\`:\n> ${response}`,
+						? `Added trigger \`${entry._id.toString()}\` (weight ${weight})\n**Type:** \`${triggerType}\` **Text:** \`${triggerText}\`\n**Response:** ${response}`
+						: `Added to random pool \`${entry._id.toString()}\` (weight ${weight}):\n> ${response}`,
 				);
 			}
 

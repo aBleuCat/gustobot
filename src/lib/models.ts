@@ -65,6 +65,7 @@ export type IMessageCache = {
 } & mongoose.Document;
 export type IPingResponse = {
 	message: string;
+	weight: number;
 	trigger: {
 		// eslint-disable-next-line @typescript-eslint/no-restricted-types
 		type: "contains" | "author" | "exact" | null;
@@ -213,6 +214,7 @@ export const PingResponse = mongoose.model(
 	"PingResponse",
 	new mongoose.Schema<IPingResponse>({
 		message: { type: String, required: true },
+		weight: { type: Number, required: true, default: 1, min: 0 },
 		trigger: {
 			type: {
 				type: String,
