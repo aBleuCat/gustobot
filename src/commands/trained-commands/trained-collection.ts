@@ -29,8 +29,8 @@ function buildEmbeds(trainedList: Array<Require_id<FlattenMaps<ITrainedHorses>> 
 		.setTitle(horse.name)
 		.setDescription(horse.breedName ?? "Unknown")
 		.addFields(
-			{ name: "Speed", value: horse.speed.toString() },
-			{ name: "Speed Modifier", value: `${horse.speedModifier > 0 ? "+" : ""}${horse.speedModifier * 100}% (from breed's base speed of ${horse.breedSpeed})` },
+			{ name: "Speed", value: horse.speed.toFixed(2) },
+			{ name: "Speed Modifier", value: `${horse.speedModifier > 0 ? "+" : ""}${(horse.speedModifier * 100).toFixed(2)}% (from breed's base speed of ${horse.breedSpeed})` },
 			{ name: "XP", value: horse.xp?.toString() ?? "0" },
 		)
 		.setFooter({ text: "XP will do things and be obtainable from races in the future" })
