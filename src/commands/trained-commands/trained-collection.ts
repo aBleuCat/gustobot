@@ -20,8 +20,8 @@ const HORSES_PER_PAGE = 3;
 
 function buildEmbeds(trainedList: Array<Require_id<FlattenMaps<ITrainedHorses>> & { __v: number }>) {
 	const trainedListWithInfo = trainedList.map((horse) => {
-		const { name: breedName, ...breedRest } = HORSE_VALUES[horse.breed] ?? { name: horse.breed };
-		return { ...horse, ...breedRest, breedName };
+		const { name: breedName, speed: breedSpeed, ...breedRest } = HORSE_VALUES[horse.breed] ?? { name: horse.breed, speed: horse.speed / (1 + horse.speedModifier) };
+		return { ...horse, ...breedRest, breedName, breedSpeed };
 	});
 	return trainedListWithInfo.map((horse) => new EmbedBuilder()
 		.setColor("#5c4603")
@@ -30,7 +30,7 @@ function buildEmbeds(trainedList: Array<Require_id<FlattenMaps<ITrainedHorses>> 
 		.setDescription(horse.breedName ?? "Unknown")
 		.addFields(
 			{ name: "Speed", value: horse.speed.toString() },
-			{ name: "Speed Modifier", value: horse.speedModifier.toString() },
+			{ name: "Speed Modifier", value: `${horse.speedModifier > 0 ? "+" : ""}${horse.speedModifier * 100}% (from breed's base speed of ${horse.breedSpeed})` },
 			{ name: "XP", value: horse.xp?.toString() ?? "0" },
 		)
 		.setFooter({ text: "XP will do things and be obtainable from races in the future" })
