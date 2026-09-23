@@ -29,6 +29,17 @@ async function handleBotPing(message: Message, client: Client) {
 	const content = message.content.toLowerCase();
 	const allResponses = await PingResponse.find({}).lean();
 
+	// `.lean()` skips Mongoose's schema-default application, so entries saved
+	// before `weight` existed come back as `weight: undefined` — even though
+	// the type says `number`. Left unhandled, that turns pickWeighted's sum
+	// into NaN and silently breaks randomness for the whole pool. Normalize
+	// once here so everything below can trust the value.
+	for (const entry of allResponses) {
+		if (typeof entry.weight !== "number" || Number.isNaN(entry.weight)) {
+			entry.weight = 1;
+		}
+	}
+
 	// Filter for all matching triggered responses
 	const matches = allResponses.filter((entry) => {
 		if (!entry.trigger.type) return false;
