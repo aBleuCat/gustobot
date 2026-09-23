@@ -136,7 +136,7 @@ const pingTrigCommand = {
 				const triggerText =
 					interaction.options.getString("triggertext");
 				const weight =
-					interaction.options.getInteger("weight") ?? 1;
+					interaction.options.getNumber("weight") ?? 1;
 
 				if (triggerType && !triggerText) {
 					return interaction.editReply(
