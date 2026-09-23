@@ -87,7 +87,7 @@ const pingTrigCommand = {
 						)
 						.setRequired(false),
 				)
-				.addIntegerOption((option) =>
+				.addNumberOption((option) =>
 					option
 						.setName("weight")
 						.setDescription(
