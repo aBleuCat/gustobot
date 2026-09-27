@@ -60,6 +60,7 @@ export async function execute(
 			{
 				name: "Rarity",
 				value: lastHorseData.rarity.toLocaleString(),
+				inline: true,
 			},
 			{
 				name: "Speed",
