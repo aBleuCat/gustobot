@@ -4,10 +4,10 @@ import { config } from "../src/lib/config.js";
 
 const horseKeys = Object.keys(horsesData);
 
-// Chance = 1 / (value * SPAWN_COEFFICIENT * ANTIINFLATOR)
-function calculateChance(value) {
+// Chance = 1 / (rarity * SPAWN_COEFFICIENT * ANTIINFLATOR)
+function calculateChance(rarity) {
 	const denominator =
-		value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
+		rarity * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
 	return 1 / denominator;
 }
 
@@ -21,18 +21,18 @@ function getStats() {
 
 	const stats = horseKeys.map((key) => {
 		const horse = horsesData[key];
-		const chance = calculateChance(horse.value);
+		const chance = calculateChance(horse.rarity);
 		totalRate += chance;
 		return {
 			name: horse.name,
-			value: horse.value,
+			rarity: horse.rarity,
 			prob: (chance * 100).toFixed(6) + "%",
 			oneInX: Math.round(1 / chance).toLocaleString(),
 		};
 	});
 
-	// Sort by value (rarest first)
-	stats.sort((a, b) => b.value - a.value);
+	// Sort by rarity (rarest first)
+	stats.sort((a, b) => b.rarity - a.rarity);
 
 	console.table(stats);
 	console.log(
@@ -48,7 +48,7 @@ function spinWheel() {
 
 	const pool = horseKeys.map((key) => ({
 		key,
-		weight: calculateChance(horsesData[key].value),
+		weight: calculateChance(horsesData[key].rarity),
 	}));
 
 	const totalWeight = pool.reduce((sum, h) => sum + h.weight, 0);

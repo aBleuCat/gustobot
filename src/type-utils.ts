@@ -14,6 +14,8 @@ function isHorse(item: unknown): item is Horse {
 		typeof (item as Record<string, unknown>).name === "string" &&
 		"value" in item &&
 		typeof (item as Record<string, unknown>).value === "number" &&
+		"rarity" in item &&
+		typeof (item as Record<string, unknown>).rarity === "number" &&
 		"link" in item &&
 		typeof (item as Record<string, unknown>).link === "string"
 	);

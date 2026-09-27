@@ -15,38 +15,32 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	const calculateChance = (value: number) => {
+	const calculateChance = (rarity: number) => {
 		const denominator =
-			value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
+			rarity * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
 		return 1 / denominator;
 	};
 
 	let totalRate = 0;
 
-	const horseStats = Object.values(horseDataCatalog as Record<string, unknown>)
+	const horseStats = Object.values(horseDataCatalog)
 		.map((horse) => {
-			const horseInfo = horse as {
-				name: string;
-				value?: number;
-				spawn?: boolean;
-			};
-			const horseValue = horseInfo.value ?? 0;
-			const chance = calculateChance(horseValue);
-			const isSpawnable = horseInfo.spawn !== false;
+			const chance = calculateChance(horse.rarity);
+			const isSpawnable = horse.spawn !== false;
 
 			if (isSpawnable) {
 				totalRate += chance;
 			}
 
 			return {
-				name: horseInfo.name,
-				val: horseValue,
+				name: horse.name,
+				rarity: horse.rarity,
 				prob: (chance * 100).toFixed(5),
 				msgFreq: Math.round(1 / chance).toLocaleString(),
 				isSpawnable,
 			};
 		})
-		.toSorted((a, b) => b.val - a.val);
+		.toSorted((a, b) => b.rarity - a.rarity);
 
 	const statsLines = horseStats.map((s) => {
 		const nameTag = s.isSpawnable

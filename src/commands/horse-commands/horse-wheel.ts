@@ -8,9 +8,9 @@ import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 import { config } from "../../lib/config.js";
 
-const calculateChance = (value: number) => {
+const calculateChance = (rarity: number) => {
 	const denominator =
-		value * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
+		rarity * config.SPAWN_COEFFICIENT * config.ANTIINFLATOR;
 	return 1 / denominator;
 };
 
@@ -37,7 +37,7 @@ export async function execute(
 	const pool = spawnableHorseEntries.map(([key, horse]) => ({
 		key,
 		horse,
-		weight: calculateChance(horse.value),
+		weight: calculateChance(horse.rarity),
 	}));
 
 	const totalWeight = pool.reduce((sum, h) => sum + h.weight, 0);
@@ -55,7 +55,7 @@ export async function execute(
 
 	const selectedHorse = selectedItem.horse;
 
-	const chance = calculateChance(selectedHorse.value);
+	const chance = calculateChance(selectedHorse.rarity);
 	const embed = new EmbedBuilder()
 		.setTitle(`Woah the wheel landed on...`)
 		.setColor(

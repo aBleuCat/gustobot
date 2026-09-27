@@ -41,7 +41,7 @@ function rollHorseSpawns(
 
 		const chance = Math.max(
 			1,
-			Math.floor(data.value * spawnCoefficient * antiinflator),
+			Math.floor(data.rarity * spawnCoefficient * antiinflator),
 		);
 
 		if (Math.floor(Math.random() * chance) === 0) {
@@ -126,15 +126,13 @@ function sendSpawnMessages(
 	spawnedHorses: HorseData,
 	coinDropSize?: number,
 ): void {
-	for (const [slug, data] of Object.entries(spawnedHorses)) {
+	for (const data of Object.values(spawnedHorses)) {
 		let prefix = "found the";
 		let decoration = "";
 		if (
-			data.value > config.FLAIR_THRESHOLD_VALUE ||
-			slug === "dung_beetle"
+			data.value > config.FLAIR_THRESHOLD_VALUE
 		) {
-			prefix =
-				slug === "dung_beetle" ? "gets ✨" : "found the ✨";
+			prefix = "found the ✨";
 			decoration = "✨";
 		}
 
