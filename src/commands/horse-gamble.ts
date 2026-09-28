@@ -373,6 +373,12 @@ const gambleCommand = {
 					"(Admin only) Simulate gambles without spending horses.",
 				)
 				.setRequired(false),
+		)
+		.addBooleanOption((option) => 
+			option
+				.setName("boolean")
+				.setDescription("Should people not see this in the channel? Defaults to true")
+				.setRequired(false)
 		),
 
 	async autocomplete(interaction: AutocompleteInteraction) {
@@ -445,6 +451,7 @@ const gambleCommand = {
 			interaction.options.getInteger("bankhorses") ?? null;
 		const isTest =
 			interaction.options.getBoolean("test") ?? false;
+		const isEphemeral = interaction.options.getBoolean("ephemeral") ?? true;
 
 		devLog(
 			`/horsegamble: User ${interaction.user.id} initiated gamble | horse=${horseSlug} count=${count} cycles=${cycles} bankAbove=${bankAbove} test=${isTest}`,
@@ -456,7 +463,7 @@ const gambleCommand = {
 		const isAdmin = ADMIN_IDS.has(interaction.user.id);
 		const isCycleMode = cycles !== null && cycles >= 2;
 
-		await interaction.deferReply();
+		await interaction.deferReply({ flags: isEphemeral ? [MessageFlags.Ephemeral] : [] });
 
 		if (isTest && !isAdmin) {
 			devLog(
@@ -472,7 +479,7 @@ const gambleCommand = {
 				`/horsegamble: Cycle mode rejected for horse coin gambling from user ${interaction.user.id}`,
 			);
 			return interaction.editReply({
-				content: `Cycle mode cannot be used with Horse Coin gambling. Yet...`,
+				content: `Cycle mode cannot be used with Horse Coin gambling. Yet...\n-# who am i kidding this feature aint getting added`,
 			});
 		}
 

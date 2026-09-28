@@ -66,7 +66,7 @@ function aggregateHorseStats(users: IUserHorses[]) {
 
 		if (user.horses) {
 			for (const [slug, count] of user.horses) {
-				if (!(count > 0)) {
+				if (count <= 0) {
 					continue;
 				}
 
@@ -223,12 +223,19 @@ function buildPageButtons(page: number, totalPages: number) {
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("stats")
-	.setDescription("View global horse economy statistics");
+	.setDescription("View global horse economy statistics")
+	.addBooleanOption((option) =>
+		option
+			.setName("ephemeral")
+			.setDescription("Should this not be visible to others in this channel? (default: true)")
+			.setRequired(false)
+	);
 
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
-	await interaction.deferReply();
+	const isEphemeral = interaction.options.getBoolean("ephemeral") ?? true;
+	await interaction.deferReply({ flags: isEphemeral ? [MessageFlags.Ephemeral] : [] });
 	const allUsers = await UserHorses.find({});
 
 	if (allUsers.length === 0) {
@@ -352,6 +359,7 @@ export async function execute(
 		content: buildBreakdownPage(sortedByCount, 0),
 		components: [buildPageButtons(0, totalPages).toJSON()],
 		fetchReply: true,
+		flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
 	});
 
 	attachHorseStatsCollector(
