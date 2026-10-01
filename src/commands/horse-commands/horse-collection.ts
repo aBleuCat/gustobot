@@ -535,13 +535,19 @@ export async function execute(
 	try {
 		await showCollection(interaction);
 	} catch (error) {
-		console.error("[horse collection] failed:", error);
+		// console.log (stdout) on purpose: stderr may be routed to a log you aren't watching.
+		console.log(
+			"[horse collection] failed:",
+			error instanceof Error ? (error.stack ?? error.message) : error,
+		);
 		await interaction
 			.editReply({
 				content: "Something went wrong loading the collection.",
 				embeds: [],
 				components: [],
 			})
-			.catch(() => undefined);
+			.catch((fallbackError: unknown) => {
+				console.log("[horse collection] fallback reply failed:", fallbackError);
+			});
 	}
 }
