@@ -112,7 +112,7 @@ export const config = {
 	TRADE_CONFIRM_DURATION: 3 * MINUTE_MS,
 
 	// For horse-beg.ts
-	BEG_COOLDOWN: DAY_MS,
+	BEG_COOLDOWN: 22 * HOUR_MS,
 
 	// Changeable with /hacks lists
 	lists: {
