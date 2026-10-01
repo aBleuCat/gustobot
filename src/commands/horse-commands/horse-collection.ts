@@ -277,9 +277,10 @@ function parseNavDirection(customId: string): NavDirection | undefined {
 	}
 }
 
-export async function execute(
+async function showCollection(
 	interaction: ChatInputCommandInteraction,
-) {
+): Promise<void> {
+	console.log("[collection] 1 entered");
 	const isEphemeral =
 		interaction.options.getBoolean("ephemeral") ?? true;
 	await interaction.deferReply({
@@ -307,6 +308,14 @@ export async function execute(
 		trainedMap.set(t.ownerId, array);
 	}
 
+	console.log(
+		"[collection] 2 queries done",
+		allUsers.length,
+		allTrained.length,
+		"mongoose readyState:",
+		mongoose.connection.readyState,
+	);
+
 	const targetTrained = trainedMap.get(targetUser.id) ?? [];
 
 	// Spread to an array: Iterator Helpers (`.values().every()`) throw on
@@ -316,11 +325,12 @@ export async function execute(
 	);
 
 	if (!hasHorses && targetTrained.length === 0) {
-		return interaction.editReply({
+		await interaction.editReply({
 			content: isSelf
 				? "Your stables are empty. Keep talking to find some horses!"
 				: `${targetUser.username}'s stables are empty.`,
 		});
+		return;
 	}
 	
 	const allPossibleSlugs = Object.keys(HORSE_VALUES).filter(
@@ -434,10 +444,12 @@ export async function execute(
 		return rows;
 	}
 
+	console.log("[collection] 3 sending", pages.length);
 	const reply = await interaction.editReply({
 		embeds: [getHeaderEmbed(), getContentEmbed(currentPage)],
 		components: getComponents(currentPage),
 	});
+	console.log("[collection] 4 sent");
 
 	if (pages.length <= 1) return;
 
@@ -513,4 +525,23 @@ export async function execute(
 			components: [],
 		}).catch(() => undefined);
 	});
+}
+
+// Any throw between deferReply() and editReply() would otherwise leave the
+// interaction stuck on "thinking…". Log it and always resolve the reply.
+export async function execute(
+	interaction: ChatInputCommandInteraction,
+): Promise<void> {
+	try {
+		await showCollection(interaction);
+	} catch (error) {
+		console.error("[horse collection] failed:", error);
+		await interaction
+			.editReply({
+				content: "Something went wrong loading the collection.",
+				embeds: [],
+				components: [],
+			})
+			.catch(() => undefined);
+	}
 }
