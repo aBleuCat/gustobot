@@ -49,6 +49,20 @@
 		"speed": 165,
 		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542939044277649428/IMG_4457.gif"
 	},
+	"doodles_drawing": {
+		"name": "Horse of Doodles and Drawing",
+		"value": 225,
+		"rarity": 225,
+		"speed": 155,
+		"link": "https://i.imgur.com/y0vp2Rf.png"
+	},
+	"marble_renaissance": {
+		"name": "Horse of Marble and Renaissance",
+		"value": 225,
+		"rarity": 225,
+		"speed": 160,
+		"link": "https://i.imgur.com/Yq5AuBe.png"
+	},
 	"omniscience": {
 		"name": "Horse of Omniscience and All Knowing",
 		"value": 200,
@@ -188,6 +202,13 @@
 		"speed": 145,
 		"link": "https://cdn.discordapp.com/attachments/1487571283083526166/1541760521370599434/togif.gif"
 	},
+	"gildedness_stratification": {
+		"name": "Horse of Gildedness and Stratification",
+		"value": 150,
+		"rarity": 150,
+		"speed": 145,
+		"link": "https://i.imgur.com/TV3m89Z.png"
+	},
 	"gaming_streaming": {
 		"name": "Horse of Gaming and Twitch Streaming",
 		"value": 125,
@@ -281,6 +302,13 @@
 		"rarity": 75,
 		"speed": 120,
 		"link": "https://i.imgur.com/zu0Y04g.png"
+	},
+	"construction_building": {
+		"name": "Horse of Construction and Building",
+		"value": 75,
+		"rarity": 75,
+		"speed": 125,
+		"link": "https://i.imgur.com/HDPYj8h.png"
 	},
 	"truth_affirmation": {
 		"name": "Horse of Truth and Affirmation",
