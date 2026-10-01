@@ -20,10 +20,14 @@ import {
 import devLog from "../helpers/dev-log.js";
 import queueMessage from "../helpers/message-queue.js";
 import type { HorseData } from "../../types.js";
+import { randItem } from "../helpers/random-helpers.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
-// Pure function: Rolls all horses with given spawn parameters.
+const rareFlavorText = ["You should feed it to me! Use `/horses give` to give it to me and you won't get it back!"];
+const flavorTextChance = 0.01;
+
+// Rolls all horses with given spawn parameters.
 function rollHorseSpawns(
 	spawnCoefficient: number,
 	antiinflator: number,
@@ -76,9 +80,22 @@ async function applySpawnInventory(
 ): Promise<{
 	inventory: IUserHorses;
 	coinDropSize: number | undefined;
+	newHorseSlugs: string[];
 	// eslint-disable-next-line @typescript-eslint/no-restricted-types
 } | null> {
 	if (Object.keys(spawnedCounts).length === 0) return null;
+
+	const existingInventory = await UserHorses.findOne({ userId }); // Yeah we'll optimize this later
+	const previousHorseCounts = new Map<string, number>();
+	for (const [slug, count] of Object.entries(
+		existingInventory?.horses ?? {},
+	)) {
+		previousHorseCounts.set(slug, Number(count) || 0);
+	}
+
+	const newHorseSlugs = Object.keys(spawnedCounts).filter(
+		(slug) => (previousHorseCounts.get(slug) ?? 0) <= 0,
+	);
 
 	const inc: Record<string, number> = {};
 	for (const [slug, count] of Object.entries(spawnedCounts)) {
@@ -116,7 +133,7 @@ async function applySpawnInventory(
 	);
 
 	if (!inventory) return null;
-	return { inventory, coinDropSize };
+	return { inventory, coinDropSize, newHorseSlugs };
 }
 
 // Sends all spawn messages + coin notification via queue.
@@ -125,10 +142,14 @@ function sendSpawnMessages(
 	channel: GuildTextBasedChannel,
 	spawnedHorses: HorseData,
 	coinDropSize?: number,
+	newHorseSlugs: string[] = [],
 ): void {
-	for (const data of Object.values(spawnedHorses)) {
+	const newlyAddedHorseSet = new Set(newHorseSlugs);
+
+	for (const [slug, data] of Object.entries(spawnedHorses)) {
 		let prefix = "found the";
 		let decoration = "";
+		let hint = "";
 		if (
 			data.value > config.FLAIR_THRESHOLD_VALUE
 		) {
@@ -136,9 +157,13 @@ function sendSpawnMessages(
 			decoration = "✨";
 		}
 
+		if (Math.random() < flavorTextChance) {
+			hint = `\n-# ${randItem(rareFlavorText)}`;
+		}
+
 		queueMessage({
 			channel,
-			content: `<@${userId}> ${prefix} **${data.name}**${decoration}!`,
+			content: `<@${userId}> ${prefix} **${data.name}**${decoration}!${hint}`,
 			priority: 2,
 		}).catch((error: unknown) => {
 			console.error(
@@ -154,6 +179,19 @@ function sendSpawnMessages(
 			}).catch((error: unknown) => {
 				console.error(
 					"QueueMessage error while spawning horse:",
+					error,
+				);
+			});
+		}
+
+		if (newlyAddedHorseSet.has(slug)) {
+			queueMessage({
+				channel,
+				content: `<@${userId}> This is a new horse, **${data.name}**, that has been added to your collection!\n-# Use \`/horses collection\` to see your completion`,
+				priority: 2,
+			}).catch((error: unknown) => {
+				console.error(
+					"QueueMessage error while sending new horse follow-up:",
 					error,
 				);
 			});
@@ -257,6 +295,7 @@ async function forceSpawnHorse(
 		channel,
 		spawnedHorses,
 		result?.coinDropSize,
+		result?.newHorseSlugs,
 	);
 
 	if (result?.inventory) {
@@ -336,6 +375,7 @@ async function handleHorseSpawn(message: Message) {
 		castedChannel,
 		spawnedHorses,
 		result?.coinDropSize,
+		result?.newHorseSlugs,
 	);
 
 	if (result?.inventory) {
