@@ -107,7 +107,12 @@ function categorizeOwnedHorses(inventory: IUserHorses | undefined): {
 		return { compLines, nonCompLines, ownedSlugs };
 	}
 
-	for (const [slug, count] of inventory.horses) {
+	const horsesByValue = [...inventory.horses].toSorted(
+		([slugA], [slugB]) =>
+			(HORSE_VALUES[slugB]?.value ?? 0) -
+			(HORSE_VALUES[slugA]?.value ?? 0),
+	);
+	for (const [slug, count] of horsesByValue) {
 		const horseData = HORSE_VALUES[slug];
 		if (count <= 0 || !horseData) continue;
 
@@ -131,7 +136,10 @@ function buildTrainedLines(
 ): string[] {
 	const trainedLines: string[] = [];
 
-	for (const t of trainedForUser) {
+	const trainedByValue = trainedForUser.toSorted(
+		(a, b) => trainedHorseValue(b.breed) - trainedHorseValue(a.breed),
+	);
+	for (const t of trainedByValue) {
 		const { breed } = t;
 		const value = trainedHorseValue(breed);
 		const displayName = t.name ?? horseName(breed);
@@ -185,9 +193,13 @@ function buildMissingPages(
 	isSelf: boolean,
 	username: string,
 ): PageData[] {
-	const missing = allPossibleSlugs.filter(
-		(slug) => !ownedSlugs.has(slug),
-	);
+	const missing = allPossibleSlugs
+		.filter((slug) => !ownedSlugs.has(slug))
+		.toSorted(
+			(slugA, slugB) =>
+				(HORSE_VALUES[slugB]?.value ?? 0) -
+				(HORSE_VALUES[slugA]?.value ?? 0),
+		);
 
 	if (missing.length === 0) {
 		return [
