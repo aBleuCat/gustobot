@@ -376,7 +376,7 @@ const gambleCommand = {
 		)
 		.addBooleanOption((option) => 
 			option
-				.setName("boolean")
+				.setName("ephemeral")
 				.setDescription("Should people not see this in the channel? Defaults to true")
 				.setRequired(false)
 		),
