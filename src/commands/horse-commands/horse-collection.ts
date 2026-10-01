@@ -9,6 +9,7 @@ import {
 	StringSelectMenuBuilder,
 	type ButtonInteraction,
 	type StringSelectMenuInteraction,
+	version as discordJsVersion,
 } from "discord.js";
 import mongoose from "mongoose";
 import type { IUserHorses, ITrainedHorses } from "../../lib/models.js";
@@ -277,10 +278,30 @@ function parseNavDirection(customId: string): NavDirection | undefined {
 	}
 }
 
+// Rejects if `promise` hasn't settled within `ms`, so a stalled call surfaces
+// as a logged error instead of an interaction stuck on "thinking…".
+async function withTimeout<T>(
+	promise: Promise<T>,
+	ms: number,
+	label: string,
+): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timeout = new Promise<never>((_resolve, reject) => {
+		timer = setTimeout(() => {
+			reject(new Error(`${label} stalled for ${ms}ms`));
+		}, ms);
+	});
+	try {
+		return await Promise.race([promise, timeout]);
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
 async function showCollection(
 	interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-	console.log("[collection] 1 entered");
+	console.log("[collection] 1 entered (build 5, discord.js", discordJsVersion + ")");
 	const isEphemeral =
 		interaction.options.getBoolean("ephemeral") ?? true;
 	await interaction.deferReply({
@@ -444,11 +465,17 @@ async function showCollection(
 		return rows;
 	}
 
-	console.log("[collection] 3 sending", pages.length);
-	const reply = await interaction.editReply({
+	const payload = {
 		embeds: [getHeaderEmbed(), getContentEmbed(currentPage)],
 		components: getComponents(currentPage),
-	});
+	};
+	// Stringifying calls toJSON() on every builder, so validation errors surface here.
+	console.log("[collection] 3 payload built", pages.length, JSON.stringify(payload).length);
+	const reply = await withTimeout(
+		interaction.editReply(payload),
+		10_000,
+		"editReply",
+	);
 	console.log("[collection] 4 sent");
 
 	if (pages.length <= 1) return;

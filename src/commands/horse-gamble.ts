@@ -31,10 +31,23 @@ const STREAK_REQUIRED = 6;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 /* eslint-enable @typescript-eslint/naming-convention */
-const STREAKS_PATH = path.join(
-	__dirname,
-	"../runtime_jsons/gamble_streaks.json",
-);
+const STREAKS_PATH = (() => {
+	const candidates = [
+		path.resolve(process.cwd(), "src/runtime_jsons/gamble_streaks.json"),
+		path.resolve(process.cwd(), "runtime_jsons/gamble_streaks.json"),
+		path.resolve(__dirname, "../runtime_jsons/gamble_streaks.json"),
+		path.resolve(__dirname, "../../src/runtime_jsons/gamble_streaks.json"),
+	];
+
+	for (const candidate of candidates) {
+		const dir = path.dirname(candidate);
+		if (fs.existsSync(dir) || fs.existsSync(candidate)) {
+			return candidate;
+		}
+	}
+
+	return candidates[0];
+})();
 const safeLength = 1800;
 const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
@@ -52,6 +65,8 @@ function loadStreaks() {
 
 function saveStreaks(streaks) {
 	try {
+		const dir = path.dirname(STREAKS_PATH);
+		fs.mkdirSync(dir, { recursive: true });
 		fs.writeFileSync(
 			STREAKS_PATH,
 			JSON.stringify(streaks, null, 2),
