@@ -166,7 +166,7 @@ function sendSpawnMessages(
 
 		queueMessage({
 			channel,
-			content: `<@${userId}> ${prefix} **${data.name}**${decoration}!${hint}`,
+			content: `<@${userId}> ${prefix} **${data.name}** ${decoration}!${hint}`,
 			priority: 2,
 		}).catch((error: unknown) => {
 			console.error(
