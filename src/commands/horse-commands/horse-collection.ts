@@ -171,6 +171,13 @@ function paginateLines(
 	}));
 }
 
+// Title factory that only appends "(n/total)" when there is more than one page.
+function pagedTitle(
+	base: string,
+): (pageNumber: number, totalPages: number) => string {
+	return (page, total) => (total > 1 ? `${base} (${page}/${total})` : base);
+}
+
 function buildMissingPages(
 	allPossibleSlugs: string[],
 	ownedSlugs: Set<string>,
@@ -227,22 +234,18 @@ function buildPages(
 		"#954535",
 	);
 
-	if (nonCompLines.length > 0) {
-		pages.push({
-			title: "👻 Specials & Secrets",
-			color: "#cba6f7",
-			lines: nonCompLines,
-		});
-	}
+	pages.push(
+		...paginateLines(
+			nonCompLines,
+			pagedTitle("👻 Specials & Secrets"),
+			"#cba6f7",
+		),
+	);
 
 	const trainedLines = buildTrainedLines(trainedForUser, ownedSlugs);
-	if (trainedLines.length > 0) {
-		pages.push({
-			title: "🏅 Trained Horses",
-			color: "#f9e2af",
-			lines: trainedLines,
-		});
-	}
+	pages.push(
+		...paginateLines(trainedLines, pagedTitle("🏅 Trained Horses"), "#f9e2af"),
+	);
 
 	pages.push(
 		...buildMissingPages(allPossibleSlugs, ownedSlugs, isSelf, username),
@@ -306,11 +309,13 @@ export async function execute(
 
 	const targetTrained = trainedMap.get(targetUser.id) ?? [];
 
-	if (
-		(!inventory?.horses ||
-			inventory.horses.values().every((v) => v === 0)) &&
-		targetTrained.length === 0
-	) {
+	// Spread to an array: Iterator Helpers (`.values().every()`) throw on
+	// Node versions without them, which left the deferred reply hanging.
+	const hasHorses = [...(inventory?.horses?.values() ?? [])].some(
+		(count) => count > 0,
+	);
+
+	if (!hasHorses && targetTrained.length === 0) {
 		return interaction.editReply({
 			content: isSelf
 				? "Your stables are empty. Keep talking to find some horses!"

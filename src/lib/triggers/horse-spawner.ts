@@ -87,9 +87,12 @@ async function applySpawnInventory(
 
 	const existingInventory = await UserHorses.findOne({ userId }); // Yeah we'll optimize this later
 	const previousHorseCounts = new Map<string, number>();
-	for (const [slug, count] of Object.entries(
-		existingInventory?.horses ?? {},
-	)) {
+	const existingHorseEntries =
+		existingInventory?.horses instanceof Map
+			? [...existingInventory.horses]
+			: Object.entries(existingInventory?.horses ?? {});
+
+	for (const [slug, count] of existingHorseEntries) {
 		previousHorseCounts.set(slug, Number(count) || 0);
 	}
 
@@ -187,7 +190,7 @@ function sendSpawnMessages(
 		if (newlyAddedHorseSet.has(slug)) {
 			queueMessage({
 				channel,
-				content: `<@${userId}> This is a new horse, **${data.name}**, that has been added to your collection!\n-# Use \`/horses collection\` to see your completion`,
+				content: `<@${userId}> This is a new horse, **${data.name}**, that has been added to your completion!\n-# Use \`/horses collection\` to see your completion`,
 				priority: 2,
 			}).catch((error: unknown) => {
 				console.error(
