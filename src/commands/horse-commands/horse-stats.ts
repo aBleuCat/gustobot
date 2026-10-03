@@ -229,17 +229,26 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setName("ephemeral")
 			.setDescription("Should this not be visible to others in this channel? (default: true)")
 			.setRequired(false)
+	)
+	.addBooleanOption((option) =>
+		option
+			.setName("opted-in-only")
+			.setDescription("Only include players opted in to horse spawns (default: false)")
+			.setRequired(false),
 	);
 
 export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	const isEphemeral = interaction.options.getBoolean("ephemeral") ?? true;
+	const isOptedInOnly = interaction.options.getBoolean("opted-in-only") ?? false;
 	await interaction.deferReply({ flags: isEphemeral ? [MessageFlags.Ephemeral] : [] });
-	const allUsers = await UserHorses.find({});
+	const allUsers = await UserHorses.find(
+		isOptedInOnly ? { optIn: true } : {},
+	);
 
 	if (allUsers.length === 0) {
-		return interaction.editReply("No horse data yet!");
+		return interaction.editReply("No horse data for the selected filters!");
 	}
 
 	const {
