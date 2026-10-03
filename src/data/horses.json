@@ -124,6 +124,13 @@
 		"speed": 145,
 		"link": "https://tenor.com/view/tired-exhausted-sleepy-gif-12798975"
 	},
+	"mining_crafting": {
+		"name": "Horse of Mining and Crafting",
+		"value": 175,
+		"rarity": 175,
+		"speed": 155,
+		"link": "https://minecraft.wiki/images/Creamy_Horse.png?ea14a"
+	},
 	"procrastination_doomscrolling": {
 		"name": "Horse of Procrastination and Doomscrolling",
 		"value": 175,
@@ -309,6 +316,20 @@
 		"rarity": 75,
 		"speed": 125,
 		"link": "https://i.imgur.com/HDPYj8h.png"
+	},
+	"noobs_baseplates": {
+		"name": "Horse of Noobs and Baseplates",
+		"value": 75,
+		"rarity": 75,
+		"speed": 115,
+		"link": "https://static.wikitide.net/asylumrejectswikiwiki/f/f2/Horse_equipped.png"
+	},
+	"smiles_dentistry": {
+		"name": "Horse of Smiles and Dentistry",
+		"value": 75,
+		"rarity": 75,
+		"speed": 120,
+		"link": "https://i.giphy.com/DgEGFcydXOrvE2ENAL.webp"
 	},
 	"truth_affirmation": {
 		"name": "Horse of Truth and Affirmation",
