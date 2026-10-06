@@ -574,7 +574,6 @@ export async function execute(
 	try {
 		await showCollection(interaction);
 	} catch (error) {
-		// console.log (stdout) on purpose: stderr may be routed to a log you aren't watching.
 		console.log(
 			"[horse collection] failed:",
 			error instanceof Error ? (error.stack ?? error.message) : error,

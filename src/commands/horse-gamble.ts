@@ -207,6 +207,7 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 				slug,
 				virtualInv.horses.get(slug) - 1,
 			);
+			netValueChange -= HORSE_VALUES[slug].value;
 			completeLosses++;
 			continue;
 		}
@@ -584,7 +585,11 @@ const gambleCommand = {
 			}
 
 			const gamblesCount =
-				count === 0 ? Math.floor(available / 2) : count;
+				count === 0
+					? isTest
+						? 100
+						: Math.floor(available / 2)
+					: count;
 			if (gamblesCount <= 0) {
 				return interaction.editReply({
 					content: `You need at least **2 Horse Coins** to gamble.`,
@@ -778,7 +783,7 @@ const gambleCommand = {
 			};
 
 			const bankedHorses = new Map(); // Slug -> total count banked across all cycles
-			let bankingCoinDebt = 0; // Accumulated fractional cost (0.3 per horse banked)
+			let bankingCoinDebt = 0; // Accumulated cost in tenths of a coin (3 per horse banked)
 			let totalCoinsSpentOnBanking = 0; // Whole coins actually deducted so far
 
 			let cycleHorses = [...initialHorsesToGamble];
@@ -842,7 +847,7 @@ const gambleCommand = {
 								slug,
 								(bankedHorses.get(slug) || 0) + 1,
 							);
-							bankingCoinDebt += 0.3;
+							bankingCoinDebt += 3;
 							bankedThisCycle.push(slug);
 						} else {
 							toGamble.push(slug);
@@ -853,7 +858,7 @@ const gambleCommand = {
 
 					// Deduct newly-owed whole coins (ceil increments)
 					const newWholeCoins =
-						Math.ceil(bankingCoinDebt) -
+						Math.ceil(bankingCoinDebt / 10) -
 						totalCoinsSpentOnBanking;
 					if (newWholeCoins > 0) {
 						virtualInv.horseCoins -= newWholeCoins;
@@ -933,13 +938,13 @@ const gambleCommand = {
 			// GustoBot receives: horses present in original but missing/reduced in active final
 			const lostToHouse = new Map();
 			for (const [s, origCnt] of originalMap.entries()) {
-				const lost = origCnt - (finalActiveMap.get(s) || 0);
+				const lost = origCnt - (finalFullMap.get(s) || 0);
 				if (lost > 0) lostToHouse.set(s, lost);
 			}
 
 			// GustoBot pays out: horses present in active final beyond original counts
 			const gainedFromHouse = new Map();
-			for (const [s, finalCnt] of finalActiveMap.entries()) {
+			for (const [s, finalCnt] of finalFullMap.entries()) {
 				const gained = finalCnt - (originalMap.get(s) || 0);
 				if (gained > 0) gainedFromHouse.set(s, gained);
 			}
@@ -1076,15 +1081,13 @@ const gambleCommand = {
 			];
 
 			// Active horses sorted by value desc
-			const finalGrouped = new Map();
-			for (const s of [...finalActiveMap.entries()]
-				.flatMap(([s, cnt]) => new Array(cnt).fill(s))
-				.sort(
+			const finalGrouped = new Map(
+				[...finalActiveMap.entries()].sort(
 					(a, b) =>
-						(HORSE_VALUES[b]?.value ?? 0) -
-						(HORSE_VALUES[a]?.value ?? 0),
-				))
-				finalGrouped.set(s, (finalGrouped.get(s) || 0) + 1);
+						(HORSE_VALUES[b[0]]?.value ?? 0) -
+						(HORSE_VALUES[a[0]]?.value ?? 0),
+				),
+			);
 			for (const [s, cnt] of finalGrouped.entries()) {
 				finalLines.push(
 					`${cnt} ${horseName(s)} ($${HORSE_VALUES[s]?.value})`,
@@ -1188,6 +1191,7 @@ const gambleCommand = {
 					);
 					await houseInv.save();
 					await inventory.save();
+					updateStreak(interaction.user.id, false);
 					return interaction.editReply(
 						`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`,
 					);
@@ -1203,25 +1207,29 @@ const gambleCommand = {
 				now - lastGamble < config.FRENZY_THRESHOLD_MS &&
 				Math.random() < config.FRENZY_CHANCE
 			) {
-				const ownedHorses = [];
-				for (const [
-					s,
-					hCount,
-				] of inventory.horses.entries()) {
-					if (hCount > 0 && HORSE_VALUES[s]) {
-						const availableCount =
-							s === slug ? hCount - 1 : hCount;
-						for (let i = 0; i < availableCount; i++) {
-							ownedHorses.push({
-								slug: s,
-								value: HORSE_VALUES[s].value,
-							});
-						}
+				const victims = [];
+				for (const entry of getSortedHorseList(
+					inventory,
+					"asc",
+				)) {
+					const availableCount =
+						entry.slug === slug
+							? entry.count - 1
+							: entry.count;
+					for (
+						let i = 0;
+						i < availableCount && victims.length < 2;
+						i++
+					) {
+						victims.push({
+							slug: entry.slug,
+							value: entry.value,
+						});
 					}
+
+					if (victims.length >= 2) break;
 				}
 
-				ownedHorses.sort((a, b) => a.value - b.value);
-				const victims = ownedHorses.slice(0, 2);
 				if (victims.length > 0) {
 					frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
 					for (const victim of victims) {
@@ -1430,6 +1438,9 @@ const gambleCommand = {
 		);
 
 		const now = Date.now();
+		const preGambleCounts = isTest
+			? null
+			: new Map(inventory.horses);
 		const houseInv = isTest
 			? null
 			: await getOrCreateInventory(UserHorses, HOUSE_USER_ID);
@@ -1455,6 +1466,7 @@ const gambleCommand = {
 						slug,
 						(houseInv.horses.get(slug) || 0) + 1,
 					);
+					netValueChange -= HORSE_VALUES[slug].value;
 					totalCompleteLosses++;
 					continue;
 				}
@@ -1625,12 +1637,13 @@ const gambleCommand = {
 		}
 
 		// Compute net change for each horse
+		const beforeCounts = preGambleCounts ?? initialHorseCounts;
 		const allHorseSlugs = new Set([
-			...initialHorseCounts.keys(),
+			...beforeCounts.keys(),
 			...finalHorseCounts.keys(),
 		]);
 		for (const slug of allHorseSlugs) {
-			const before = initialHorseCounts.get(slug) || 0;
+			const before = beforeCounts.get(slug) || 0;
 			const after = finalHorseCounts.get(slug) || 0;
 			const diff = after - before;
 			if (diff !== 0) horseChangeMap.set(slug, diff);
@@ -1649,7 +1662,7 @@ const gambleCommand = {
 			},
 		)) {
 			const value = HORSE_VALUES[slug]?.value || 0;
-			const before = initialHorseCounts.get(slug) || 0;
+			const before = beforeCounts.get(slug) || 0;
 			const after = finalHorseCounts.get(slug) || 0;
 			let prefix = "";
 			if (diff > 0) {
