@@ -55,7 +55,7 @@ export const config = {
 	FRENZY_CHANCE: 0.2,
 	CONFISCATE_CHANCE: 0.25,
 	LOSS_THRESHOLD: -75,
-	PROGRESSIVE_COIN_GAMBLE_TAX: 0.1,
+	PROGRESSIVE_COIN_GAMBLE_TAX: 0,
 	MAX_ROLL: 100,
 	MIN_ROLL: -100,
 
@@ -153,7 +153,7 @@ export const descriptions: Record<keyof typeof config, string> = {
 	LOSS_THRESHOLD:
 		"Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between -100 and 100 is rolled",
 	PROGRESSIVE_COIN_GAMBLE_TAX:
-		"Cost per horse = floor(coins / 50 * this)",
+		"Cost per horse = Math.max(1, ceil(coins / 50 * this))",
 	MAX_ROLL: "Maximum possible roll for gambling (inclusive)",
 	MIN_ROLL: "Minimum possible roll for gambling (inclusive)",
 	ANTIINFLATOR:

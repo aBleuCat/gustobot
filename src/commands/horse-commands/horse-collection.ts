@@ -258,9 +258,6 @@ function buildPages(
 	const trainedLines = buildTrainedLines(trainedForUser, ownedSlugs);
 	pages.push(
 		...paginateLines(trainedLines, pagedTitle("🏅 Trained Horses"), "#f9e2af"),
-	);
-
-	pages.push(
 		...buildMissingPages(allPossibleSlugs, ownedSlugs, isSelf, username),
 	);
 
