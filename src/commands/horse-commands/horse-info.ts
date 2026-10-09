@@ -23,15 +23,16 @@ const OVERFLOW_LINE_RESERVE = 40;
 const ROLL_COUNT = MAX_ROLL - MIN_ROLL + 1;
 
 const GAMBLE_POOL = HORSE_ENTRIES.filter(
+	// eslint-disable-next-line unicorn/no-non-function-verb-prefix
 	([, { comp, getByGamble }]) => comp !== false && getByGamble !== false,
 );
 
-interface GambleOutcome {
+type GambleOutcome = {
 	name: string;
 	chance: number;
 }
 
-interface GambleOdds {
+type GambleOdds = {
 	lossChance: number;
 	outcomes: GambleOutcome[];
 	averageReturn: number;
@@ -45,9 +46,9 @@ function rankBy(slug: string, metric: (horse: Horse) => number): number {
 	);
 }
 
-function closestGambleHorses(targetValue: number): [string, Horse][] {
+function closestGambleHorses(targetValue: number): Array<[string, Horse]> {
 	let minDiff = Infinity;
-	let closest: [string, Horse][] = [];
+	let closest: Array<[string, Horse]> = [];
 	for (const entry of GAMBLE_POOL) {
 		const diff = Math.abs(entry[1].value - targetValue);
 		if (diff < minDiff) {
@@ -57,13 +58,14 @@ function closestGambleHorses(targetValue: number): [string, Horse][] {
 			closest.push(entry);
 		}
 	}
+
 	return closest;
 }
 
 /**
- * Exact odds of gambling a horse worth `startValue`, mirroring the roll logic in
- * horse-gamble.ts. Ignores coin cost and confiscation (those depend on the user and the time).
- * Average return is the expected net value change per gamble, a complete loss counting as -startValue.
+ Exact odds of gambling a horse worth `startValue`, mirroring the roll logic in
+ horse-gamble.ts. Ignores coin cost and confiscation (those depend on the user and the time).
+ Average return is the expected net value change per gamble, a complete loss counting as -startValue.
  */
 function computeGambleOdds(startValue: number): GambleOdds {
 	const lossThreshold = LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
@@ -89,13 +91,14 @@ function computeGambleOdds(startValue: number): GambleOdds {
 			} else {
 				chances.set(slug, { name: horse.name, chance: share });
 			}
+
 			averageReturn += (horse.value - startValue) * share;
 		}
 	}
 
 	return {
 		lossChance,
-		outcomes: [...chances.values()].toSorted((a, b) => b.chance - a.chance),
+		outcomes: chances.values().toArray().toSorted((a, b) => b.chance - a.chance),
 		averageReturn,
 	};
 }
@@ -127,6 +130,7 @@ function describeGamble(startValue: number): string {
 			hiddenChance += chance;
 		}
 	}
+
 	if (hiddenCount > 0) {
 		lines.push(`...and ${hiddenCount} more: ${formatPercent(hiddenChance)}`);
 	}
