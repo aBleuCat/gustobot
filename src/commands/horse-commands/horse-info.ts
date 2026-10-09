@@ -27,14 +27,16 @@ const GAMBLE_POOL = HORSE_ENTRIES.filter(
 	([, { comp, getByGamble }]) => comp !== false && getByGamble !== false,
 );
 
-type GambleOutcome = {
-	name: string;
+type GambleTier = {
+	/** Net value change from the starting horse (resulting horse value - starting value). */
+	delta: number;
 	chance: number;
 }
 
 type GambleOdds = {
 	lossChance: number;
-	outcomes: GambleOutcome[];
+	/** Sorted by delta, best first. Excludes complete losses. */
+	tiers: GambleTier[];
 	averageReturn: number;
 }
 
@@ -65,12 +67,13 @@ function closestGambleHorses(targetValue: number): Array<[string, Horse]> {
 /**
  Exact odds of gambling a horse worth `startValue`, mirroring the roll logic in
  horse-gamble.ts. Ignores coin cost and confiscation (those depend on the user and the time).
- Average return is the expected net value change per gamble, a complete loss counting as -startValue.
+ Outcomes are grouped into tiers by net value change. A complete loss counts as -startValue
+ for the average return but is reported separately from the tiers.
  */
 function computeGambleOdds(startValue: number): GambleOdds {
 	const lossThreshold = LOSS_THRESHOLD - Math.max(0, (startValue - 100) / 10);
 	const rollChance = 1 / ROLL_COUNT;
-	const chances = new Map<string, GambleOutcome>();
+	const tierChances = new Map<number, number>();
 	let lossChance = 0;
 	let averageReturn = 0;
 
@@ -84,21 +87,18 @@ function computeGambleOdds(startValue: number): GambleOdds {
 		const closest = closestGambleHorses(startValue + change);
 		if (closest.length === 0) continue;
 		const share = rollChance / closest.length;
-		for (const [slug, horse] of closest) {
-			const existing = chances.get(slug);
-			if (existing) {
-				existing.chance += share;
-			} else {
-				chances.set(slug, { name: horse.name, chance: share });
-			}
-
-			averageReturn += (horse.value - startValue) * share;
+		for (const [, horse] of closest) {
+			const delta = horse.value - startValue;
+			tierChances.set(delta, (tierChances.get(delta) ?? 0) + share);
+			averageReturn += delta * share;
 		}
 	}
 
 	return {
 		lossChance,
-		outcomes: chances.values().toArray().toSorted((a, b) => b.chance - a.chance),
+		tiers: [...tierChances]
+			.map(([delta, chance]) => ({ delta, chance }))
+			.toSorted((a, b) => b.delta - a.delta),
 		averageReturn,
 	};
 }
@@ -109,28 +109,35 @@ function formatPercent(chance: number): string {
 }
 
 function formatSignedDollars(amount: number): string {
-	return `${amount < 0 ? "-" : "+"}$${Math.abs(amount).toFixed(2)}`;
+	const rounded = Number(amount.toFixed(2));
+	return `${rounded < 0 ? "-" : "+"}$${Math.abs(rounded)}`;
+}
+
+function formatTier({ delta, chance }: GambleTier): string {
+	return `${formatSignedDollars(delta)}: ${formatPercent(chance)}`;
 }
 
 function describeGamble(startValue: number): string {
-	const { lossChance, outcomes, averageReturn } = computeGambleOdds(startValue);
+	const { lossChance, tiers, averageReturn } = computeGambleOdds(startValue);
 	const footer = `Complete Loss: ${formatPercent(lossChance)}\nAverage Return: ${formatSignedDollars(averageReturn)}`;
 
+	// Keep the most likely tiers if the field would overflow, but display them best-to-worst
 	let budget = EMBED_FIELD_LIMIT - footer.length - 1;
-	const lines: string[] = [];
+	const kept: GambleTier[] = [];
 	let hiddenCount = 0;
 	let hiddenChance = 0;
-	for (const { name, chance } of outcomes) {
-		const line = `${name}: ${formatPercent(chance)}`;
-		if (hiddenCount === 0 && line.length + 1 + OVERFLOW_LINE_RESERVE <= budget) {
-			lines.push(line);
-			budget -= line.length + 1;
+	for (const tier of tiers.toSorted((a, b) => b.chance - a.chance)) {
+		const lineLength = formatTier(tier).length + 1;
+		if (hiddenCount === 0 && lineLength + OVERFLOW_LINE_RESERVE <= budget) {
+			kept.push(tier);
+			budget -= lineLength;
 		} else {
 			hiddenCount++;
-			hiddenChance += chance;
+			hiddenChance += tier.chance;
 		}
 	}
 
+	const lines = kept.toSorted((a, b) => b.delta - a.delta).map((tier) => formatTier(tier));
 	if (hiddenCount > 0) {
 		lines.push(`...and ${hiddenCount} more: ${formatPercent(hiddenChance)}`);
 	}
