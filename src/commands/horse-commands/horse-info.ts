@@ -138,7 +138,7 @@ function describeGamble(startValue: number): string {
 	return [...lines, footer].join("\n");
 }
 
-export const infoCommand = new SlashCommandSubcommandBuilder()
+export const data = new SlashCommandSubcommandBuilder()
 	.setName("info")
 	.setDescription("Get the info for a specific breed of horse")
 	.addStringOption((option) =>
