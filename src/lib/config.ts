@@ -151,7 +151,7 @@ export const descriptions: Record<keyof typeof config, string> = {
 	CONFISCATE_CHANCE:
 		"Probability of police confiscating horse when no coins (0-1)",
 	LOSS_THRESHOLD:
-		"Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between -100 and 100 is rolled",
+		"Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between -75 and 110 is rolled",
 	PROGRESSIVE_COIN_GAMBLE_TAX:
 		"Cost per horse = Math.max(1, ceil(coins / 50 * this))",
 	MAX_ROLL: "Maximum possible roll for gambling (inclusive)",
