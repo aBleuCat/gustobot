@@ -19,7 +19,8 @@
 		"value": 500,
 		"rarity": 1000,
 		"speed": 200,
-		"link": "https://tenor.com/view/cat-kitten-unicorn-rainbow-yeah-gif-27324049"
+		"link": "https://tenor.com/view/cat-kitten-unicorn-rainbow-yeah-gif-27324049",
+		"thumbnail": "https://i.imgur.com/kEiTHlX.png"
 	},
 	"trojan_horse": {
 		"name": "Trojan Horse",
