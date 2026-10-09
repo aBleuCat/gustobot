@@ -5,7 +5,8 @@ import rawHorseValues from "../data/horses.json" with { type: "json" };
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, "all");
 
-const BASELINE_SUM = 0.2; // I like rounded better
+/* No matter how many horses get added, you on average get one horse every 0.2*SPAWN_COEFFICIENT*25 messages */
+const BASELINE_SUM = 0.2;
 const currentInverseSum = Object.entries(HORSE_VALUES)
 	.filter(([, data]) => data.spawn !== false)
 	.reduce((sum, [, data]) => sum + (1 / data.value), 0);
@@ -56,7 +57,7 @@ export const config = {
 	CONFISCATE_CHANCE: 0.25,
 	LOSS_THRESHOLD: -60,
 	PROGRESSIVE_COIN_GAMBLE_TAX: 0,
-	MAX_ROLL: 110,
+	MAX_ROLL: 100,
 	MIN_ROLL: -75,
 
 	// For message-cache-cleanup.ts
