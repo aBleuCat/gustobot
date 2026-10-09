@@ -26,7 +26,7 @@ const HOUSE_USER_ID = "1469509600561729710";
 const COMMON_HORSE = "common_horse";
 const ADMIN_IDS = immutConfig.ADMINS;
 const STREAK_HORSE = "gamble_streak";
-const STREAK_REQUIRED = 6;
+const STREAK_REQUIRED = 10;
 /* eslint-disable @typescript-eslint/naming-convention */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
