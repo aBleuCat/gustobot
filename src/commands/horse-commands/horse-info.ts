@@ -149,7 +149,7 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setAutocomplete(true)
 	)
 
-export function autocomplete(
+export async function autocomplete(
 	interaction: AutocompleteInteraction
 ) {
 	const focused = interaction.options.getFocused().toLowerCase();
@@ -157,7 +157,7 @@ export function autocomplete(
 		.filter(([slug, {name}]) => slug.includes(focused) || name.toLowerCase().includes(focused))
 		.slice(0, 25)
 		.map(([slug, {name}]) => ({ name, value: slug }));
-	return choices;
+	await interaction.respond(choices);
 }
 
 export async function execute(
@@ -190,7 +190,7 @@ export async function execute(
 	const sellPrice = (value / 25) * COMMON_SELL_PRICE;
 	const valueDescription = {
 		name: "Value",
-		value: `$${value} (#${valuePosition} of ${totalHorses})\nWould sell for 🪙 ${sellPrice} Horse Coin with \`horses sell\`\n-# \`horses sell\` purposefully gives less horse coin than horses are worth`,
+		value: `$${value} (#${valuePosition} of ${totalHorses})\nWould sell for 🪙 ${sellPrice} Horse Coin with \`/horses sell\`\n-# Note: \`/horses sell\` purposefully gives less horse coin than horses are worth`,
 	};
 
 	const obtainmentDescription = {
@@ -202,7 +202,7 @@ export async function execute(
 	const rarityPosition = rankBy(slug, (horse) => horse.rarity);
 	const rarityDescription = {
 		name: "Rarity",
-		value: `Stat: ${rarity} (#${rarityPosition} of ${totalHorses})\nEffective: ${effectiveRarity.toFixed(4)}\nAverage 1 in ${(1 / effectiveRarity).toFixed(0)} messages\n${rarity / 25}x rarer than commons`,
+		value: `Stat: ${rarity} (#${rarityPosition} of ${totalHorses})\nEffective: ${effectiveRarity < 0.00001 ? "<0.00001" : effectiveRarity.toFixed(5)}%\nAverage 1 in ${(1 / effectiveRarity).toFixed(0)} messages\n${rarity / 25}x rarer than commons`,
 	}
 
 	const trainingPrice =
