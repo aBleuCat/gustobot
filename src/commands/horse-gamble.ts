@@ -53,6 +53,15 @@ const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
 const rollFactor = maxRoll - minRoll + 1;
 const MIN_GAMBLE_COIN_COUNT = -5;
+// Horse Coin gambles: pay COIN_GAMBLE_COST, get back a uniform 0..COIN_GAMBLE_MAX_PAYOUT.
+// The mean payout equals the cost, so the expected value is zero.
+const COIN_GAMBLE_COST = 1;
+const COIN_GAMBLE_MAX_PAYOUT = 2;
+const coinPlural = COIN_GAMBLE_COST === 1 ? "" : "s";
+
+function rollCoinPayout(): number {
+	return Math.floor(Math.random() * (COIN_GAMBLE_MAX_PAYOUT + 1));
+}
 
 // Gamble streak helpers
 function loadStreaks() {
@@ -420,7 +429,7 @@ const gambleCommand = {
 				},
 			];
 
-			if ((inventory?.horseCoins || 0) >= 2) {
+			if ((inventory?.horseCoins || 0) >= COIN_GAMBLE_COST) {
 				choices.push({
 					name: "🪙 Horse Coin",
 					value: "horse_coin",
@@ -577,9 +586,9 @@ const gambleCommand = {
 			const available = isTest
 				? Infinity
 				: inventory.horseCoins || 0;
-			if (!isTest && available < 2) {
+			if (!isTest && available < COIN_GAMBLE_COST) {
 				return interaction.editReply({
-					content: `You need **2 Horse Coins** to gamble a Horse Coin!`,
+					content: `You need **${COIN_GAMBLE_COST} Horse Coin${coinPlural}** to gamble a Horse Coin!`,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
@@ -588,24 +597,24 @@ const gambleCommand = {
 				count === 0
 					? isTest
 						? 100
-						: Math.floor(available / 2)
+						: Math.floor(available / COIN_GAMBLE_COST)
 					: count;
 			if (gamblesCount <= 0) {
 				return interaction.editReply({
-					content: `You need at least **2 Horse Coins** to gamble.`,
+					content: `You need at least **${COIN_GAMBLE_COST} Horse Coin${coinPlural}** to gamble.`,
 					flags: [MessageFlags.Ephemeral],
 				});
 			}
 
 			if (gamblesCount === 1) {
-				const winAmount = Math.floor(Math.random() * 5);
+				const winAmount = rollCoinPayout();
 				devLog(
-					`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - 2}`,
+					`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - COIN_GAMBLE_COST}`,
 					"micro",
 				);
 				if (!isTest) {
 					inventory.horseCoins =
-						inventory.horseCoins - 2 + winAmount;
+						inventory.horseCoins - COIN_GAMBLE_COST + winAmount;
 					await inventory.save();
 					devLog(
 						`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`,
@@ -620,7 +629,7 @@ const gambleCommand = {
 					content:
 						`**Horse Coin Gamble**\n\n` +
 						"```patch\n" +
-						`- 2 🪙 → +${winAmount} 🪙${testTag}\n` +
+						`- ${COIN_GAMBLE_COST} 🪙 → +${winAmount} 🪙${testTag}\n` +
 						"```",
 				});
 			}
@@ -628,15 +637,17 @@ const gambleCommand = {
 			let coinsDelta = 0;
 			let wins = 0;
 			let losses = 0;
+			let breakEvens = 0;
 			for (let i = 0; i < gamblesCount; i++) {
-				const winAmount = Math.floor(Math.random() * 5);
-				coinsDelta += winAmount - 2;
-				if (winAmount >= 2) wins++;
-				else losses++;
+				const winAmount = rollCoinPayout();
+				coinsDelta += winAmount - COIN_GAMBLE_COST;
+				if (winAmount > COIN_GAMBLE_COST) wins++;
+				else if (winAmount < COIN_GAMBLE_COST) losses++;
+				else breakEvens++;
 			}
 
 			devLog(
-				`/horsegamble: Bulk coin gamble for user ${interaction.user.id} | gamblesCount=${gamblesCount} wins=${wins} losses=${losses} delta=${coinsDelta}`,
+				`/horsegamble: Bulk coin gamble for user ${interaction.user.id} | gamblesCount=${gamblesCount} wins=${wins} losses=${losses} breakEvens=${breakEvens} delta=${coinsDelta}`,
 			);
 			if (!isTest) {
 				inventory.horseCoins =
@@ -657,6 +668,7 @@ const gambleCommand = {
 					`- Gambled: ${gamblesCount} 🪙\n` +
 					`+ Wins:    ${wins}\n` +
 					`- Losses:  ${losses}\n` +
+					`= Even:    ${breakEvens}\n` +
 					`= Net:     ${coinsDelta >= 0 ? "+" : ""}${coinsDelta} 🪙\n` +
 					"```" +
 					testTag,
