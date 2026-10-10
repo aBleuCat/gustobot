@@ -3,6 +3,7 @@ import {EmbedBuilder, type Message} from 'discord.js';
 import {config} from '../../lib/config.js';
 import type {ITrainedHorsesProps} from '../../lib/models.js';
 import type {ReadyRaceChallenge} from './horse-race-challenge.js';
+import { randItem } from "../../lib/helpers/random-helpers.js";
 
 const {
 	RACE_RANDOM_JITTER,
@@ -23,9 +24,6 @@ const specialHorseIcons: Record<string, string> = {
 	unicorn: '🦄',
 	dung_beetle: '🪲',
 };
-
-const randItem = <T>(array: T[]) =>
-	array[Math.floor(Math.random() * array.length)];
 
 function createTrackDisplay(
 	users: RacingHorse[],
@@ -75,16 +73,36 @@ function createTrackDisplay(
 }
 
 const commentaryStrings = {
-	lead: ['$horse is in the lead!', "$horse is first, but it's fine, first is the worst anyway"],
+	lead: [
+		'$horse is in the lead!',
+		"$horse is first, but it's fine, first is the worst anyway",
+		"$horse has the high ground!",
+		"$horse came, $horse saw, $horse conquered",
+		"$horse seizes the vanguard!",
+		"The crown sits heavy, but $horse wears it like a king!",
+		"$horse is the throne",
+		"$horse finds a way, or they make one!",
+	],
 	significantLead: [
 		'$horse is leaving everyone else in the dust!',
 		'$horse is humbling the competition!',
 		'Why are we just letting $horse win?',
 		'$horse is mogging their competitors',
+		"$horse's enemies are many, their equals are none",
+		"$horse is running like he runs from the cops!",
+		"Everyone fights for second place while $horse takes the crown",
+		"Long story short, it's over. $horse is too far ahead.",
+		"Kings have divine right to rule, and $horse has divine right to win",
+		"History will be kind to $horse, for they intend to write it",
+		"$horse has crossed the Rubicon while everyone is still tying their shoes!",
+		"$horse is a punishment from God Himself",
 	],
 	overtake: [
 		'$horse overtakes $horse2 and takes first!',
 		'$horse gallops ahead of $horse2 and takes the lead!',
+		"It's like taking candy from a baby - $horse, to $horse2",
+		"$horse2 has lost the Mandate of Heaven. $horse takes the crown!",
+		"$horse does unto $horse2 as Brutus did unto Caesar",
 	],
 };
 
