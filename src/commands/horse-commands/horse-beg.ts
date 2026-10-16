@@ -4,14 +4,80 @@ import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { config } from "../../lib/config.js";
 import { UserHorses, type IUserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
-import { randItem } from "../../lib/helpers/random-helpers.js";
+import { randInt, randItem } from "../../lib/helpers/random-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { discordTimestamp } from "../../lib/helpers/time-helpers.js";
 
 type BegReward = undefined | number | string;
 type BegRewardQuality = "unsuccessful" | "successful" | "verySuccessful";
+type StreakReward = { horse?: string; coins?: number };
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const { BEG_COOLDOWN } = config;
+const MAX_BEG_STREAK_GAP = BEG_COOLDOWN * 2;
+
+const streakRewardMilestones: Record<number, StreakReward> = {
+	5: { horse: "peasantry_beggary" },
+	10: { horse: "patience_wisdom", coins: 5 },
+	20: { horse: "noobs_baseplates", coins: 8 },
+	30: { horse: "skinniness_malnutrition", coins: 10 },
+	120: { horse: "gildedness_stratification", coins: 20 },
+	365: { horse: "suicide_stuyvesant", coins: 40 },
+	1826: { horse: "brightness_prosperity", coins: 80 }, // 5 years, including a leap year
+	3652: { horse: "unicorn", coins: 150 }, // 10 years, including 2 leap years
+	18_262: { horse: "pegasus", coins: 200 }, // 50 years, including 12 leap years
+	36_524: { horse: "john_kim", coins: 500 }, // 100 years, including 24 leap years
+};
+
+const recurringStreakRewards = [
+	{ start: 10, every: 4, horse: "peasantry_beggary", coins: 2 },
+	{ start: 30, every: 20, horse: "noobs_baseplates", coins: 8 },
+];
+
+function determineStreakReward(day: number): undefined | StreakReward {
+	const milestoneReward = (Object.entries(streakRewardMilestones)
+		.find(([milestone]) => Number(milestone) === day))?.[1];
+	if (milestoneReward) return milestoneReward;
+	const recurringReward = recurringStreakRewards
+		.find(({ start, every }) => day >= start && day % every === 0);
+	if (recurringReward) { return {
+		horse: recurringReward.horse,
+		coins: recurringReward.coins,
+	}; }
+
+	return undefined;
+}
+
+function nextStreakReward(day: number): Temporal.PlainDateTime | undefined {
+	const milestoneRewardDistances = Object.keys(streakRewardMilestones)
+		.map((milestone) => Number(milestone) - day)
+		.filter((dist) => dist > 0);
+	const recurringRewardDistances = recurringStreakRewards
+		.map(({ start, every }) => {
+			const nextMultiple = Math.max(Math.floor(day / every) + 1, Math.ceil(start / every)) * every;
+			return nextMultiple - day;
+		});
+	const closest = Math.min(...milestoneRewardDistances, ...recurringRewardDistances);
+	if (!Number.isFinite(closest)) return undefined;
+	return Temporal.Now.plainDateTimeISO().add({ days: closest }); // How did I just found out about temporal
+}
+
+function describeStreakReward(reward: StreakReward | undefined, streak: number): string {
+	const horsePart = reward?.horse && ` an additional **${horseName(reward.horse)}**`;
+	const coinPart = reward?.coins 
+		? ` ${reward.horse ? "and " : ""}**${reward.coins}** more Horse Coins!`
+		: "";
+	const obtainedLine = reward
+		? `Your streak of ${streak} days got you${horsePart}${coinPart}`
+		: "";
+	const nextStreakDate = nextStreakReward(streak);
+	if (!nextStreakDate) console.error("Failed to calculate next streak date. Likely because there are no streak rewards.");
+	const nextStreakLine = `Your next streak reward will be ${nextStreakDate 
+		? discordTimestamp(nextStreakDate, "relative") 
+		: "in unknown days (this is a bug)"}!`;
+	const streakLine = reward ? "" : `You've been begging for ${streak} days in a row!`;
+	return `${streakLine}${obtainedLine}\n${nextStreakLine}`;
+}
 
 const begFlavorText: Record<BegRewardQuality, string[]> = {
 	unsuccessful: [
@@ -41,11 +107,13 @@ const begFlavorText: Record<BegRewardQuality, string[]> = {
 const unsuccessfulBegChance = 0.2;
 const verySuccessfulBegChance = 0.05;
 
-function buildBegUpdate(reward: BegReward, now: number): UpdateQuery<IUserHorses> {
-	const $set = { lastBeg: new Date(now) };
-	if (typeof reward === "number") return { $set, $inc: { horseCoins: reward } };
-	if (typeof reward === "string") return { $set, $inc: { [`horses.${reward}`]: 1 } };
-	return { $set };
+function buildBegUpdate(reward: BegReward, now: number, begStreak: number, streakReward: StreakReward): UpdateQuery<IUserHorses> {
+	const $set = { lastBeg: new Date(now), begStreak };
+	const horseCoins = (typeof reward === "number" ? reward : 0) + (streakReward.coins ?? 0);
+	const $inc: Record<string, number> = { horseCoins };
+	if (streakReward.horse) $inc[`horses.${streakReward.horse}`] = 1;
+	if (typeof reward === "string") $inc[`horses.${reward}`] = 1;
+	return { $set, $inc };
 }
 
 type BegTier = Exclude<BegRewardQuality, "unsuccessful">;
@@ -54,10 +122,6 @@ const BEG_TIERS: Record<BegTier, { coinMin: number; coinMax: number; horseMin: n
 	successful: { coinMin: 2, coinMax: 5, horseMin: 25, horseMax: 75 },
 	verySuccessful: { coinMin: 8, coinMax: 15, horseMin: 100, horseMax: 150 },
 };
-
-function randInt(min: number, max: number): number {
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function determineBegReward(): [BegReward, BegRewardQuality] {
 	const roll = Math.random();
@@ -78,13 +142,18 @@ function determineBegReward(): [BegReward, BegRewardQuality] {
 	return [randInt(tier.coinMin, tier.coinMax), quality];
 }
 
-async function tryClaimBeg(userId: string, reward: BegReward, now: number): Promise<boolean> {
+async function tryClaimBeg(
+	userId: string,
+	reward: BegReward,
+	now: number,
+	streak: { begStreak: number; reward: StreakReward },
+): Promise<boolean> {
 	const result = await UserHorses.updateOne(
 		{
 			userId,
 			$or: [{ lastBeg: null }, { lastBeg: { $lte: new Date(now - BEG_COOLDOWN) } }],
 		},
-		buildBegUpdate(reward, now),
+		buildBegUpdate(reward, now, streak.begStreak, streak.reward),
 	);
 	return result.matchedCount === 1;
 }
@@ -102,9 +171,19 @@ export const data = new SlashCommandSubcommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
 	const userId = interaction.user.id;
 	const now = Date.now();
+	const leanInv = await UserHorses.findOne({ userId }, { begStreak: 1, lastBeg: 1 }).lean();
+	const lastBegTime = leanInv?.lastBeg?.getTime();
+	const previousBegStreak = leanInv?.begStreak ?? 0;
+	const isStreakContinuing = lastBegTime !== undefined && now - lastBegTime <= MAX_BEG_STREAK_GAP;
+	const didLoseBegStreak = lastBegTime !== undefined
+		&& previousBegStreak > 0
+		&& now - lastBegTime > MAX_BEG_STREAK_GAP;
+	const begStreak = isStreakContinuing ? previousBegStreak + 1 : 1;
 	const [reward, rewardQuality] = determineBegReward();
+	const streakReward = determineStreakReward(begStreak);
+	const streak = { begStreak, reward: streakReward ?? {} };
 
-	let isBegClaimable = await tryClaimBeg(userId, reward, now);
+	let isBegClaimable = await tryClaimBeg(userId, reward, now, streak);
 
 	if (!isBegClaimable) {
 		const ensure = await UserHorses.updateOne(
@@ -112,11 +191,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 			{ $setOnInsert: { userId } },
 			{ upsert: true },
 		);
-		if (ensure.upsertedCount === 1) isBegClaimable = await tryClaimBeg(userId, reward, now);
+		if (ensure.upsertedCount === 1) isBegClaimable = await tryClaimBeg(userId, reward, now, streak);
 	}
 
 	if (isBegClaimable) {
-		await interaction.reply({ content: describeReward(reward, rewardQuality) });
+		const streakResetMessage = didLoseBegStreak
+			? `Your **${previousBegStreak}-day begging streak ended.** You're starting over.\n\n`
+			: "";
+		await interaction.reply({ 
+			content: `${streakResetMessage}${describeReward(reward, rewardQuality)}\n\n${describeStreakReward(streakReward, begStreak)}` 
+		});
 		return;
 	}
 

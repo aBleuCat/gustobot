@@ -56,6 +56,7 @@ export type IUserHorses = {
 	horses: Map<string, number>;
 	lastHorse?: string;
 	lastBeg?: Date;
+	begStreak?: number;
 } & mongoose.Document;
 export type IMessageCache = {
 	userId: string;
@@ -191,6 +192,7 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	horses: { type: Map, of: Number, default: {} },
 	lastHorse: { type: String, default: undefined },
 	lastBeg: { type: Date },
+	begStreak: { type: Number, default: 0 },
 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserHorses = mongoose.model(
