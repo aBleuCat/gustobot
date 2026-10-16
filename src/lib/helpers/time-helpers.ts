@@ -11,5 +11,5 @@ const styleToTimestampLetter = {
 export function discordTimestamp(time: Temporal.PlainDateTime, style: keyof typeof styleToTimestampLetter) {
 	const utcDateTime = time.toZonedDateTime("UTC");
 	const epochSeconds = utcDateTime.epochMilliseconds / 1000;
-	return `<t:${epochSeconds}:${styleToTimestampLetter[style]}`;
+	return `<t:${epochSeconds.toFixed(0)}:${styleToTimestampLetter[style]}>`;
 }
