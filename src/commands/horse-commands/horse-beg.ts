@@ -48,7 +48,7 @@ function determineStreakReward(day: number): undefined | StreakReward {
 	return undefined;
 }
 
-function nextStreakReward(day: number): Temporal.PlainDateTime | undefined {
+function nextStreakReward(day: number): number | undefined {
 	const milestoneRewardDistances = Object.keys(streakRewardMilestones)
 		.map((milestone) => Number(milestone) - day)
 		.filter((dist) => dist > 0);
@@ -59,7 +59,7 @@ function nextStreakReward(day: number): Temporal.PlainDateTime | undefined {
 		});
 	const closest = Math.min(...milestoneRewardDistances, ...recurringRewardDistances);
 	if (!Number.isFinite(closest)) return undefined;
-	return Temporal.Now.plainDateTimeISO().add({ days: closest }); // How did I just found out about temporal
+	return closest;
 }
 
 function describeStreakReward(reward: StreakReward | undefined, streak: number): string {
@@ -73,7 +73,7 @@ function describeStreakReward(reward: StreakReward | undefined, streak: number):
 	const nextStreakDate = nextStreakReward(streak);
 	if (!nextStreakDate) console.error("Failed to calculate next streak date. Likely because there are no streak rewards.");
 	const nextStreakLine = `Your next streak reward will be ${nextStreakDate 
-		? discordTimestamp(nextStreakDate, "relative") 
+		? nextStreakDate.toString()
 		: "in unknown days (this is a bug)"}!`;
 	const streakLine = reward ? "" : `You've been begging for ${streak} days in a row!`;
 	return `${streakLine}${obtainedLine}\n${nextStreakLine}`;
