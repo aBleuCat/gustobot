@@ -46,6 +46,8 @@ export const config = {
 	COIN_DROP_MIN: 3,
 	COIN_DROP_MAX: 10,
 	ANTIINFLATOR: antiinflator,
+	RARE_THRESHOLD: 200,
+	VERY_RARE_THRESHOLD: 500,
 
 	// For random-cat.ts
 	UNEXPECTED_CAT_PROBABILITY: 1000,
@@ -144,6 +146,10 @@ export const descriptions: Record<keyof typeof config, string> = {
 	COIN_DROP_SIZE: "Fallback coin drop size (for legacy behavior)",
 	COIN_DROP_MIN: "Minimum coins dropped when horse coins spawn",
 	COIN_DROP_MAX: "Maximum coins dropped when horse coins spawn",
+	RARE_THRESHOLD:
+		"The inclusive threshold above which people who are set to be pinged for rare horse spawns only will be pinged",
+	VERY_RARE_THRESHOLD:
+		"The inclusive threshold above which people who are set to be pinged for very rare horse spawns only will be pinged",
 	UNEXPECTED_CAT_PROBABILITY:
 		"1 in X chance of random cat gif per message",
 	FRENZY_THRESHOLD_MS:

@@ -50,7 +50,6 @@ export type IHorseConfig = {
 } & mongoose.Document;
 export type IUserHorses = {
 	userId: string;
-	optIn: boolean;
 	lastGamble: number;
 	horseCoins: number;
 	horses: Map<string, number>;
@@ -58,6 +57,19 @@ export type IUserHorses = {
 	lastBeg?: Date;
 	begStreak?: number;
 } & mongoose.Document;
+const horsesSpawnPingSetting = {
+	Always: "always",
+	Rare: "rare",
+	VeryRare: "very_rare",
+	Never: "never",
+} as const;
+export type HorsesSpawnPingSetting =
+	(typeof horsesSpawnPingSetting)[keyof typeof horsesSpawnPingSetting];
+export type ISettings = {
+	userId: string;
+	horsesOptIn: boolean;
+	horsesSpawnPing: HorsesSpawnPingSetting;
+}
 export type IMessageCache = {
 	userId: string;
 	guildId: string;
@@ -180,8 +192,7 @@ export const HorseConfig = mongoose.model(
 );
 
 const userHorsesSchema = new mongoose.Schema<IUserHorses>({
-	userId: { type: String, required: true, unique: true},
-	optIn: { type: Boolean, default: false },
+	userId: { type: String, required: true, unique: true },
 	lastGamble: { type: Number, default: 0 },
 	horseCoins: {
 		type: Number,
@@ -198,6 +209,21 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 export const UserHorses = mongoose.model(
 	"UserHorses",
 	userHorsesSchema,
+);
+
+const settingsSchema = new mongoose.Schema<ISettings>({
+	userId: { type: String, required: true, unique: true },
+	horsesOptIn: { type: Boolean, default: true },
+	horsesSpawnPing: {
+		type: String,
+		enum: Object.values(horsesSpawnPingSetting),
+		default: horsesSpawnPingSetting.Never,
+	},
+});
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const Settings = mongoose.model(
+	"Settings",
+	settingsSchema,
 );
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

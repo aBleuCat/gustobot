@@ -10,7 +10,11 @@ import {
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
 import { castAsHorseData } from "../../type-utils.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
-import { UserHorses, type IUserHorses } from "../../lib/models.js";
+import {
+	Settings,
+	UserHorses,
+	type IUserHorses,
+} from "../../lib/models.js";
 import { immutConfig } from "../../lib/config.js";
 
 const HORSES_PER_PAGE = 15;
@@ -243,9 +247,18 @@ export async function execute(
 	const isEphemeral = interaction.options.getBoolean("ephemeral") ?? true;
 	const isOptedInOnly = interaction.options.getBoolean("opted-in-only") ?? false;
 	await interaction.deferReply({ flags: isEphemeral ? [MessageFlags.Ephemeral] : [] });
-	const allUsers = await UserHorses.find(
-		isOptedInOnly ? { optIn: true } : {},
-	);
+	let allUsers: IUserHorses[];
+	if (isOptedInOnly) {
+		const optedOutUsers = await Settings.find(
+			{ horsesOptIn: false },
+			{ userId: 1 },
+		).lean();
+		allUsers = await UserHorses.find({
+			userId: { $nin: optedOutUsers.map(({ userId }) => userId) },
+		});
+	} else {
+		allUsers = await UserHorses.find({});
+	}
 
 	if (allUsers.length === 0) {
 		return interaction.editReply("No horse data for the selected filters!");

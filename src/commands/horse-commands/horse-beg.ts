@@ -6,7 +6,6 @@ import { UserHorses, type IUserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
 import { randInt, randItem } from "../../lib/helpers/random-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
-import { discordTimestamp } from "../../lib/helpers/time-helpers.js";
 
 type BegReward = undefined | number | string;
 type BegRewardQuality = "unsuccessful" | "successful" | "verySuccessful";

@@ -1,5 +1,5 @@
 import { type ChatInputCommandInteraction, MessageFlags, SlashCommandSubcommandBuilder } from "discord.js";
-import { UserHorses } from "../../lib/models.js";
+import { Settings } from "../../lib/models.js";
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("forceopt")
@@ -26,9 +26,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 		});
 	}
 
-	await UserHorses.updateOne(
+	await Settings.updateOne(
 		{ userId: target.id },
-		{ $set: { optIn: isOptIn } },
+		{ $set: { horsesOptIn: isOptIn } },
 		{ upsert: true },
 	);
 	return interaction.reply({

@@ -8,6 +8,8 @@ import {
 	UserHorses,
 	MessageCache,
 	type IUserHorses,
+	Settings,
+	type ISettings,
 } from "../models.js";
 import stringSimilarity from "../helpers/similarity-helper.js";
 import { config } from "../config.js";
@@ -24,7 +26,10 @@ import { randItem } from "../helpers/random-helpers.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
-const rareFlavorText = ["You should feed it to me! Use `/horses give` to give it to me and you won't get it back!"];
+const rareFlavorText = [
+	"You should feed it to me! Use `/horses give` to give it to me and you won't get it back!",
+	"This one is feelin' gambleable. Use `/horsegamble` to gamble. It is obligatory to do so."
+];
 const flavorTextChance = 0.01;
 
 // Rolls all horses with given spawn parameters.
@@ -139,17 +144,63 @@ async function applySpawnInventory(
 	return { inventory, coinDropSize, newHorseSlugs };
 }
 
+type SpawnMessageOptions = {
+	pingPreferences: SpawnPingPreference[];
+	coinDropSize: number | undefined;
+	newHorseSlugs: string[] | undefined;
+};
+
+type SpawnPingPreference = Pick<
+	ISettings,
+	"userId" | "horsesSpawnPing"
+>;
+
+async function getSpawnPingPreferences(): Promise<
+	SpawnPingPreference[]
+> {
+	return Settings.find(
+		{ horsesSpawnPing: { $in: ["always", "rare", "very_rare"] } },
+		{ userId: 1, horsesSpawnPing: 1 },
+	).lean();
+}
+
+function getPingUserIdsForHorse(
+	pingPreferences: SpawnPingPreference[],
+	horse: HorseData[string],
+): string[] {
+	return pingPreferences
+		.filter(({ horsesSpawnPing }) =>
+			horsesSpawnPing === "always" ||
+			(horsesSpawnPing === "rare" &&
+				horse.rarity >= config.RARE_THRESHOLD) ||
+			(horsesSpawnPing === "very_rare" &&
+				horse.rarity >= config.VERY_RARE_THRESHOLD),
+		)
+		.map(({ userId }) => userId);
+}
+
 // Sends all spawn messages + coin notification via queue.
 function sendSpawnMessages(
 	userId: string,
 	channel: GuildTextBasedChannel,
 	spawnedHorses: HorseData,
-	coinDropSize?: number,
-	newHorseSlugs: string[] = [],
+	{
+		pingPreferences,
+		coinDropSize,
+		newHorseSlugs = [],
+	}: SpawnMessageOptions,
 ): void {
 	const newlyAddedHorseSet = new Set(newHorseSlugs);
 
 	for (const [slug, data] of Object.entries(spawnedHorses)) {
+		const pingUserIds = getPingUserIdsForHorse(
+			pingPreferences,
+			data,
+		);
+		const allowedMentions = {
+			users: pingUserIds,
+			parse: [],
+		};
 		let prefix = "found the";
 		let decoration = "";
 		let hint = "";
@@ -166,8 +217,12 @@ function sendSpawnMessages(
 
 		queueMessage({
 			channel,
-			content: `<@${userId}> ${prefix} **${data.name}** ${decoration}!${hint}`,
+			content: `${pingUserIds
+				.filter((pingUserId) => pingUserId !== userId)
+				.map((pingUserId) => `<@${pingUserId}>`)
+				.join(" ")} <@${userId}> ${prefix} **${data.name}** ${decoration}!${hint}`,
 			priority: 2,
+			allowedMentions,
 		}).catch((error: unknown) => {
 			console.error(
 				"QueueMessage error while spawning horse:",
@@ -192,6 +247,7 @@ function sendSpawnMessages(
 				channel,
 				content: `<@${userId}> This is a new horse, **${data.name}**, that has been added to your completion!\n-# Use \`/horses collection\` to see your completion`,
 				priority: 2,
+				allowedMentions,
 			}).catch((error: unknown) => {
 				console.error(
 					"QueueMessage error while sending new horse follow-up:",
@@ -202,9 +258,20 @@ function sendSpawnMessages(
 	}
 
 	if (typeof coinDropSize === "number") {
+		const pingUserIds = [
+			...new Set(
+				Object.values(spawnedHorses).flatMap((data) =>
+					getPingUserIdsForHorse(pingPreferences, data),
+				),
+			),
+		];
 		queueMessage({
 			channel,
 			content: `<@${userId}> acquired 🪙 **${coinDropSize} Horse Coins**!`,
+			allowedMentions: {
+				users: pingUserIds,
+				parse: [],
+			},
 		}).catch((error: unknown) => {
 			console.error(
 				"QueueMessage error while spawning horse:",
@@ -292,13 +359,19 @@ async function forceSpawnHorse(
 	const result = anySpawned
 		? await applySpawnInventory(userId, spawnedCounts)
 		: null;
+	const pingPreferences = anySpawned
+		? await getSpawnPingPreferences()
+		: [];
 
 	sendSpawnMessages(
 		userId,
 		channel,
 		spawnedHorses,
-		result?.coinDropSize,
-		result?.newHorseSlugs,
+		{
+			pingPreferences,
+			coinDropSize: result?.coinDropSize,
+			newHorseSlugs: result?.newHorseSlugs,
+		},
 	);
 
 	if (result?.inventory) {
@@ -336,12 +409,12 @@ async function handleHorseSpawn(message: Message) {
 		return;
 	}
 
-	const { optIn } = (await UserHorses.findOne(
+	const { horsesOptIn } = (await Settings.findOne(
 		{ userId: message.author.id },
-		{ optIn: 1 },
-	).lean()) ?? { optIn: false };
+		{ horsesOptIn: 1 },
+	).lean()) ?? { horsesOptIn: true };
 
-	if (!optIn) {
+	if (!horsesOptIn) {
 		console.log(
 			`Horse did not spawn because ${message.author.displayName} was opted out`,
 		);
@@ -372,13 +445,19 @@ async function handleHorseSpawn(message: Message) {
 	const result = anySpawned
 		? await applySpawnInventory(message.author.id, spawnedCounts)
 		: null;
+	const pingPreferences = anySpawned
+		? await getSpawnPingPreferences()
+		: [];
 
 	sendSpawnMessages(
 		message.author.id,
 		castedChannel,
 		spawnedHorses,
-		result?.coinDropSize,
-		result?.newHorseSlugs,
+		{
+			pingPreferences,
+			coinDropSize: result?.coinDropSize,
+			newHorseSlugs: result?.newHorseSlugs,
+		},
 	);
 
 	if (result?.inventory) {
