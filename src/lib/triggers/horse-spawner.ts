@@ -9,7 +9,7 @@ import {
 	MessageCache,
 	type IUserHorses,
 	Settings,
-	type ISettings,
+	type HorsesSpawnPingSetting,
 } from "../models.js";
 import stringSimilarity from "../helpers/similarity-helper.js";
 import { config } from "../config.js";
@@ -145,38 +145,22 @@ async function applySpawnInventory(
 }
 
 type SpawnMessageOptions = {
-	pingPreferences: SpawnPingPreference[];
+	pingSetting: HorsesSpawnPingSetting;
 	coinDropSize: number | undefined;
 	newHorseSlugs: string[] | undefined;
 };
 
-type SpawnPingPreference = Pick<
-	ISettings,
-	"userId" | "horsesSpawnPing"
->;
-
-async function getSpawnPingPreferences(): Promise<
-	SpawnPingPreference[]
-> {
-	return Settings.find(
-		{ horsesSpawnPing: { $in: ["always", "rare", "very_rare"] } },
-		{ userId: 1, horsesSpawnPing: 1 },
-	).lean();
-}
-
-function getPingUserIdsForHorse(
-	pingPreferences: SpawnPingPreference[],
+function shouldPingForHorse(
+	pingSetting: HorsesSpawnPingSetting,
 	horse: HorseData[string],
-): string[] {
-	return pingPreferences
-		.filter(({ horsesSpawnPing }) =>
-			horsesSpawnPing === "always" ||
-			(horsesSpawnPing === "rare" &&
-				horse.rarity >= config.RARE_THRESHOLD) ||
-			(horsesSpawnPing === "very_rare" &&
-				horse.rarity >= config.VERY_RARE_THRESHOLD),
-		)
-		.map(({ userId }) => userId);
+): boolean {
+	return (
+		pingSetting === "always" ||
+		(pingSetting === "rare" &&
+			horse.rarity >= config.RARE_THRESHOLD) ||
+		(pingSetting === "very_rare" &&
+			horse.rarity >= config.VERY_RARE_THRESHOLD)
+	);
 }
 
 // Sends all spawn messages + coin notification via queue.
@@ -185,7 +169,7 @@ function sendSpawnMessages(
 	channel: GuildTextBasedChannel,
 	spawnedHorses: HorseData,
 	{
-		pingPreferences,
+		pingSetting,
 		coinDropSize,
 		newHorseSlugs = [],
 	}: SpawnMessageOptions,
@@ -193,12 +177,9 @@ function sendSpawnMessages(
 	const newlyAddedHorseSet = new Set(newHorseSlugs);
 
 	for (const [slug, data] of Object.entries(spawnedHorses)) {
-		const pingUserIds = getPingUserIdsForHorse(
-			pingPreferences,
-			data,
-		);
+		const shouldPing = shouldPingForHorse(pingSetting, data);
 		const allowedMentions = {
-			users: pingUserIds,
+			users: shouldPing ? [userId] : [],
 			parse: [],
 		};
 		let prefix = "found the";
@@ -217,10 +198,7 @@ function sendSpawnMessages(
 
 		queueMessage({
 			channel,
-			content: `${pingUserIds
-				.filter((pingUserId) => pingUserId !== userId)
-				.map((pingUserId) => `<@${pingUserId}>`)
-				.join(" ")} <@${userId}> ${prefix} **${data.name}** ${decoration}!${hint}`,
+			content: `<@${userId}> ${prefix} **${data.name}** ${decoration}!${hint}`,
 			priority: 2,
 			allowedMentions,
 		}).catch((error: unknown) => {
@@ -258,18 +236,14 @@ function sendSpawnMessages(
 	}
 
 	if (typeof coinDropSize === "number") {
-		const pingUserIds = [
-			...new Set(
-				Object.values(spawnedHorses).flatMap((data) =>
-					getPingUserIdsForHorse(pingPreferences, data),
-				),
-			),
-		];
+		const shouldPing = Object.values(spawnedHorses).some((data) =>
+			shouldPingForHorse(pingSetting, data),
+		);
 		queueMessage({
 			channel,
 			content: `<@${userId}> acquired 🪙 **${coinDropSize} Horse Coins**!`,
 			allowedMentions: {
-				users: pingUserIds,
+				users: shouldPing ? [userId] : [],
 				parse: [],
 			},
 		}).catch((error: unknown) => {
@@ -359,16 +333,17 @@ async function forceSpawnHorse(
 	const result = anySpawned
 		? await applySpawnInventory(userId, spawnedCounts)
 		: null;
-	const pingPreferences = anySpawned
-		? await getSpawnPingPreferences()
-		: [];
+	const { horsesSpawnPing } = (await Settings.findOne(
+		{ userId },
+		{ horsesSpawnPing: 1 },
+	).lean()) ?? { horsesSpawnPing: "never" as const };
 
 	sendSpawnMessages(
 		userId,
 		channel,
 		spawnedHorses,
 		{
-			pingPreferences,
+			pingSetting: horsesSpawnPing,
 			coinDropSize: result?.coinDropSize,
 			newHorseSlugs: result?.newHorseSlugs,
 		},
@@ -409,10 +384,13 @@ async function handleHorseSpawn(message: Message) {
 		return;
 	}
 
-	const { horsesOptIn } = (await Settings.findOne(
+	const { horsesOptIn, horsesSpawnPing } = (await Settings.findOne(
 		{ userId: message.author.id },
-		{ horsesOptIn: 1 },
-	).lean()) ?? { horsesOptIn: true };
+		{ horsesOptIn: 1, horsesSpawnPing: 1 },
+	).lean()) ?? {
+		horsesOptIn: true,
+		horsesSpawnPing: "never" as const,
+	};
 
 	if (!horsesOptIn) {
 		console.log(
@@ -445,16 +423,13 @@ async function handleHorseSpawn(message: Message) {
 	const result = anySpawned
 		? await applySpawnInventory(message.author.id, spawnedCounts)
 		: null;
-	const pingPreferences = anySpawned
-		? await getSpawnPingPreferences()
-		: [];
 
 	sendSpawnMessages(
 		message.author.id,
 		castedChannel,
 		spawnedHorses,
 		{
-			pingPreferences,
+			pingSetting: horsesSpawnPing,
 			coinDropSize: result?.coinDropSize,
 			newHorseSlugs: result?.newHorseSlugs,
 		},
