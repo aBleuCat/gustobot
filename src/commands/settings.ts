@@ -83,20 +83,20 @@ function buildSettingsPanel(
 	return new ContainerBuilder()
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				"# Your settings\nChoose how you want Gustobot to handle horse spawns. Changes save immediately.",
+				"# Your settings\nGustobot settings, including horse spawn settings. Changes save immediately.",
 			),
 		)
 		.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				"## Opt in to horses\nWhen enabled, horses can spawn from your messages.",
+				"## Opt in to horses\nWhen enabled, horses can spawn from your messages. If disabled, you can still gamble and do other things",
 			),
 		)
 		.addActionRowComponents(optInButtons)
 		.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				"## Horse spawn pings\nChoose which horse spawns ping you in the spawn channel. Rare and very rare use the configured rarity thresholds.",
+				"## Horse spawn pings\nChoose which horse spawns ping you in the spawn channel. Horses will only spawn if you are opted in.",
 			),
 		)
 		.addActionRowComponents(pingButtons);
