@@ -104,11 +104,11 @@ const { Guild, BotDM, PrivateChannel } = InteractionContextType;
 // Client init
 const client = new Client({
 	intents: [
-		GatewayIntentBits.s,
-		GatewayIntentBits.Messages,
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.Members,
-		GatewayIntentBits.VoiceStates,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildVoiceStates,
 	],
 	allowedMentions: {
 		parse: ["users", "roles"],
