@@ -104,11 +104,11 @@ const { Guild, BotDM, PrivateChannel } = InteractionContextType;
 // Client init
 const client = new Client({
 	intents: [
-		GatewayIntentBits.Guilds,
-		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.s,
+		GatewayIntentBits.Messages,
 		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.GuildMembers,
-		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.Members,
+		GatewayIntentBits.VoiceStates,
 	],
 	allowedMentions: {
 		parse: ["users", "roles"],
@@ -212,26 +212,8 @@ const [globalCommandsData, validCommands] = await loadCommandsHelper(
 for (const command of validCommands)
 	{client.commands.set(command.data.name, command);}
 
-// Load guild commands
-const guildCommandsPath = path.resolve(
-	import.meta.dirname,
-	"guild-commands",
-);
-const guildCommandFiles = fs
-	.readdirSync(guildCommandsPath)
-	.filter(
-		(file) =>
-			file.endsWith(thisFileExtension) &&
-			!file.endsWith(".d.ts"),
-	);
-const [guildCommandsData, validGuildCommands] =
-	await loadCommandsHelper(guildCommandFiles, guildCommandsPath);
-for (const command of validGuildCommands)
-	{client.commands.set(command.data.name, command);}
-
 console.log(
-	`Successfully validated ${validCommands.length} global commands.\n
-	Successfully validated ${validGuildCommands.length} guild commands`,
+	`Successfully validated ${validCommands.length} global commands.`,
 );
 
 // Ready event
@@ -341,7 +323,6 @@ client.once(Events.ClientReady, () => {
 					{
 						body: [
 							...globalCommandsData,
-							...guildCommandsData,
 						],
 					},
 				);
@@ -349,13 +330,6 @@ client.once(Events.ClientReady, () => {
 				await rest.put(
 					Routes.applicationCommands(envClientId),
 					{ body: globalCommandsData },
-				);
-				await rest.put(
-					Routes.applicationGuildCommands(
-						envClientId,
-						envGuildId,
-					),
-					{ body: guildCommandsData },
 				);
 			}
 
