@@ -27,5 +27,6 @@ export async function execute(
 
 	return interaction.reply({
 		content: `<@${targetUser.id}> has 🪙 **${coins}** Horse Coin${coins === 1 ? "" : "s"}`,
+		allowedMentions: { parse: [] },
 	});
 }
