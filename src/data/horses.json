@@ -217,12 +217,26 @@
 		"speed": 145,
 		"link": "https://i.imgur.com/TV3m89Z.png"
 	},
+	"darren_watkins": {
+		"name": "Horse of Darren and Watkins",
+		"value": 150,
+		"rarity": 150,
+		"speed": 150,
+		"link": "https://i.imgur.com/dQsLkuS.png"
+	},
 	"gaming_streaming": {
 		"name": "Horse of Gaming and Twitch Streaming",
 		"value": 125,
 		"rarity": 125,
 		"speed": 135,
 		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938228321951847/togif.gif"
+	},
+	"indoors_basements": {
+		"name": "Horse of Indoors and Basemenets",
+		"value": 125,
+		"rarity": 125,
+		"speed": 125,
+		"link": "https://i.imgur.com/NHGtO1g.png"
 	},
 	"emo_sixteen": {
 		"name": "Horse of Emo and 2016",
@@ -296,6 +310,13 @@
 		"rarity": 100,
 		"speed": 105,
 		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938392390799370/togif.gif"
+	},
+	"railings_balconies": {
+		"name": "Horse of Railings and Balconies",
+		"value": 75,
+		"rarity": 75,
+		"speed": 120,
+		"link": "https://i.imgur.com/C4XXkJf.png"
 	},
 	"leggings_pantaloons": {
 		"name": "Horse of Leggings and Pantaloons",
