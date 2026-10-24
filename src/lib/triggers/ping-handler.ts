@@ -67,15 +67,19 @@ async function handleBotPing(message: Message, client: Client) {
 
 	// Select the final response list
 	let finalSelectionPool: typeof allResponses = [];
+	const generalResponses = allResponses.filter(
+		(response) => !response.trigger.type,
+	);
 
 	if (matches.length > 0) {
-		// If specific triggers match, use those
-		finalSelectionPool = matches;
+		// Include low-weight general responses alongside matching triggers.
+		finalSelectionPool = [
+			...matches,
+			...generalResponses.filter((response) => response.weight < 1),
+		];
 	} else {
 		// Fall back to untriggered messages if no triggers matched
-		finalSelectionPool = allResponses.filter(
-			(response) => !response.trigger.type,
-		);
+		finalSelectionPool = generalResponses;
 	}
 
 	// Pick one at random, weighted by each entry's `weight`
