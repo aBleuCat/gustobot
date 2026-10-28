@@ -4,13 +4,13 @@
 		"source.fixAll.xo": "always"
 	},
 	"[javascript]": {
-		"editor.defaultFormatter": "samverschueren.linter-xo"
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"[typescript]": {
-		"editor.defaultFormatter": "samverschueren.linter-xo"
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"[javascriptjavascript]": {
-		"editor.defaultFormatter": "samverschueren.linter-xo"
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"js/ts.preferences.quoteStyle": "double",
 	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
