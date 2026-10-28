@@ -3,14 +3,12 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.xo": "always"
 	},
+	"xo.format.enable": true,
 	"[javascript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
+		"editor.defaultFormatter": "samverschueren.linter-xo"
 	},
 	"[typescript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
-	"[javascriptreact]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
+		"editor.defaultFormatter": "samverschueren.linter-xo"
 	},
 	"js/ts.preferences.quoteStyle": "double",
 	"js/ts.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
