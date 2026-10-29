@@ -49,7 +49,6 @@ const orbitalcannonCommand = {
 			if (target) {
 				await send({
 					content: `<@${target.id}> has been thoroughly incinerated`,
-					// Removed bc alvin wants it to ping: allowedMentions: { parse: [] },
 				});
 			}
 
