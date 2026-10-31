@@ -160,6 +160,13 @@
 		"speed": 155,
 		"link": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fd/David_-_Napoleon_crossing_the_Alps_-_Malmaison2.jpg/960px-David_-_Napoleon_crossing_the_Alps_-_Malmaison2.jpg"
 	},
+	"steppes_khanates": {
+		"name": "Horse of Steppes and Khanates",
+		"value": 175,
+		"rarity": 175,
+		"speed": 165,
+		"link": "https://i.imgur.com/REphN02.png"
+	},
 	"dung_beetle": {
 		"name": "Dung Beetle",
 		"value": 150,
@@ -231,6 +238,13 @@
 		"speed": 135,
 		"link": "https://cdn.discordapp.com/attachments/1542905106247327876/1542938228321951847/togif.gif"
 	},
+	"saturation_exposure": {
+		"name": "Horse of Saturation and Exposure",
+		"value": 125,
+		"rarity": 125,
+		"speed": 135,
+		"link": "https://i.imgur.com/YIUI6Iv.png"
+	},
 	"indoors_basements": {
 		"name": "Horse of Indoors and Basemenets",
 		"value": 125,
@@ -272,6 +286,20 @@
 		"rarity": 125,
 		"speed": 135,
 		"link": "https://i.imgur.com/oclIUKR.png"
+	},
+	"matcha_performativeness": {
+		"name": "Horse of Matcha and Performativeness",
+		"value": 125,
+		"rarity": 125,
+		"speed": 130,
+		"link": "https://i.imgur.com/hDYnLjg.png"
+	},
+	"amusement_rollercoasters": {
+		"name": "Horse of Amusement and Rollercoasters",
+		"value": 125,
+		"rarity": 125,
+		"speed": 130,
+		"link": "https://i.imgur.com/180mrwN.png"
 	},
 	"gamble_streak": {
 		"name": "Horse of Gambling and Money",
