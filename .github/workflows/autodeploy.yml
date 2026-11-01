@@ -1,0 +1,21 @@
+name: Deploy Gustobot
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restart Gustobot
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST_IP }}
+          username: ${{ secrets.HOST_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl restart gustobot
+            sudo systemctl is-active gustobot
