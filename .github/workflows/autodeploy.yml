@@ -18,4 +18,24 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             sudo systemctl restart gustobot
-            sudo systemctl is-active gustobot
+
+            for i in $(seq 1 30); do
+              state=$(sudo systemctl is-active gustobot || true)
+              echo "Gustobot status: $state"
+
+              if [ "$state" = "active" ]; then
+                echo "Gustobot successfully started!"
+                exit 0
+              fi
+
+              if [ "$state" = "failed" ]; then
+                break
+              fi
+
+              sleep 1
+            done
+
+            echo "Gustobot failed to start!"
+            sudo systemctl status gustobot --no-pager -l
+            sudo journalctl -u gustobot -n 50 --no-pager
+            exit 1
