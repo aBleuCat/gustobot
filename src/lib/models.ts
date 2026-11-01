@@ -168,6 +168,7 @@ export type ITimeframeQuests = {
 	nextRefresh: Date;
 	readonly nextRefreshTemporal: Temporal.Instant;
 	rerollsUsed: number;
+	questStreak: number;
 };
 export type IUserQuests = {
 	userId: string;
@@ -516,7 +517,8 @@ const timeframeQuestsSchema = new mongoose.Schema<ITimeframeQuests>(
 		claimed: { type: [String], default: [] },
 		unclaimed: { type: [String], default: [] },
 		nextRefresh: { type: Date, required: true },
-		rerollsUsed: { type: Number, default: 0 },
+		rerollsUsed: { type: Number, default: 0, min: 0 },
+		questStreak: { type: Number, default: 0, min: 0 },
 	},
 	{ _id: false },
 );
@@ -534,6 +536,8 @@ const userQuestsSchema = new mongoose.Schema<IUserQuests>({
 	daily: { type: timeframeQuestsSchema, default: () => ({}) },
 	weekly: { type: timeframeQuestsSchema, default: () => ({}) },
 });
+// eslint-disable-next-line unicorn/no-top-level-side-effects
+userQuestsSchema.index({ userId: 1 });
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserQuests = mongoose.model(
