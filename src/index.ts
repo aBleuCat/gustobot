@@ -38,6 +38,7 @@ import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
 import initOrbital from "./lib/helpers/orbital-master.js";
+import { startPresenceRotation } from "./lib/tasks/presence-rotation.js";
 
 dotenv.config();
 
@@ -229,6 +230,7 @@ client.once(Events.ClientReady, () => {
 			{console.log("[DEV MODE] Running with beta credentials");}
 
 		console.log(`Logged in as ${client.user.tag}`);
+		startPresenceRotation(client);
 		const options = {
 			hostname: "discord.com",
 			port: 443,
