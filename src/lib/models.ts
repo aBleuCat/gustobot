@@ -530,8 +530,6 @@ const userStatsSchema = new mongoose.Schema<IUserStats>({
 	weekly: { type: timeframeSubSchema, default: () => ({}) },
 	allTime: { type: allTimeSubSchema, default: () => ({}) },
 });
-// eslint-disable-next-line unicorn/no-top-level-side-effects
-userStatsSchema.index({ userId: 1 });
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserStats = mongoose.model("UserStats", userStatsSchema);
@@ -560,8 +558,6 @@ const userQuestsSchema = new mongoose.Schema<IUserQuests>({
 	daily: { type: timeframeQuestsSchema, default: () => ({}) },
 	weekly: { type: timeframeQuestsSchema, default: () => ({}) },
 });
-// eslint-disable-next-line unicorn/no-top-level-side-effects
-userQuestsSchema.index({ userId: 1 });
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserQuests = mongoose.model(

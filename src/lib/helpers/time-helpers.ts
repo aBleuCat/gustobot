@@ -5,11 +5,13 @@ const styleToTimestampLetter = {
 	"long date": "D",
 	"short date and time": "f",
 	"long date and time": "F",
-	"relative": "R",
-}
+	relative: "R",
+};
 
-export function discordTimestamp(time: Temporal.PlainDateTime, style: keyof typeof styleToTimestampLetter) {
-	const utcDateTime = time.toZonedDateTime("UTC");
-	const epochSeconds = utcDateTime.epochMilliseconds / 1000;
+export function discordTimestamp(
+	time: Temporal.ZonedDateTime,
+	style: keyof typeof styleToTimestampLetter,
+) {
+	const epochSeconds = time.epochMilliseconds / 1000;
 	return `<t:${epochSeconds.toFixed(0)}:${styleToTimestampLetter[style]}>`;
 }

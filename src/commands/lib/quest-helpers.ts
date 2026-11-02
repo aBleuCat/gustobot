@@ -110,7 +110,21 @@ export async function attemptQuestRefresh(
 		nextRefreshZdt.epochMilliseconds,
 	);
 	const nowEpochMs = Temporal.Now.instant().epochMilliseconds;
-	// Idk why the hell I'm putting this in one update but I'm too far gone now
+	try {
+		await UserQuests.updateOne(
+			{ userId },
+			{ $setOnInsert: { userId } },
+			{ upsert: true, setDefaultsOnInsert: true },
+		);
+	} catch (error: unknown) {
+		if (!(
+			error instanceof mongoose.mongo.MongoServerError &&
+			error.code === 11_000
+		)) {
+			throw error;
+		}
+	}
+
 	const updatedUser = await UserQuests.findOneAndUpdate(
 		{
 			userId,
@@ -120,7 +134,11 @@ export async function attemptQuestRefresh(
 						$lte: new Date(nowEpochMs),
 					},
 				},
-				{ [questType]: { $exists: false } },
+				{
+					[questType + ".nextRefresh"]: {
+						$exists: false,
+					},
+				},
 			],
 		},
 		[
@@ -195,7 +213,6 @@ export async function attemptQuestRefresh(
 		],
 		{
 			new: true,
-			upsert: true,
 			setDefaultsOnInsert: true,
 		},
 	);
@@ -476,7 +493,7 @@ export function buildOverviewContainer(
 	questType: "daily" | "weekly",
 	hasRefreshed: boolean,
 ): ContainerBuilder {
-	const nextRefresh = nextQuestRefresh(questType).toPlainDateTime();
+	const nextRefresh = nextQuestRefresh(questType);
 	const claimed = document[questType].claimed.length;
 	const unclaimed = document[questType].unclaimed.length;
 	const total = claimed + unclaimed;
@@ -485,8 +502,8 @@ export function buildOverviewContainer(
 		.setAccentColor(0x18_18_25)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				"# Overview" +
-					`Claimed ${claimed} of ${total} quests (${((claimed / (total || 1)) * 100).toFixed(0)}%)` +
+				"# Overview\n" +
+					`Claimed ${claimed} of ${total} quests (${((claimed / (total || 1)) * 100).toFixed(0)}%)\n` +
 					`Your quests will reset ${discordTimestamp(nextRefresh, "relative")}`,
 			),
 		);
@@ -556,10 +573,7 @@ export function buildQuestContainer(
 		const section = new SectionBuilder().addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`## ${quest.name ?? "Unknown"}\n` +
-					`${quest.description ?? "Unknown"}\n` +
-					(quest.status === "uncompleted"
-						? `\nCompletion: ${quest.completion}`
-						: ""),
+					`${quest.description ?? "Unknown"}\n`,
 			),
 		);
 		if (quest.status === "completed") {
@@ -567,7 +581,21 @@ export function buildQuestContainer(
 				new ButtonBuilder()
 					.setLabel("Claim")
 					.setCustomId(`claim_${quest.quest}`)
-					.setStyle(ButtonStyle.Premium),
+					.setStyle(ButtonStyle.Success),
+			);
+		} else {
+			section.setButtonAccessory(
+				new ButtonBuilder()
+					.setLabel(
+						quest.status === "claimed"
+							? "Claimed"
+							: `${Math.round((quest.completion ?? 0) * 100)}%`,
+					)
+					.setCustomId(
+						`quest_${quest.status}_${quest.quest}`,
+					)
+					.setDisabled(true)
+					.setStyle(ButtonStyle.Secondary),
 			);
 		}
 
@@ -588,7 +616,7 @@ export function buildQuestContainer(
 				new ButtonBuilder()
 					.setLabel("Claim All")
 					.setCustomId("claimall")
-					.setStyle(ButtonStyle.Premium),
+					.setStyle(ButtonStyle.Success),
 			),
 		);
 	}
