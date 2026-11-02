@@ -17,6 +17,13 @@ jobs:
           username: ${{ secrets.HOST_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            export PATH=/home/ubuntu/.nvm/versions/node/v26.0.0/bin:$PATH
+            cd /home/ubuntu/gustobot
+
+            git pull || exit 1
+            pnpm install --frozen-lockfile || exit 1
+            pnpm build || exit 1
+
             sudo systemctl restart gustobot
 
             for i in $(seq 1 30); do
