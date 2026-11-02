@@ -13,6 +13,8 @@ import { fetchWithTimeout } from "../../lib/helpers/timeout-helpers.js";
 import { config } from "../../lib/config.js";
 import dictToEmbed from "../../lib/helpers/embed-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { horseItemValue } from "../../lib/helpers/horse-leaderboard.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
 
 export type TradeMember = {
 	readonly id: string;
@@ -407,6 +409,42 @@ export async function applyTradeResult(
 
 			if (!redResult || !blueResult)
 				{throw new Error("insufficient balance");}
+
+			for (const [member, other] of [
+				[red, blue],
+				[blue, red],
+			] as const) {
+				const dollarsGiven = Object.entries(
+					member.horsesOffered,
+				).reduce(
+					(total, [slug, count]) =>
+						total + horseItemValue(slug) * count,
+					0,
+				);
+				const dollarsReceived = Object.entries(
+					other.horsesOffered,
+				).reduce(
+					(total, [slug, count]) =>
+						total + horseItemValue(slug) * count,
+					0,
+				);
+				await recordUserStats(
+					member.id,
+					{
+						increments: {
+							"trades.tradesCompleted": 1,
+							"trades.totalDollarsGiven": dollarsGiven,
+							"trades.totalDollarsRecieved":
+								dollarsReceived,
+							"trades.totalCoinsGiven":
+								member.coinsOffered,
+							"trades.totalCoinsRecieved":
+								other.coinsOffered,
+						},
+					},
+					session,
+				);
+			}
 		});
 
 		return { success: true };

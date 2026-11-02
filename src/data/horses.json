@@ -290,6 +290,15 @@
 		"speed": 120,
 		"link": "https://static.wikia.nocookie.net/theamazingworldofgumball/images/9/94/S5E07_The_Code_19.png/revision/latest?cb=20161021005239"
 	},
+	"racing_robotics": {
+		"name": "Horse of Racing and Robotics",
+		"value": 100,
+		"rarity": 100,
+		"speed": 135,
+		"link": "https://i.imgur.com/KYd9M70.jpeg",
+		"spawn": false,
+		"getByGamble": false
+	},
 	"ballsacks_testicles": {
 		"name": "Horse of Ballsacks and Testicular Cancer",
 		"value": 100,

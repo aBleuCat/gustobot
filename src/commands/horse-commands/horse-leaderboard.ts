@@ -11,21 +11,14 @@ import {
 	type StringSelectMenuInteraction,
 	type User,
 } from "discord.js";
-import { TrainedHorses, UserHorses } from "../../lib/models.js";
-import rawHorseValues from "../../data/horses.json" with { type: "json" };
-import { castAsHorseData } from "../../type-utils.js";
+import {
+	calculateHorseLeaderboards,
+	type HorseLeaderboardEntry,
+} from "../../lib/helpers/horse-leaderboard.js";
 import { immutConfig } from "../../lib/config.js";
-import { trainedHorseValue } from "../../lib/helpers/horse-funcs.js";
 import { fetchWithTimeout } from "../../lib/helpers/timeout-helpers.js";
 
-type SortList = Array<{
-	userId: string;
-	worth: number;
-	horseCoins: number;
-	completion: number;
-}>;
-
-const HORSE_VALUES = castAsHorseData(rawHorseValues);
+type SortList = HorseLeaderboardEntry[];
 const PAGE_SIZE = 10;
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("leaderboard")
@@ -60,77 +53,14 @@ export async function execute(
 	interaction: ChatInputCommandInteraction,
 ) {
 	await interaction.deferReply();
-	// Fetch only needed fields for speed
-	const allUsers = await UserHorses.find(
-		{},
-		{ userId: 1, horses: 1, horseCoins: 1 },
-	);
-	const allTrained = await TrainedHorses.find({});
-	const trainedByUser = new Map<string, typeof allTrained>();
-	for (const horse of allTrained) {
-		const userId = horse.ownerId;
-		const array = trainedByUser.get(userId) ?? [];
-		array.push(horse);
-		trainedByUser.set(userId, array);
-	}
-
-	const totalPossibleItems = Object.values(HORSE_VALUES).filter(
-		(v) => v.comp !== false,
-	).length;
-
-	// Precompute leaderboard data
-	const leaderboardData = allUsers.map((u) => {
-		let worth = 0;
-		let unique = 0;
-		const seenBreedIds = new Set<string>();
-		for (const [name, count] of u.horses) {
-			if (count <= 0) {
-				continue;
-			}
-
-			const horseData = HORSE_VALUES[name];
-			if (!horseData) continue;
-			worth += horseData.value * count;
-			if (horseData.comp !== false && !seenBreedIds.has(name)) {
-				seenBreedIds.add(name);
-				unique++;
-			}
-		}
-
-		for (const trainedHorse of trainedByUser.get(u.userId) ?? []) {
-			worth += trainedHorseValue(trainedHorse.breed);
-			if (
-				HORSE_VALUES[trainedHorse.breed]?.comp !== false &&
-				!seenBreedIds.has(trainedHorse.breed)
-			) {
-				seenBreedIds.add(trainedHorse.breed);
-				unique++;
-			}
-		}
-
-		return {
-			userId: u.userId,
-			worth,
-			horseCoins: u.horseCoins || 0,
-			completion: Math.round(
-				(unique / totalPossibleItems) * 100,
-			),
-		};
-	});
-
-	const worthSort: SortList = leaderboardData.toSorted(
-		(a, b) => b.worth - a.worth,
-	);
-	const compSort: SortList = leaderboardData.toSorted(
-		(a, b) => b.completion - a.completion,
-	);
-	const coinSort: SortList = leaderboardData.toSorted(
-		(a, b) => b.horseCoins - a.horseCoins,
-	);
+	const leaderboards = await calculateHorseLeaderboards();
+	const worthSort: SortList = leaderboards.worth;
+	const compSort: SortList = leaderboards.completion;
+	const coinSort: SortList = leaderboards.coins;
 
 	const totalPages = Math.max(
 		1,
-		Math.ceil(leaderboardData.length / PAGE_SIZE),
+		Math.ceil(worthSort.length / PAGE_SIZE),
 	);
 	// Get page from option, default to 1
 	let currentPage =

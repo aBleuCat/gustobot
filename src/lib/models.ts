@@ -56,6 +56,7 @@ export type IUserHorses = {
 	lastHorse?: string;
 	lastBeg?: Date;
 	begStreak?: number;
+	gamblingStreak: number;
 } & mongoose.Document;
 const horsesSpawnPingSetting = {
 	Always: "always",
@@ -69,6 +70,7 @@ export type ISettings = {
 	userId: string;
 	horsesOptIn: boolean;
 	horsesSpawnPing: HorsesSpawnPingSetting;
+	questsAutoclaim: boolean;
 };
 export type IMessageCache = {
 	userId: string;
@@ -101,6 +103,7 @@ export type ITrainedHorsesProps = {
 export type ITrainedHorses = ITrainedHorsesProps & mongoose.Document;
 
 export type IGamblingUserStats = {
+	totalGambles: number;
 	wins: number;
 	losses: number;
 	highestWin: number;
@@ -129,7 +132,7 @@ export type IDonationUserStats = {
 	highestRecieved: number;
 };
 export type ILeaderboardUserStats = {
-	highestPosition: number | undefined;
+	highestPosition: number | null;
 };
 export type IRacesUserStats = {
 	racesWon: number;
@@ -284,6 +287,7 @@ const userHorsesSchema = new mongoose.Schema<IUserHorses>({
 	lastHorse: { type: String, default: undefined },
 	lastBeg: { type: Date },
 	begStreak: { type: Number, default: 0 },
+	gamblingStreak: { type: Number, default: 0, min: 0 },
 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserHorses = mongoose.model(
@@ -299,6 +303,7 @@ const settingsSchema = new mongoose.Schema<ISettings>({
 		enum: Object.values(horsesSpawnPingSetting),
 		default: horsesSpawnPingSetting.Never,
 	},
+	questsAutoclaim: { type: Boolean, default: true },
 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const Settings = mongoose.model("Settings", settingsSchema);
@@ -359,6 +364,7 @@ export const TrainedHorses = mongoose.model(
 const gamblingStatsSubSchema =
 	new mongoose.Schema<IGamblingUserStats>(
 		{
+			totalGambles: { type: Number, default: 0, min: 0 },
 			wins: { type: Number, default: 0, min: 0 },
 			losses: { type: Number, default: 0, min: 0 },
 			highestWin: { type: Number, default: 0, min: 0 },
@@ -410,7 +416,7 @@ const leaderboardStatsSubSchema =
 	new mongoose.Schema<ILeaderboardUserStats>(
 		{
 			highestPosition: {
-				type: [Number, null],
+				type: Number,
 				default: null,
 				validate: {
 					validator(value: unknown) {

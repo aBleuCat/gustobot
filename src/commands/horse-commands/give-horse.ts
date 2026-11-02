@@ -13,6 +13,8 @@ import { UserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
 import logToModChannel from "../../lib/helpers/mod-log.js";
 import { handleCommandError } from "../../lib/helpers/error-handlers.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
+import { horseItemValue } from "../../lib/helpers/horse-leaderboard.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, 5);
 
@@ -121,6 +123,19 @@ export async function execute(
 	);
 	await giverInv.save();
 	await receiverInv.save();
+	const donatedValue = horseItemValue(horseSlug);
+	await Promise.all([
+		recordUserStats(giverInv.userId, {
+			increments: { "donations.totalGiven": donatedValue },
+			maxima: { "donations.highestGiven": donatedValue },
+		}),
+		recordUserStats(receiverInv.userId, {
+			increments: { "donations.totalRecieved": donatedValue },
+			maxima: {
+				"donations.highestRecieved": donatedValue,
+			},
+		}),
+	]);
 
 	const horseDisplay = horseName(horseSlug);
 	const message =

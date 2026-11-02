@@ -25,60 +25,84 @@ const pingSettings = [
 ] as const satisfies readonly HorsesSpawnPingSetting[];
 
 function buildSettingsPanel(
-	settings: Pick<ISettings, "horsesOptIn" | "horsesSpawnPing">,
+	settings: Pick<
+		ISettings,
+		"horsesOptIn" | "horsesSpawnPing" | "questsAutoclaim"
+	>,
 ): ContainerBuilder {
-	const optInButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-		new ButtonBuilder()
-			.setCustomId("settings:horses:yes")
-			.setLabel("Yes")
-			.setStyle(
-				settings.horsesOptIn
-					? ButtonStyle.Success
-					: ButtonStyle.Secondary,
-			),
-		new ButtonBuilder()
-			.setCustomId("settings:horses:no")
-			.setLabel("No")
-			.setStyle(
-				settings.horsesOptIn
-					? ButtonStyle.Secondary
-					: ButtonStyle.Danger,
-			),
-	);
-	const pingButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-		new ButtonBuilder()
-			.setCustomId("settings:ping:always")
-			.setLabel("Always")
-			.setStyle(
-				settings.horsesSpawnPing === "always"
-					? ButtonStyle.Primary
-					: ButtonStyle.Secondary,
-			),
-		new ButtonBuilder()
-			.setCustomId("settings:ping:rare")
-			.setLabel("Rare")
-			.setStyle(
-				settings.horsesSpawnPing === "rare"
-					? ButtonStyle.Primary
-					: ButtonStyle.Secondary,
-			),
-		new ButtonBuilder()
-			.setCustomId("settings:ping:very_rare")
-			.setLabel("Very rare")
-			.setStyle(
-				settings.horsesSpawnPing === "very_rare"
-					? ButtonStyle.Primary
-					: ButtonStyle.Secondary,
-			),
-		new ButtonBuilder()
-			.setCustomId("settings:ping:never")
-			.setLabel("Never")
-			.setStyle(
-				settings.horsesSpawnPing === "never"
-					? ButtonStyle.Primary
-					: ButtonStyle.Secondary,
-			),
-	);
+	const optInButtons =
+		new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("settings:horses:yes")
+				.setLabel("Yes")
+				.setStyle(
+					settings.horsesOptIn
+						? ButtonStyle.Success
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:horses:no")
+				.setLabel("No")
+				.setStyle(
+					settings.horsesOptIn
+						? ButtonStyle.Secondary
+						: ButtonStyle.Danger,
+				),
+		);
+	const pingButtons =
+		new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("settings:ping:always")
+				.setLabel("Always")
+				.setStyle(
+					settings.horsesSpawnPing === "always"
+						? ButtonStyle.Primary
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:ping:rare")
+				.setLabel("Rare")
+				.setStyle(
+					settings.horsesSpawnPing === "rare"
+						? ButtonStyle.Primary
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:ping:very_rare")
+				.setLabel("Very rare")
+				.setStyle(
+					settings.horsesSpawnPing === "very_rare"
+						? ButtonStyle.Primary
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:ping:never")
+				.setLabel("Never")
+				.setStyle(
+					settings.horsesSpawnPing === "never"
+						? ButtonStyle.Primary
+						: ButtonStyle.Secondary,
+				),
+		);
+	const autoclaimButtons =
+		new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("settings:autoclaim:yes")
+				.setLabel("On")
+				.setStyle(
+					settings.questsAutoclaim
+						? ButtonStyle.Success
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:autoclaim:no")
+				.setLabel("Off")
+				.setStyle(
+					settings.questsAutoclaim
+						? ButtonStyle.Secondary
+						: ButtonStyle.Danger,
+				),
+		);
 
 	return new ContainerBuilder()
 		.addTextDisplayComponents(
@@ -86,28 +110,47 @@ function buildSettingsPanel(
 				"# Your settings\nGustobot settings, including horse spawn settings. Changes save immediately.",
 			),
 		)
-		.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
+		.addSeparatorComponents(
+			new SeparatorBuilder().setDivider(true),
+		)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				"## Opt in to horses\nWhen enabled, horses can spawn from your messages. If disabled, you can still gamble and do other things",
 			),
 		)
 		.addActionRowComponents(optInButtons)
-		.addSeparatorComponents(new SeparatorBuilder().setDivider(true))
+		.addSeparatorComponents(
+			new SeparatorBuilder().setDivider(true),
+		)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				"## Horse spawn pings\nChoose which horse spawns ping you in the spawn channel. Horses will only spawn if you are opted in.",
 			),
 		)
-		.addActionRowComponents(pingButtons);
+		.addActionRowComponents(pingButtons)
+		.addSeparatorComponents(
+			new SeparatorBuilder().setDivider(true),
+		)
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				"## Quest autoclaim\nAutomatically claim completed daily and weekly quests when you open them.",
+			),
+		)
+		.addActionRowComponents(autoclaimButtons);
 }
 
 async function updateSettings(
 	interaction: ButtonInteraction,
 ): Promise<void> {
-	const [, settingName, settingValue] = interaction.customId.split(":");
+	const [, settingName, settingValue] = interaction.customId.split(
+		":",
+		3,
+	);
 	let update: Partial<
-		Pick<ISettings, "horsesOptIn" | "horsesSpawnPing">
+		Pick<
+			ISettings,
+			"horsesOptIn" | "horsesSpawnPing" | "questsAutoclaim"
+		>
 	>;
 
 	if (settingName === "horses" && settingValue === "yes") {
@@ -120,10 +163,16 @@ async function updateSettings(
 		);
 		if (!pingSetting) return;
 		update = { horsesSpawnPing: pingSetting };
+	} else if (
+		settingName === "autoclaim" &&
+		(settingValue === "yes" || settingValue === "no")
+	) {
+		update = { questsAutoclaim: settingValue === "yes" };
 	} else {
 		return;
 	}
 
+	await interaction.deferUpdate();
 	const savedSettings = await Settings.findOneAndUpdate(
 		{ userId: interaction.user.id },
 		{ $set: update },
@@ -135,7 +184,7 @@ async function updateSettings(
 		);
 	}
 
-	await interaction.update({
+	await interaction.editReply({
 		components: [buildSettingsPanel(savedSettings)],
 	});
 }
@@ -145,16 +194,24 @@ const settingsCommand = {
 		.setName("settings")
 		.setDescription("Edit your personal bot settings"),
 	async execute(interaction: ChatInputCommandInteraction) {
+		await interaction.deferReply({
+			flags: [MessageFlags.Ephemeral],
+		});
 		const settings = (await Settings.findOne(
 			{ userId: interaction.user.id },
-			{ horsesOptIn: 1, horsesSpawnPing: 1 },
+			{
+				horsesOptIn: 1,
+				horsesSpawnPing: 1,
+				questsAutoclaim: 1,
+			},
 		).lean()) ?? {
 			horsesOptIn: true,
 			horsesSpawnPing: "never" as const,
+			questsAutoclaim: true,
 		};
-		const response = await interaction.reply({
+		const response = await interaction.editReply({
 			components: [buildSettingsPanel(settings)],
-			flags: [MessageFlags.Ephemeral, MessageFlags.IsComponentsV2],
+			flags: [MessageFlags.IsComponentsV2],
 		});
 		const collector = response.createMessageComponentCollector({
 			time: immutConfig.MINUTE_MS * 10,
@@ -162,10 +219,13 @@ const settingsCommand = {
 
 		collector.on("collect", (componentInteraction) => {
 			if (!componentInteraction.isButton()) return;
-			if (componentInteraction.user.id !== interaction.user.id) {
+			if (
+				componentInteraction.user.id !== interaction.user.id
+			) {
 				void componentInteraction
 					.reply({
-						content: "Only the person who opened these settings can change them.",
+						content:
+							"Only the person who opened these settings can change them.",
 						flags: [MessageFlags.Ephemeral],
 					})
 					.catch((error: unknown) => {
@@ -179,15 +239,21 @@ const settingsCommand = {
 
 			void updateSettings(componentInteraction).catch(
 				(error: unknown) => {
-					console.error("Failed to update user settings:", error);
+					console.error(
+						"Failed to update user settings:",
+						error,
+					);
 					const errorReply = {
-						content: "Couldn't save your settings. Please try again.",
+						content:
+							"Couldn't save your settings. Please try again.",
 						flags: [MessageFlags.Ephemeral] as const,
 					};
 					const reportError =
 						componentInteraction.deferred ||
 						componentInteraction.replied
-							? componentInteraction.followUp(errorReply)
+							? componentInteraction.followUp(
+									errorReply,
+								)
 							: componentInteraction.reply(errorReply);
 					void reportError.catch((replyError: unknown) => {
 						console.error(

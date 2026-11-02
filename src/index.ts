@@ -32,6 +32,7 @@ import { startRoleReverter } from "./lib/tasks/role-reverter.js";
 import { startResourceMonitor } from "./lib/tasks/resource-monitor.js";
 import { startMessageCacheCleanup } from "./lib/tasks/message-cache-cleanup.js";
 import { startStatusChecker } from "./lib/tasks/status-checker.js";
+import { startHorseLeaderboardStatsTask } from "./lib/tasks/horse-leaderboard-stats.js";
 // Logging
 import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
@@ -392,6 +393,7 @@ try {
 	// Only start DB-dependent tasks after connection is established
 	registerMessageHandler(client);
 	startRoleReverter(client);
+	startHorseLeaderboardStatsTask();
 	await client.login(envToken);
 } catch (error: unknown) {
 	throw new Error(
