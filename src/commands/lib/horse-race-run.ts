@@ -266,6 +266,15 @@ export async function executeRace(
 	const hasRaceCompleted = Boolean(
 		final?.some((horse) => horse.position >= RACE_TRACK_LENGTH),
 	);
+	if (final) {
+		await Promise.all(
+			final.map((horse) =>
+				recordUserStats(horse.userId, {
+					increments: { "races.racesParticipated": 1 },
+				}),
+			),
+		);
+	}
 	if (final && hasRaceCompleted) {
 		const winnerId = final.find(
 			(horse) => horse.position >= RACE_TRACK_LENGTH,

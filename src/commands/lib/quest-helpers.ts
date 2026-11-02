@@ -557,7 +557,6 @@ export function buildQuestContainer(
 			new TextDisplayBuilder().setContent(
 				`## ${quest.name ?? "Unknown"}\n` +
 					`${quest.description ?? "Unknown"}\n` +
-					`Difficulty: ${quest.difficulty ?? "Unknown"}` +
 					(quest.status === "uncompleted"
 						? `\nCompletion: ${quest.completion}`
 						: ""),

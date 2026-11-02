@@ -130,11 +130,16 @@ export type IDonationUserStats = {
 	totalRecieved: number;
 	highestGiven: number;
 	highestRecieved: number;
+	horsesGiven: number;
+	horsesRecieved: number;
+	totalHorseValueGiven: number;
+	totalHorseValueRecieved: number;
 };
 export type ILeaderboardUserStats = {
 	highestPosition: number | null;
 };
 export type IRacesUserStats = {
+	racesParticipated: number;
 	racesWon: number;
 	racesLost: number;
 };
@@ -408,6 +413,18 @@ const donationStatsSubSchema =
 			totalRecieved: { type: Number, default: 0, min: 0 },
 			highestGiven: { type: Number, default: 0, min: 0 },
 			highestRecieved: { type: Number, default: 0, min: 0 },
+			horsesGiven: { type: Number, default: 0, min: 0 },
+			horsesRecieved: { type: Number, default: 0, min: 0 },
+			totalHorseValueGiven: {
+				type: Number,
+				default: 0,
+				min: 0,
+			},
+			totalHorseValueRecieved: {
+				type: Number,
+				default: 0,
+				min: 0,
+			},
 		},
 		{ _id: false },
 	);
@@ -434,6 +451,7 @@ const leaderboardStatsSubSchema =
 
 const racesStatsSubSchema = new mongoose.Schema<IRacesUserStats>(
 	{
+		racesParticipated: { type: Number, default: 0, min: 0 },
 		racesWon: { type: Number, default: 0, min: 0 },
 		racesLost: { type: Number, default: 0, min: 0 },
 	},

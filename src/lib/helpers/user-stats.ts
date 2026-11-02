@@ -50,9 +50,13 @@ function emptyStats() {
 			totalRecieved: 0,
 			highestGiven: 0,
 			highestRecieved: 0,
+			horsesGiven: 0,
+			horsesRecieved: 0,
+			totalHorseValueGiven: 0,
+			totalHorseValueRecieved: 0,
 		},
 		leaderboard: { highestPosition: null },
-		races: { racesWon: 0, racesLost: 0 },
+		races: { racesParticipated: 0, racesWon: 0, racesLost: 0 },
 		trades: {
 			tradesCompleted: 0,
 			totalDollarsGiven: 0,
@@ -106,16 +110,16 @@ export async function recordUserStats(
 		},
 	};
 
-	const setChanges: Record<string, unknown> = {};
+	const updateFields: Record<string, unknown> = {};
 	for (const [path, amount] of Object.entries(
 		changes.increments ?? {},
 	)) {
-		setChanges[`allTime.${path}`] = {
+		updateFields[`allTime.${path}`] = {
 			$add: [{ $ifNull: [`$allTime.${path}`, 0] }, amount],
 		};
 		if (!changes.allTimeOnly) {
 			for (const timeframe of ["daily", "weekly"] as const) {
-				setChanges[`${timeframe}.${path}`] = {
+				updateFields[`${timeframe}.${path}`] = {
 					$add: [
 						{ $ifNull: [`$${timeframe}.${path}`, 0] },
 						amount,
@@ -128,12 +132,12 @@ export async function recordUserStats(
 	for (const [path, value] of Object.entries(
 		changes.maxima ?? {},
 	)) {
-		setChanges[`allTime.${path}`] = {
+		updateFields[`allTime.${path}`] = {
 			$max: [{ $ifNull: [`$allTime.${path}`, 0] }, value],
 		};
 		if (!changes.allTimeOnly) {
 			for (const timeframe of ["daily", "weekly"] as const) {
-				setChanges[`${timeframe}.${path}`] = {
+				updateFields[`${timeframe}.${path}`] = {
 					$max: [
 						{ $ifNull: [`$${timeframe}.${path}`, 0] },
 						value,
@@ -146,7 +150,7 @@ export async function recordUserStats(
 	for (const [path, value] of Object.entries(
 		changes.minima ?? {},
 	)) {
-		setChanges[`allTime.${path}`] = {
+		updateFields[`allTime.${path}`] = {
 			$cond: [
 				{
 					$or: [
@@ -160,7 +164,7 @@ export async function recordUserStats(
 		};
 		if (!changes.allTimeOnly) {
 			for (const timeframe of ["daily", "weekly"] as const) {
-				setChanges[`${timeframe}.${path}`] = {
+				updateFields[`${timeframe}.${path}`] = {
 					$cond: [
 						{
 							$or: [
@@ -186,13 +190,15 @@ export async function recordUserStats(
 		}
 	}
 
-	const pipeline: Record<string, unknown>[] = [{ $set: update }];
-	if (Object.keys(setChanges).length > 0) {
-		pipeline.push({ $set: setChanges });
-	}
+	const pipeline: Array<Record<string, unknown>> = [
+		{ $set: update },
+		...(Object.keys(updateFields).length > 0
+			? [{ $set: updateFields }]
+			: []),
+	];
 
 	await UserStats.updateOne({ userId }, pipeline, {
 		upsert: true,
-		...(session ? { session } : {}),
+		...(session && { session }),
 	});
 }

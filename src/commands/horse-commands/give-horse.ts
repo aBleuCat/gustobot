@@ -126,11 +126,19 @@ export async function execute(
 	const donatedValue = horseItemValue(horseSlug);
 	await Promise.all([
 		recordUserStats(giverInv.userId, {
-			increments: { "donations.totalGiven": donatedValue },
+			increments: {
+				"donations.totalGiven": donatedValue,
+				"donations.horsesGiven": 1,
+				"donations.totalHorseValueGiven": donatedValue,
+			},
 			maxima: { "donations.highestGiven": donatedValue },
 		}),
 		recordUserStats(receiverInv.userId, {
-			increments: { "donations.totalRecieved": donatedValue },
+			increments: {
+				"donations.totalRecieved": donatedValue,
+				"donations.horsesRecieved": 1,
+				"donations.totalHorseValueRecieved": donatedValue,
+			},
 			maxima: {
 				"donations.highestRecieved": donatedValue,
 			},
