@@ -33,6 +33,12 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setDescription("The horse you want to give")
 			.setRequired(true)
 			.setAutocomplete(true),
+	)
+	.addIntegerOption((option) =>
+		option
+			.setName("amount")
+			.setDescription("How many of this horse to give")
+			.setMinValue(1),
 	);
 
 export async function autocomplete(
@@ -46,7 +52,7 @@ export async function autocomplete(
 	const choices = [];
 	if (inventory?.horses) {
 		for (const [slug, count] of inventory.horses) {
-			if (count > 0 && HORSE_VALUES[slug]) {
+			if (count > 0 && Object.hasOwn(HORSE_VALUES, slug)) {
 				choices.push({
 					name: `${horseName(slug)} (x${count})`,
 					value: slug,
@@ -67,19 +73,25 @@ export async function execute(
 ) {
 	const targetUser = interaction.options.getUser("target");
 	const horseSlug = interaction.options.getString("horse");
-	const botId = interaction.client.user.id;
-	if (!targetUser || !horseSlug)
+
+	if (!targetUser || !horseSlug) {
 		return interaction.reply({
 			content:
 				"try again, something went wrong when trying to recieve your inputs",
 			flags: [MessageFlags.Ephemeral],
 		});
-	if (!interaction.guild)
+	}
+
+	if (!interaction.guild) {
 		return interaction.reply({
 			content:
 				"lo siento something went wrong when finding your server",
 			flags: [MessageFlags.Ephemeral],
 		});
+	}
+
+	const botId = interaction.client.user.id;
+	const amount = interaction.options.getInteger("amount") ?? 1;
 
 	if (targetUser.id === interaction.user.id) {
 		return interaction.reply({
@@ -95,12 +107,20 @@ export async function execute(
 		});
 	}
 
+	if (!Object.hasOwn(HORSE_VALUES, horseSlug)) {
+		return interaction.reply({
+			content: "That horse doesn't exist.",
+			flags: [MessageFlags.Ephemeral],
+		});
+	}
+
 	const giverInv = await UserHorses.findOne({
 		userId: interaction.user.id,
 	});
-	if (!giverInv || (giverInv.horses.get(horseSlug) ?? 0) <= 0) {
+	const owned = giverInv?.horses.get(horseSlug) ?? 0;
+	if (!giverInv || owned < amount) {
 		return interaction.reply({
-			content: `You don't have a **${horseName(horseSlug)}**!`,
+			content: `You only have **${owned}** ${horseName(horseSlug)}${owned === 1 ? "" : "s"}, but you tried to give **${amount}**.`,
 			flags: [MessageFlags.Ephemeral],
 		});
 	}
@@ -113,22 +133,19 @@ export async function execute(
 		horses: new Map(),
 	});
 
-	giverInv.horses.set(
-		horseSlug,
-		(giverInv.horses.get(horseSlug) ?? 0) - 1,
-	);
+	giverInv.horses.set(horseSlug, owned - amount);
 	receiverInv.horses.set(
 		horseSlug,
-		(receiverInv.horses.get(horseSlug) ?? 0) + 1,
+		(receiverInv.horses.get(horseSlug) ?? 0) + amount,
 	);
 	await giverInv.save();
 	await receiverInv.save();
-	const donatedValue = horseItemValue(horseSlug);
+	const donatedValue = horseItemValue(horseSlug) * amount;
 	await Promise.all([
 		recordUserStats(giverInv.userId, {
 			increments: {
 				"donations.totalGiven": donatedValue,
-				"donations.horsesGiven": 1,
+				"donations.horsesGiven": amount,
 				"donations.totalHorseValueGiven": donatedValue,
 			},
 			maxima: { "donations.highestGiven": donatedValue },
@@ -136,7 +153,7 @@ export async function execute(
 		recordUserStats(receiverInv.userId, {
 			increments: {
 				"donations.totalRecieved": donatedValue,
-				"donations.horsesRecieved": 1,
+				"donations.horsesRecieved": amount,
 				"donations.totalHorseValueRecieved": donatedValue,
 			},
 			maxima: {
@@ -146,15 +163,16 @@ export async function execute(
 	]);
 
 	const horseDisplay = horseName(horseSlug);
+	const horseCount = `${amount} ${horseDisplay}${amount === 1 ? "" : "s"}`;
 	const message =
 		targetUser.id === botId
-			? `You offered a **${horseDisplay}** to me! Nom nom nom.`
-			: `You gave your **${horseDisplay}** to <@${targetUser.id}>!`;
+			? `You offered **${horseCount}** to me! Nom nom nom.`
+			: `You gave **${horseCount}** to <@${targetUser.id}>!`;
 	await interaction.reply({ content: message });
 
 	logToModChannel(
 		interaction.guild,
-		`${interaction.user.tag} gave a ${horseDisplay} to ${targetUser.tag}`,
+		`${interaction.user.tag} gave ${horseCount} to ${targetUser.tag}`,
 	).catch(async (error: unknown) =>
 		handleCommandError(error, interaction),
 	);
