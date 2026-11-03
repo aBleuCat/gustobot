@@ -26,12 +26,12 @@ import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 type QuestStatus = "claimed" | "completed" | "uncompleted";
 
-const QUESTS_PER_PAGE = 4;
+const { QUESTS_PER_PAGE } = config;
 const colorToStatus = {
 	claimed: 0xa6_e3_a1,
 	completed: 0xfa_b3_87,
 	uncompleted: 0xf3_8b_a8,
-};
+}; // Catppuccin
 
 type QuestType = "daily" | "weekly";
 
@@ -499,11 +499,12 @@ export function buildOverviewContainer(
 	const unclaimed = document[questType].unclaimed.length;
 	const total = claimed + unclaimed;
 	const isRerollAvailable = document[questType].rerollsUsed < 1;
+	const { questStreak } = document[questType];
 	const container = new ContainerBuilder()
 		.setAccentColor(0x18_18_25)
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				"# Overview\n" +
+				"## Overview\n" +
 					`Claimed ${claimed} of ${total} quests (${((claimed / (total || 1)) * 100).toFixed(0)}%)\n` +
 					`Your quests will reset ${discordTimestamp(nextRefresh, "relative")}`,
 			),
@@ -512,12 +513,26 @@ export function buildOverviewContainer(
 		container
 			.addSeparatorComponents(
 				new SeparatorBuilder()
-					.setDivider(true)
+					.setDivider(false)
 					.setSpacing(SeparatorSpacingSize.Small),
 			)
 			.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
 					`The ${questType === "daily" ? "day" : "week"} has ended, and your quests have refreshed!\nGet back to work!`,
+				),
+			);
+	}
+
+	if (questStreak > 0) {
+		container
+			.addSeparatorComponents(
+				new SeparatorBuilder()
+					.setDivider(false)
+					.setSpacing(SeparatorSpacingSize.Small),
+			)
+			.addTextDisplayComponents(
+				new TextDisplayBuilder().setContent(
+					`You've been completing your quests for ${questStreak} ${questType}${questStreak === 1 ? "" : "s"} in a row. Keep it up!`,
 				),
 			);
 	}
@@ -573,7 +588,7 @@ export function buildQuestContainer(
 	const sections = questsChunk.map((quest) => {
 		const section = new SectionBuilder().addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				`## ${quest.name ?? "Unknown"}\n` +
+				`### ${quest.name ?? "Unknown"}\n` +
 					`${quest.description ?? "Unknown"}\n` +
 					"Rewards:" +
 					(quest.reward?.horse
@@ -613,7 +628,7 @@ export function buildQuestContainer(
 	const container = new ContainerBuilder()
 		.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				`# ${capitalizeFirstLetter(questStatus)}`,
+				`## ${capitalizeFirstLetter(questStatus)}`,
 			),
 		)
 		.setAccentColor(colorToStatus[questStatus]);
@@ -634,7 +649,7 @@ export function buildQuestContainer(
 			.addSeparatorComponents(
 				new SeparatorBuilder()
 					.setDivider(true)
-					.setSpacing(SeparatorSpacingSize.Large),
+					.setSpacing(SeparatorSpacingSize.Small),
 			)
 			.addSectionComponents(section);
 	}

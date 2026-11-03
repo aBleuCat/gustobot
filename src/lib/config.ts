@@ -124,6 +124,7 @@ export const config = {
 	WEEKLY_EASY_QUESTS: 6,
 	WEEKLY_MEDIUM_QUESTS: 3,
 	WEEKLY_HARD_QUESTS: 1,
+	QUESTS_PER_PAGE: 3,
 
 	// Changeable with /hacks lists
 	lists: {
@@ -242,4 +243,5 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"The number of medium difficulty weekly quests that are available to be completed",
 	WEEKLY_HARD_QUESTS:
 		"The number of hard weekly quests that are available to be completed",
+	QUESTS_PER_PAGE: "The number of quests to be displayed per page",
 };
