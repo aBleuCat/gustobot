@@ -35,6 +35,7 @@ import { startResourceMonitor } from "./lib/tasks/resource-monitor.js";
 import { startMessageCacheCleanup } from "./lib/tasks/message-cache-cleanup.js";
 import { startStatusChecker } from "./lib/tasks/status-checker.js";
 import { startHorseLeaderboardStatsTask } from "./lib/tasks/horse-leaderboard-stats.js";
+import { startDailyStatsArchiveTask } from "./lib/tasks/daily-stats-archive.js";
 // Logging
 import { logToAllModChannels } from "./lib/helpers/mod-log.js";
 import dmAdmin from "./lib/helpers/dm-log.js";
@@ -424,6 +425,7 @@ try {
 	registerMessageHandler(client);
 	startRoleReverter(client);
 	startHorseLeaderboardStatsTask();
+	startDailyStatsArchiveTask();
 	await client.login(envToken);
 } catch (error: unknown) {
 	throw new Error(

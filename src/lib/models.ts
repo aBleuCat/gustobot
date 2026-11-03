@@ -170,6 +170,13 @@ export type IUserStats = {
 		"nextRefresh" | "nextRefreshTemporal"
 	>;
 };
+export type IDailyStatsArchive = {
+	day: string;
+	stats: Omit<
+		ITimeframeStats,
+		"nextRefresh" | "nextRefreshTemporal"
+	>;
+};
 export type ITimeframeQuests = {
 	claimed: string[];
 	unclaimed: string[];
@@ -533,6 +540,20 @@ const userStatsSchema = new mongoose.Schema<IUserStats>({
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserStats = mongoose.model("UserStats", userStatsSchema);
+
+const dailyStatsArchiveSchema = new mongoose.Schema<IDailyStatsArchive>({
+	day: { type: String, required: true, unique: true },
+	stats: {
+		type: allTimeSubSchema,
+		required: true,
+		default: () => ({}),
+	},
+});
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const DailyStatsArchive = mongoose.model(
+	"DailyStatsArchive",
+	dailyStatsArchiveSchema,
+);
 
 const timeframeQuestsSchema = new mongoose.Schema<ITimeframeQuests>(
 	{
