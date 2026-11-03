@@ -22,6 +22,7 @@ import {
 } from "../../lib/models.js";
 import { discordTimestamp } from "../../lib/helpers/time-helpers.js";
 import { capitalizeFirstLetter } from "../../lib/helpers/string-helpers.js";
+import { horseName } from "../../lib/helpers/horse-funcs.js";
 
 type QuestStatus = "claimed" | "completed" | "uncompleted";
 
@@ -542,7 +543,7 @@ export function buildOverviewContainer(
 			)
 			.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
-					"You've used your free reroll!",
+					"You've used your free reroll! You'll get a free reroll again after your quests reset.",
 				),
 			);
 	}
@@ -573,7 +574,14 @@ export function buildQuestContainer(
 		const section = new SectionBuilder().addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
 				`## ${quest.name ?? "Unknown"}\n` +
-					`${quest.description ?? "Unknown"}\n`,
+					`${quest.description ?? "Unknown"}\n` +
+					"Rewards:" +
+					(quest.reward?.horse
+						? `\n${horseName(quest.reward.horse)}`
+						: "") +
+					(quest.reward?.coins
+						? `\n🪙 ${quest.reward.coins} Horse Coins`
+						: ""),
 			),
 		);
 		if (quest.status === "completed") {
