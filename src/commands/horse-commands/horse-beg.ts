@@ -6,6 +6,7 @@ import { UserHorses, type IUserHorses } from "../../lib/models.js";
 import { castAsHorseData } from "../../type-utils.js";
 import { randInt, randItem } from "../../lib/helpers/random-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
 
 type BegReward = undefined | number | string;
 type BegRewardQuality = "unsuccessful" | "successful" | "verySuccessful";
@@ -194,6 +195,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 	}
 
 	if (isBegClaimable) {
+		await recordUserStats(userId, {
+			increments: { "begs.begs": 1 },
+		});
 		const streakResetMessage = didLoseBegStreak
 			? `Your **${previousBegStreak}-day begging streak ended.** You're starting over.\n\n`
 			: "";

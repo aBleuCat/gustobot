@@ -4,6 +4,7 @@ import {
 	type ChatInputCommandInteraction,
 } from "discord.js";
 import { UserHorses } from "../../lib/models.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
 
 export const data = new SlashCommandSubcommandBuilder()
 	.setName("give")
@@ -73,6 +74,16 @@ export async function execute(
 
 	await sender.save();
 	await receiver.save();
+	await Promise.all([
+		recordUserStats(sender.userId, {
+			increments: { "donations.totalGiven": amount },
+			maxima: { "donations.highestGiven": amount },
+		}),
+		recordUserStats(receiver.userId, {
+			increments: { "donations.totalRecieved": amount },
+			maxima: { "donations.highestRecieved": amount },
+		}),
+	]);
 
 	return interaction.reply(
 		`<@${interaction.user.id}> gave 🪙 **${amount}** Horse Coin${amount === 1 ? "" : "s"} to <@${target.id}>!`,

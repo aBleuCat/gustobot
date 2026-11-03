@@ -3,13 +3,11 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.xo": "always"
 	},
+	"xo.format.enable": true,
 	"[javascript]": {
 		"editor.defaultFormatter": "samverschueren.linter-xo"
 	},
 	"[typescript]": {
-		"editor.defaultFormatter": "samverschueren.linter-xo"
-	},
-	"[javascriptjavascript]": {
 		"editor.defaultFormatter": "samverschueren.linter-xo"
 	},
 	"js/ts.preferences.quoteStyle": "double",

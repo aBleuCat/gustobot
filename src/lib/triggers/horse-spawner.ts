@@ -23,6 +23,7 @@ import devLog from "../helpers/dev-log.js";
 import queueMessage from "../helpers/message-queue.js";
 import type { HorseData } from "../../types.js";
 import { randItem } from "../helpers/random-helpers.js";
+import { recordUserStats } from "../helpers/user-stats.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
@@ -141,6 +142,27 @@ async function applySpawnInventory(
 	);
 
 	if (!inventory) return null;
+	const spawnedEntries = Object.entries(spawnedCounts);
+	await recordUserStats(userId, {
+		increments: {
+			"spawns.totalSpawns": spawnedEntries.reduce(
+				(total, [, count]) => total + count,
+				0,
+			),
+			"spawns.totalSpawnsValue": spawnedEntries.reduce(
+				(total, [slug, count]) =>
+					total + (HORSE_VALUES[slug]?.value ?? 0) * count,
+				0,
+			),
+		},
+		maxima: {
+			"spawns.highestValueSpawn": Math.max(
+				...spawnedEntries.map(
+					([slug]) => HORSE_VALUES[slug]?.value ?? 0,
+				),
+			),
+		},
+	});
 	return { inventory, coinDropSize, newHorseSlugs };
 }
 
@@ -295,6 +317,9 @@ async function cacheAndCheckMessage(
 		},
 		{ upsert: true },
 	);
+	await recordUserStats(message.author.id, {
+		increments: { "spawns.messagesCounted": 1 },
+	});
 
 	return true;
 }

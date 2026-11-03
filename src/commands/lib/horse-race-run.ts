@@ -4,6 +4,7 @@ import {config} from '../../lib/config.js';
 import type {ITrainedHorsesProps} from '../../lib/models.js';
 import type {ReadyRaceChallenge} from './horse-race-challenge.js';
 import { randItem } from "../../lib/helpers/random-helpers.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
 
 const {
 	RACE_RANDOM_JITTER,
@@ -265,6 +266,36 @@ export async function executeRace(
 	const hasRaceCompleted = Boolean(
 		final?.some((horse) => horse.position >= RACE_TRACK_LENGTH),
 	);
+	if (final) {
+		await Promise.all(
+			final.map((horse) =>
+				recordUserStats(horse.userId, {
+					increments: { "races.racesParticipated": 1 },
+				}),
+			),
+		);
+	}
+	if (final && hasRaceCompleted) {
+		const winnerId = final.find(
+			(horse) => horse.position >= RACE_TRACK_LENGTH,
+		)?.userId;
+		if (!winnerId) {
+			throw new Error(
+				"Completed race has no horse at the finish line.",
+			);
+		}
+		await Promise.all(
+			final.map((horse) =>
+				recordUserStats(horse.userId, {
+					increments: {
+						...(horse.userId === winnerId
+							? { "races.racesWon": 1 }
+							: { "races.racesLost": 1 }),
+					},
+				}),
+			),
+		);
+	}
 
 	const resultsEmbed = new EmbedBuilder()
 		.setTitle('Results')

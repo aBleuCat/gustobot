@@ -5,11 +5,11 @@ import rawHorseValues from "../data/horses.json" with { type: "json" };
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues, "all");
 
-/* No matter how many horses get added, you on average get one horse every 0.2*SPAWN_COEFFICIENT*25 messages */
+// No matter how many horses get added, you on average get one horse every 0.2*SPAWN_COEFFICIENT*25 messages
 const BASELINE_SUM = 0.2;
 const currentInverseSum = Object.entries(HORSE_VALUES)
 	.filter(([, data]) => data.spawn !== false)
-	.reduce((sum, [, data]) => sum + (1 / data.value), 0);
+	.reduce((sum, [, data]) => sum + 1 / data.value, 0);
 const antiinflator = currentInverseSum / BASELINE_SUM;
 
 const SECOND_MS = 1000;
@@ -117,6 +117,15 @@ export const config = {
 	// For horse-beg.ts
 	BEG_COOLDOWN: 22 * HOUR_MS,
 
+	// For quests
+	DAILY_EASY_QUESTS: 4,
+	DAILY_MEDIUM_QUESTS: 2,
+	DAILY_HARD_QUESTS: 1,
+	WEEKLY_EASY_QUESTS: 6,
+	WEEKLY_MEDIUM_QUESTS: 3,
+	WEEKLY_HARD_QUESTS: 1,
+	QUESTS_PER_PAGE: 3,
+
 	// Changeable with /hacks lists
 	lists: {
 		// Triggers for message-handler.ts
@@ -157,8 +166,7 @@ export const descriptions: Record<keyof typeof config, string> = {
 	FRENZY_CHANCE: "Probability that gambling frenzy triggers (0-1)",
 	CONFISCATE_CHANCE:
 		"Probability of police confiscating horse when no coins (0-1)",
-	LOSS_THRESHOLD:
-		`Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between ${config.MIN_ROLL} and ${config.MAX_ROLL} is rolled`,
+	LOSS_THRESHOLD: `Gambling roll below which horse is lost (negative number, preferably). Every gamble, a number between ${config.MIN_ROLL} and ${config.MAX_ROLL} is rolled`,
 	PROGRESSIVE_COIN_GAMBLE_TAX:
 		"Cost per horse = Math.max(1, ceil(coins / 50 * this))",
 	MAX_ROLL: "Maximum possible roll for gambling (inclusive)",
@@ -223,4 +231,17 @@ export const descriptions: Record<keyof typeof config, string> = {
 		"How long the bot should wait for both players to confirm a trade (in ms)",
 	BEG_COOLDOWN:
 		"How frequently you are able to beg for a horse (in ms)",
+	DAILY_EASY_QUESTS:
+		"The number of easy daily quests that are available to be completed",
+	DAILY_MEDIUM_QUESTS:
+		"The number of medium difficulty daily quests that are available to be completed",
+	DAILY_HARD_QUESTS:
+		"The number of hard daily quests that are available to be completed",
+	WEEKLY_EASY_QUESTS:
+		"The number of easy weekly quests that are available to be completed",
+	WEEKLY_MEDIUM_QUESTS:
+		"The number of medium difficulty weekly quests that are available to be completed",
+	WEEKLY_HARD_QUESTS:
+		"The number of hard weekly quests that are available to be completed",
+	QUESTS_PER_PAGE: "The number of quests to be displayed per page",
 };

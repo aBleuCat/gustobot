@@ -1,25 +1,22 @@
 /* eslint-disable unicorn/no-abusive-eslint-disable */
 /* eslint-disable */
 // @ts-nocheck
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
-	SlashCommandBuilder,
+	SlashCommandSubcommandBuilder,
 	MessageFlags,
 	type ChatInputCommandInteraction,
 	type AutocompleteInteraction,
 } from "discord.js";
-import mongoose from "mongoose";
-import rawHorseValues from "../data/horses.json" with { type: "json" };
-import { castAsHorseData } from "../type-utils.js";
-import { config, immutConfig } from "../lib/config.js";
-import devLog from "../lib/helpers/dev-log.js";
+import rawHorseValues from "../../data/horses.json" with { type: "json" };
+import { castAsHorseData } from "../../type-utils.js";
+import { config, immutConfig } from "../../lib/config.js";
+import devLog from "../../lib/helpers/dev-log.js";
 import {
 	conditionHorse,
 	horseName,
-} from "../lib/helpers/horse-funcs.js";
-// NOTE TO SELF: DEFER REPLY EARLY
+} from "../../lib/helpers/horse-funcs.js";
+import { UserHorses } from "../../lib/models.js";
+import { recordUserStats } from "../../lib/helpers/user-stats.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const HOUSE_USER_ID = "1469509600561729710";
@@ -27,27 +24,6 @@ const COMMON_HORSE = "common_horse";
 const ADMIN_IDS = immutConfig.ADMINS;
 const STREAK_HORSE = "gamble_streak";
 const STREAK_REQUIRED = 10;
-/* eslint-disable @typescript-eslint/naming-convention */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-/* eslint-enable @typescript-eslint/naming-convention */
-const STREAKS_PATH = (() => {
-	const candidates = [
-		path.resolve(process.cwd(), "src/runtime_jsons/gamble_streaks.json"),
-		path.resolve(process.cwd(), "runtime_jsons/gamble_streaks.json"),
-		path.resolve(__dirname, "../runtime_jsons/gamble_streaks.json"),
-		path.resolve(__dirname, "../../src/runtime_jsons/gamble_streaks.json"),
-	];
-
-	for (const candidate of candidates) {
-		const dir = path.dirname(candidate);
-		if (fs.existsSync(dir) || fs.existsSync(candidate)) {
-			return candidate;
-		}
-	}
-
-	return candidates[0];
-})();
 const safeLength = 1800;
 const minRoll = config.MIN_ROLL;
 const maxRoll = config.MAX_ROLL;
@@ -63,52 +39,74 @@ function rollCoinPayout(): number {
 	return Math.floor(Math.random() * (COIN_GAMBLE_MAX_PAYOUT + 1));
 }
 
-// Gamble streak helpers
-function loadStreaks() {
-	try {
-		return JSON.parse(fs.readFileSync(STREAKS_PATH, "utf8"));
-	} catch {
-		return {};
-	}
-}
-
-function saveStreaks(streaks) {
-	try {
-		const dir = path.dirname(STREAKS_PATH);
-		fs.mkdirSync(dir, { recursive: true });
-		fs.writeFileSync(
-			STREAKS_PATH,
-			JSON.stringify(streaks, null, 2),
-			"utf8",
-		);
-	} catch (error) {
-		console.error("Failed to save gamble_streaks.json:", error);
-	}
-}
-
 /**
  * Update the streak for a user after a gamble outcome.
  * isNetWin = true if net value change > 0.
  * Returns { newStreak, awarded } — awarded=true means user hit STREAK_REQUIRED.
  */
-function updateStreak(userId, isNetWin) {
-	const streaks = loadStreaks();
+async function updateStreak(userId, isNetWin) {
 	if (!isNetWin) {
-		streaks[userId] = 0;
-		saveStreaks(streaks);
+		await UserHorses.updateOne(
+			{ userId },
+			{ $set: { gamblingStreak: 0 } },
+			{ upsert: true },
+		);
 		return { newStreak: 0, awarded: false };
 	}
 
-	streaks[userId] = (streaks[userId] || 0) + 1;
-	const newStreak = streaks[userId];
-	let awarded = false;
-	if (newStreak >= STREAK_REQUIRED) {
-		streaks[userId] = 0;
-		awarded = true;
-	}
-
-	saveStreaks(streaks);
-	return { newStreak, awarded };
+	const previousInventory = await UserHorses.findOneAndUpdate(
+		{ userId },
+		[
+			{
+				$set: {
+					gamblingStreak: {
+						$let: {
+							vars: {
+								nextStreak: {
+									$add: [
+										{
+											$ifNull: [
+												"$gamblingStreak",
+												0,
+											],
+										},
+										1,
+									],
+								},
+							},
+							in: {
+								$cond: [
+									{
+										$gte: [
+											"$$nextStreak",
+											STREAK_REQUIRED,
+										],
+									},
+									0,
+									"$$nextStreak",
+								],
+							},
+						},
+					},
+				},
+			},
+		],
+		{ new: false, upsert: true },
+	);
+	const previousStreak =
+		previousInventory?.gamblingStreak ?? 0;
+	const awarded = previousStreak + 1 >= STREAK_REQUIRED;
+	await recordUserStats(userId, {
+		maxima: {
+			"gambling.highestGamblingStreak": awarded
+				? STREAK_REQUIRED
+				: previousStreak + 1,
+		},
+	});
+	return {
+		newStreak: awarded ? 0 : previousStreak + 1,
+		awarded,
+	};
 }
 
 function getClosestHorse(targetValue) {
@@ -199,6 +197,11 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 	let noChange = 0;
 	let netValueChange = 0;
 	let coinsSpent = 0;
+	let dollarsGambled = 0;
+	let dollarsWon = 0;
+	let dollarsLost = 0;
+	let highestWin = 0;
+	let highestLoss = 0;
 	const gained = new Map();
 	const cycleOutput = new Map();
 
@@ -207,6 +210,8 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 
 		virtualInv.horseCoins -= costPerHorse;
 		coinsSpent += costPerHorse;
+		const startValue = HORSE_VALUES[slug].value;
+		dollarsGambled += startValue;
 
 		if (
 			virtualInv.horseCoins < 0 &&
@@ -216,12 +221,13 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 				slug,
 				virtualInv.horses.get(slug) - 1,
 			);
-			netValueChange -= HORSE_VALUES[slug].value;
+			netValueChange -= startValue;
+			dollarsLost -= startValue;
+			highestLoss = Math.min(highestLoss, -startValue);
 			completeLosses++;
 			continue;
 		}
 
-		const startValue = HORSE_VALUES[slug].value;
 		const change =
 			Math.floor(Math.random() * rollFactor) + minRoll;
 		const targetValue = startValue + change;
@@ -235,6 +241,8 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 				virtualInv.horses.get(slug) - 1,
 			);
 			netValueChange -= startValue;
+			dollarsLost -= startValue;
+			highestLoss = Math.min(highestLoss, -startValue);
 			completeLosses++;
 		} else {
 			const closestSlug = getClosestHorse(targetValue);
@@ -270,8 +278,18 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 					(cycleOutput.get(closestSlug) || 0) + 1,
 				);
 				netValueChange += actualDiff;
-				if (actualDiff >= 0) wins++;
-				else losses++;
+				if (actualDiff > 0) {
+					wins++;
+					dollarsWon += actualDiff;
+					highestWin = Math.max(highestWin, actualDiff);
+				} else if (actualDiff < 0) {
+					losses++;
+					dollarsLost += actualDiff;
+					highestLoss = Math.min(
+						highestLoss,
+						actualDiff,
+					);
+				}
 			}
 		}
 	}
@@ -283,6 +301,11 @@ function simulateBulkPass(slugsToGamble, virtualInv, costPerHorse) {
 		noChange,
 		netValueChange,
 		coinsSpent,
+		dollarsGambled,
+		dollarsWon,
+		dollarsLost,
+		highestWin,
+		highestLoss,
 		gained,
 		cycleOutput,
 	};
@@ -348,8 +371,8 @@ function formatCycleLog(
 }
 
 const gambleCommand = {
-	data: new SlashCommandBuilder()
-		.setName("horsegamble")
+	data: new SlashCommandSubcommandBuilder()
+		.setName("gamble")
 		.setDescription(
 			"Gamble horses; minimum coin requirement scales with your coin balance",
 		)
@@ -408,7 +431,6 @@ const gambleCommand = {
 
 	async autocomplete(interaction: AutocompleteInteraction) {
 		try {
-			const UserHorses = mongoose.model("UserHorses");
 			const focused = interaction.options
 				.getFocused()
 				.toLowerCase();
@@ -464,7 +486,6 @@ const gambleCommand = {
 	},
 
 	async execute(interaction: ChatInputCommandInteraction) {
-		const UserHorses = mongoose.model("UserHorses");
 		const horseSlug = interaction.options
 			.getString("horse")
 			.trim()
@@ -608,6 +629,7 @@ const gambleCommand = {
 
 			if (gamblesCount === 1) {
 				const winAmount = rollCoinPayout();
+				const coinChange = winAmount - COIN_GAMBLE_COST;
 				devLog(
 					`/horsegamble: Single coin gamble for user ${interaction.user.id} | win=${winAmount} change=${winAmount - COIN_GAMBLE_COST}`,
 					"micro",
@@ -616,6 +638,23 @@ const gambleCommand = {
 					inventory.horseCoins =
 						inventory.horseCoins - COIN_GAMBLE_COST + winAmount;
 					await inventory.save();
+					await recordUserStats(interaction.user.id, {
+						increments: {
+							"gambling.totalGambles": 1,
+							"gambling.wins": Number(coinChange > 0),
+							"gambling.losses": Number(coinChange < 0),
+							"gambling.totalCoinsGambled":
+								COIN_GAMBLE_COST,
+							"gambling.totalCoinsWon": Math.max(
+								0,
+								coinChange,
+							),
+							"gambling.totalCoinsLost": Math.min(
+								0,
+								coinChange,
+							),
+						},
+					});
 					devLog(
 						`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`,
 						"micro",
@@ -638,11 +677,29 @@ const gambleCommand = {
 			let wins = 0;
 			let losses = 0;
 			let breakEvens = 0;
+			let totalCoinsWon = 0;
+			let totalCoinsLost = 0;
+			let highestCoinWin = 0;
+			let highestCoinLoss = 0;
 			for (let i = 0; i < gamblesCount; i++) {
 				const winAmount = rollCoinPayout();
-				coinsDelta += winAmount - COIN_GAMBLE_COST;
-				if (winAmount > COIN_GAMBLE_COST) wins++;
-				else if (winAmount < COIN_GAMBLE_COST) losses++;
+				const coinChange = winAmount - COIN_GAMBLE_COST;
+				coinsDelta += coinChange;
+				if (coinChange > 0) {
+					wins++;
+					totalCoinsWon += coinChange;
+					highestCoinWin = Math.max(
+						highestCoinWin,
+						coinChange,
+					);
+				} else if (coinChange < 0) {
+					losses++;
+					totalCoinsLost += coinChange;
+					highestCoinLoss = Math.min(
+						highestCoinLoss,
+						coinChange,
+					);
+				}
 				else breakEvens++;
 			}
 
@@ -653,6 +710,17 @@ const gambleCommand = {
 				inventory.horseCoins =
 					(inventory.horseCoins || 0) + coinsDelta;
 				await inventory.save();
+				await recordUserStats(interaction.user.id, {
+					increments: {
+						"gambling.totalGambles": gamblesCount,
+						"gambling.wins": wins,
+						"gambling.losses": losses,
+						"gambling.totalCoinsGambled":
+							gamblesCount * COIN_GAMBLE_COST,
+						"gambling.totalCoinsWon": totalCoinsWon,
+						"gambling.totalCoinsLost": totalCoinsLost,
+					},
+				});
 				devLog(
 					`/horsegamble: Saved user ${interaction.user.id} bulk coin balance: ${inventory.horseCoins}`,
 				);
@@ -802,6 +870,16 @@ const gambleCommand = {
 			const cycleLogBlocks = [];
 			let haltedEarly = false;
 			let haltReason = "";
+			let cycleWins = 0;
+			let cycleLosses = 0;
+			let cycleTotalLosses = 0;
+			let cycleDollarsGambled = 0;
+			let cycleDollarsWon = 0;
+			let cycleDollarsLost = 0;
+			let cycleCoinsGambled = 0;
+			let cycleHighestWin = 0;
+			let cycleHighestLoss = 0;
+			let cycleGambles = 0;
 
 			for (let c = 1; c <= cycles; c++) {
 				devLog(
@@ -894,6 +972,26 @@ const gambleCommand = {
 					cycleHorses,
 					virtualInv,
 					currentCostPerHorse,
+				);
+				cycleWins += result.wins;
+				cycleLosses += result.losses;
+				cycleTotalLosses += result.completeLosses;
+				cycleGambles +=
+					result.wins +
+					result.losses +
+					result.completeLosses +
+					result.noChange;
+				cycleDollarsGambled += result.dollarsGambled;
+				cycleDollarsWon += result.dollarsWon;
+				cycleDollarsLost += result.dollarsLost;
+				cycleCoinsGambled += result.coinsSpent;
+				cycleHighestWin = Math.max(
+					cycleHighestWin,
+					result.highestWin,
+				);
+				cycleHighestLoss = Math.min(
+					cycleHighestLoss,
+					result.highestLoss,
 				);
 				devLog(
 					`/horsegamble: Cycle ${c} results: wins=${result.wins} losses=${result.losses} completeLosses=${result.completeLosses} netChange=${result.netValueChange}`,
@@ -1056,10 +1154,30 @@ const gambleCommand = {
 				const {
 					newStreak: cycleStreak,
 					awarded: cycleAwarded,
-				} = updateStreak(
+				} = await updateStreak(
 					interaction.user.id,
 					totalNetChange > 0,
 				);
+				await recordUserStats(interaction.user.id, {
+					increments: {
+						"gambling.totalGambles": cycleGambles,
+						"gambling.wins": cycleWins,
+						"gambling.losses":
+							cycleLosses + cycleTotalLosses,
+						"gambling.totalDollarsGambled":
+							cycleDollarsGambled,
+						"gambling.totalDollarsWon": cycleDollarsWon,
+						"gambling.totalDollarsLost": cycleDollarsLost,
+						"gambling.totalCoinsGambled":
+							cycleCoinsGambled,
+					},
+					maxima: {
+						"gambling.highestWin": cycleHighestWin,
+					},
+					minima: {
+						"gambling.highestLoss": cycleHighestLoss,
+					},
+				});
 				if (cycleAwarded) {
 					inventory.horses.set(
 						STREAK_HORSE,
@@ -1202,8 +1320,23 @@ const gambleCommand = {
 						(houseInv.horses.get(slug) || 0) + 1,
 					);
 					await houseInv.save();
-					await inventory.save();
-					updateStreak(interaction.user.id, false);
+					await updateStreak(interaction.user.id, false);
+					await recordUserStats(interaction.user.id, {
+						increments: {
+							"gambling.totalGambles": 1,
+							"gambling.losses": 1,
+							"gambling.totalDollarsGambled":
+								HORSE_VALUES[slug].value,
+							"gambling.totalDollarsLost":
+								-HORSE_VALUES[slug].value,
+							"gambling.totalCoinsGambled":
+								costPerHorse,
+						},
+						minima: {
+							"gambling.highestLoss":
+								-HORSE_VALUES[slug].value,
+						},
+					});
 					return interaction.editReply(
 						`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`,
 					);
@@ -1213,6 +1346,7 @@ const gambleCommand = {
 			const now = Date.now();
 			const lastGamble = isTest ? 0 : inventory.lastGamble || 0;
 			let frenzyMessage = "";
+			let frenzyGambles = 0;
 
 			if (
 				!isTest &&
@@ -1243,6 +1377,7 @@ const gambleCommand = {
 				}
 
 				if (victims.length > 0) {
+					frenzyGambles = victims.length;
 					frenzyMessage = `\n\n🔥 **GAMBLING FRENZY!** You got too excited! You accidentally put ${victims.length} more horses into the pit:`;
 					for (const victim of victims) {
 						inventory.horses.set(
@@ -1311,10 +1446,26 @@ const gambleCommand = {
 					);
 					await houseInv.save();
 					await inventory.save();
+					await recordUserStats(interaction.user.id, {
+						increments: {
+							"gambling.totalGambles": 1 + frenzyGambles,
+							"gambling.losses": 1,
+							"gambling.totalDollarsGambled":
+								startValue,
+							"gambling.totalDollarsLost": -startValue,
+							"gambling.totalCoinsGambled":
+								costPerHorse,
+						},
+						minima: {
+							"gambling.highestLoss": -startValue,
+						},
+					});
 				}
 
 				const testTag = isTest ? " *(test)*" : "";
-				if (!isTest) updateStreak(interaction.user.id, false);
+				if (!isTest) {
+					await updateStreak(interaction.user.id, false);
+				}
 				if (!isTest)
 					conditionHorse(inventory, { interaction }).catch(
 						(error) =>
@@ -1385,6 +1536,35 @@ const gambleCommand = {
 
 				inventory.lastGamble = Date.now();
 				await inventory.save();
+				await recordUserStats(interaction.user.id, {
+					increments: {
+						"gambling.totalGambles": 1 + frenzyGambles,
+						"gambling.wins": Number(actualDiff > 0),
+						"gambling.losses": Number(actualDiff < 0),
+						"gambling.totalDollarsGambled": startValue,
+						"gambling.totalDollarsWon": Math.max(
+							0,
+							actualDiff,
+						),
+						"gambling.totalDollarsLost": Math.min(
+							0,
+							actualDiff,
+						),
+						"gambling.totalCoinsGambled": costPerHorse,
+					},
+					maxima: {
+						"gambling.highestWin": Math.max(
+							0,
+							actualDiff,
+						),
+					},
+					minima: {
+						"gambling.highestLoss": Math.min(
+							0,
+							actualDiff,
+						),
+					},
+				});
 			}
 
 			let outcomeMessage = "";
@@ -1404,7 +1584,7 @@ const gambleCommand = {
 			let singleStreakMessage = "";
 			if (!isTest) {
 				const isNetWin = actualDiff > 0;
-				const { newStreak, awarded } = updateStreak(
+				const { newStreak, awarded } = await updateStreak(
 					interaction.user.id,
 					isNetWin,
 				);
@@ -1444,6 +1624,11 @@ const gambleCommand = {
 		let totalNoChange = 0;
 		let coinsSpent = 0;
 		let netValueChange = 0;
+		let totalDollarsGambled = 0;
+		let totalDollarsWon = 0;
+		let totalDollarsLost = 0;
+		let highestWin = 0;
+		let highestLoss = 0;
 		const gained = new Map();
 		const costPerHorse = calculateCoinCostPerHorse(
 			isTest ? 100 : inventory.horseCoins || 0,
@@ -1466,6 +1651,10 @@ const gambleCommand = {
 			} else {
 				inventory.horseCoins -= costPerHorse;
 				coinsSpent += costPerHorse;
+			}
+			const startValue = HORSE_VALUES[slug].value;
+			totalDollarsGambled += startValue;
+			if (!isTest) {
 				if (
 					inventory.horseCoins < 0 &&
 					Math.random() < config.CONFISCATE_CHANCE
@@ -1478,13 +1667,14 @@ const gambleCommand = {
 						slug,
 						(houseInv.horses.get(slug) || 0) + 1,
 					);
-					netValueChange -= HORSE_VALUES[slug].value;
+					netValueChange -= startValue;
+					totalDollarsLost -= startValue;
+					highestLoss = Math.min(highestLoss, -startValue);
 					totalCompleteLosses++;
 					continue;
 				}
 			}
 
-			const startValue = HORSE_VALUES[slug].value;
 			const change =
 				Math.floor(Math.random() * rollFactor) + minRoll;
 			const targetValue = startValue + change;
@@ -1505,6 +1695,8 @@ const gambleCommand = {
 				}
 
 				netValueChange -= startValue;
+				totalDollarsLost -= startValue;
+				highestLoss = Math.min(highestLoss, -startValue);
 				totalCompleteLosses++;
 			} else {
 				const closestSlug = getClosestHorse(targetValue);
@@ -1567,8 +1759,21 @@ const gambleCommand = {
 						(gained.get(closestSlug) || 0) + 1,
 					);
 					netValueChange += actualDiff;
-					if (actualDiff >= 0) totalWins++;
-					else totalLosses++;
+					if (actualDiff > 0) {
+						totalWins++;
+						totalDollarsWon += actualDiff;
+						highestWin = Math.max(
+							highestWin,
+							actualDiff,
+						);
+					} else if (actualDiff < 0) {
+						totalLosses++;
+						totalDollarsLost += actualDiff;
+						highestLoss = Math.min(
+							highestLoss,
+							actualDiff,
+						);
+					}
 				}
 			}
 		}
@@ -1581,10 +1786,29 @@ const gambleCommand = {
 			);
 			inventory.lastGamble = now;
 			// Streak: bulk counts as one outcome based on net value
-			const { newStreak, awarded } = updateStreak(
+			const { newStreak, awarded } = await updateStreak(
 				interaction.user.id,
 				netValueChange > 0,
 			);
+			await recordUserStats(interaction.user.id, {
+				increments: {
+					"gambling.totalGambles":
+						totalWins +
+						totalLosses +
+						totalCompleteLosses +
+						totalNoChange,
+					"gambling.wins": totalWins,
+					"gambling.losses":
+						totalLosses + totalCompleteLosses,
+					"gambling.totalDollarsGambled":
+						totalDollarsGambled,
+					"gambling.totalDollarsWon": totalDollarsWon,
+					"gambling.totalDollarsLost": totalDollarsLost,
+					"gambling.totalCoinsGambled": coinsSpent,
+				},
+				maxima: { "gambling.highestWin": highestWin },
+				minima: { "gambling.highestLoss": highestLoss },
+			});
 			if (awarded) {
 				inventory.horses.set(
 					STREAK_HORSE,
@@ -1746,4 +1970,6 @@ const gambleCommand = {
 	},
 };
 
-export default gambleCommand;
+export const data = gambleCommand.data;
+export const autocomplete = gambleCommand.autocomplete;
+export const execute = gambleCommand.execute;
