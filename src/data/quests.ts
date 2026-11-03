@@ -30,10 +30,10 @@ function thresholdQuest(
 	getValue: (stats: ITimeframeStats) => number,
 	target: number,
 	reward: Quest["reward"] = difficulty === "easy"
-		? { coins: 2 }
+		? { coins: 4 }
 		: difficulty === "medium"
-			? { horse: "labor_wage", coins: 3 }
-			: { horse: "logic_reason", coins: 5 },
+			? { horse: "gildedness_stratification", coins: 6 }
+			: { horse: "brightness_prosperity", coins: 10 },
 ): Quest {
 	return {
 		name,
@@ -55,7 +55,7 @@ const dailyQuests: Record<string, Quest> = {
 		isCompleted: ({ gambling }) => gambling.totalGambles >= 5,
 		getCompletion: ({ gambling }) =>
 			Math.min(gambling.totalGambles, 5) / 5,
-		reward: { coins: 2 },
+		reward: { coins: 4 },
 		difficulty: "easy",
 		category: "gambling",
 	},
@@ -74,7 +74,7 @@ const dailyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.totalDollarsWon,
 		50,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	gambleWinDollars100: thresholdQuest(
 		"Win $100 Gambling",
@@ -99,7 +99,7 @@ const dailyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.highestWin,
 		25,
-		{ coins: 2 },
+		{ coins: 4 },
 	),
 	gambleHighestWin50: thresholdQuest(
 		"Win $50 in One Gamble",
@@ -132,7 +132,7 @@ const dailyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.totalCoinsWon,
 		4,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	gambleCoins8: thresholdQuest(
 		"Win 8 Horse Coins",
@@ -156,7 +156,7 @@ const dailyQuests: Record<string, Quest> = {
 		isCompleted: ({ gambling }) => gambling.wins >= 3,
 		getCompletion: ({ gambling }) =>
 			Math.min(1, gambling.wins / 3),
-		reward: { horse: "common_horse", coins: 3 },
+		reward: { horse: "employment_sweeping", coins: 6 },
 		difficulty: "medium",
 		category: "gambling",
 	},
@@ -167,7 +167,7 @@ const dailyQuests: Record<string, Quest> = {
 		isCompleted: ({ gambling }) => gambling.wins >= 10,
 		getCompletion: ({ gambling }) =>
 			Math.min(1, gambling.wins / 10),
-		reward: { horse: "logic_reason", coins: 5 },
+		reward: { horse: "brightness_prosperity", coins: 10 },
 		difficulty: "hard",
 		category: "gambling",
 	},
@@ -179,7 +179,10 @@ const dailyQuests: Record<string, Quest> = {
 			gambling.highestGamblingStreak >= 4,
 		getCompletion: ({ gambling }) =>
 			Math.min(1, gambling.highestGamblingStreak / 4),
-		reward: { horse: "patience_wisdom", coins: 5 },
+		reward: {
+			horse: "coding_hacking",
+			coins: 10,
+		},
 		difficulty: "hard",
 		category: "gambling",
 	},
@@ -190,7 +193,7 @@ const dailyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.totalSpawns,
 		1,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawnFiveHorses: thresholdQuest(
 		"Get 5 Horse Spawns",
@@ -215,7 +218,7 @@ const dailyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.totalSpawnsValue,
 		75,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawnValue100: thresholdQuest(
 		"Spawn $100 Worth of Horses",
@@ -224,7 +227,7 @@ const dailyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.totalSpawnsValue,
 		100,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawnValue125: thresholdQuest(
 		"Spawn $125 Worth of Horses",
@@ -265,7 +268,7 @@ const dailyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.highestValueSpawn,
 		75,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawnBestHorse100: thresholdQuest(
 		"Spawn a Horse Worth $100",
@@ -290,7 +293,7 @@ const dailyQuests: Record<string, Quest> = {
 		"donations",
 		({ donations }) => donations.horsesGiven,
 		1,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	donateHorseValue50: thresholdQuest(
 		"Donate $50 in Horses",
@@ -315,7 +318,7 @@ const dailyQuests: Record<string, Quest> = {
 		"races",
 		({ races }) => races.racesLost,
 		1,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	completeTrade: thresholdQuest(
 		"Complete a Trade",
@@ -324,7 +327,7 @@ const dailyQuests: Record<string, Quest> = {
 		"trade",
 		({ trades }) => trades.tradesCompleted,
 		1,
-		{ horse: "common_horse", coins: 3 },
+		{ horse: "employment_sweeping", coins: 6 },
 	),
 	tradeValueReceived50: thresholdQuest(
 		"Receive $50 in Trades",
@@ -358,7 +361,7 @@ const dailyQuests: Record<string, Quest> = {
 			races.racesLost + races.racesWon >= 1,
 		getCompletion: ({ races }) =>
 			Math.min(1, races.racesLost + races.racesWon),
-		reward: { coins: 2 },
+		reward: { coins: 4 },
 		difficulty: "easy",
 		category: "races",
 	},
@@ -368,7 +371,7 @@ const dailyQuests: Record<string, Quest> = {
 			"Use `/race start` to challenge someone to a race.\n\nBoth players need a trained horse. Train one with `/horses train`.",
 		isCompleted: ({ races }) => races.racesWon >= 1,
 		getCompletion: ({ races }) => Math.min(1, races.racesWon),
-		reward: { horse: "logic_reason", coins: 3 },
+		reward: { horse: "brightness_prosperity", coins: 6 },
 		difficulty: "medium",
 		category: "races",
 	},
@@ -377,7 +380,10 @@ const dailyQuests: Record<string, Quest> = {
 		description: "Use your daily beg using `/horses beg`.",
 		isCompleted: ({ begs }) => begs.begs >= 1,
 		getCompletion: ({ begs }) => Math.min(1, begs.begs / 1),
-		reward: { horse: "peasantry_beggary", coins: 2 },
+		reward: {
+			horse: "employment_sweeping",
+			coins: 4,
+		},
 		difficulty: "easy",
 		category: "begs",
 	},
@@ -406,7 +412,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.wins,
 		10,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	winGambling20Times: thresholdQuest(
 		"Win 20 Times Gambling",
@@ -447,7 +453,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.totalDollarsWon,
 		300,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	gambleWinDollars500: thresholdQuest(
 		"Win $500 Gambling",
@@ -496,7 +502,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"gambling",
 		({ gambling }) => gambling.totalCoinsWon,
 		30,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	gambleCoins35: thresholdQuest(
 		"Win 35 Horse Coins",
@@ -537,7 +543,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.totalSpawns,
 		8,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawn12Horses: thresholdQuest(
 		"Get 12 Horse Spawns",
@@ -578,7 +584,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.totalSpawnsValue,
 		300,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	spawnValue500: thresholdQuest(
 		"Spawn $500 Worth of Horses",
@@ -643,7 +649,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"races",
 		({ races }) => races.racesParticipated,
 		5,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	participateInTenRaces: thresholdQuest(
 		"Participate in 10 Horse Races",
@@ -676,7 +682,7 @@ const weeklyQuests: Record<string, Quest> = {
 		"trade",
 		({ trades }) => trades.tradesCompleted,
 		4,
-		{ horse: "common_horse", coins: 2 },
+		{ horse: "employment_sweeping", coins: 4 },
 	),
 	completeEightTrades: thresholdQuest(
 		"Complete 8 Trades",
@@ -749,7 +755,7 @@ const weeklyQuests: Record<string, Quest> = {
 			"Beg at least six times this week using `/horses beg`.",
 		isCompleted: ({ begs }) => begs.begs >= 6,
 		getCompletion: ({ begs }) => Math.min(1, begs.begs / 6),
-		reward: { horse: "labor_wage", coins: 3 },
+		reward: { horse: "gildedness_stratification", coins: 6 },
 		difficulty: "medium",
 		category: "begs",
 	},

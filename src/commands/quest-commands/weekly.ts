@@ -13,6 +13,13 @@ export const data = new SlashCommandSubcommandBuilder()
 			.setDescription(
 				"Disable automatic claiming for this request",
 			),
+	)
+	.addBooleanOption((option) =>
+		option
+			.setName("ephemeral")
+			.setDescription(
+				"Show the quest list only to you (defaults to true)",
+			),
 	);
 
 export async function execute(

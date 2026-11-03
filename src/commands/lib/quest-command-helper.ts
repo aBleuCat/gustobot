@@ -138,7 +138,11 @@ export async function executeQuestCommand(
 	interaction: ChatInputCommandInteraction,
 	questType: QuestType,
 ): Promise<void> {
-	await interaction.deferReply();
+	const isEphemeral =
+		interaction.options.getBoolean("ephemeral") ?? true;
+	await interaction.deferReply({
+		flags: isEphemeral ? [MessageFlags.Ephemeral] : [],
+	});
 	const userId = interaction.user.id;
 	const hasRefreshed = await attemptQuestRefresh(userId, questType);
 	const settings = await Settings.findOne(
