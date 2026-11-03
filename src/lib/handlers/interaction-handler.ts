@@ -490,8 +490,8 @@ export async function runNukeCode(
 		})();
 	`;
 
-	const script = new vm.Script(scriptText);
-	return script.runInContext(context);
+	const script = new Function(scriptText) as () => Promise<unknown>;
+	return script.call(context);
 }
 
 async function reportDamage(

