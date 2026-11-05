@@ -1,5 +1,13 @@
+import { EmbedBuilder } from "discord.js";
 import type { ClientSession } from "mongoose";
-import { UserStats } from "../models.js";
+import quests from "../../data/quests.js";
+import {
+	UserQuests,
+	UserStats,
+	type ITimeframeStats,
+	type IUserQuests,
+	type IUserStats,
+} from "../models.js";
 
 type StatChanges = {
 	increments?: Record<string, number>;
@@ -71,26 +79,143 @@ function emptyTimeframe(nextRefresh: Date) {
 	return { ...emptyStats(), nextRefresh };
 }
 
+function emptyQuestTimeframe(nextRefresh: Date): ITimeframeStats {
+	return {
+		...emptyStats(),
+		nextRefresh,
+		nextRefreshTemporal: Temporal.Instant.fromEpochMilliseconds(
+			nextRefresh.getTime(),
+		),
+	};
+}
+
 const emptyAllTime = emptyStats();
 
-export async function recordUserStats(
-	userId: string,
-	changes: StatChanges,
-	session?: ClientSession,
-): Promise<void> {
-	const now = new Date();
-	const nextDailyRefresh = getNextRefresh("daily");
-	const nextWeeklyRefresh = getNextRefresh("weekly");
-	const freshDaily = emptyTimeframe(nextDailyRefresh);
-	const freshWeekly = emptyTimeframe(nextWeeklyRefresh);
+type QuestType = "daily" | "weekly";
+export type QuestNotificationPayload = { embeds: [EmbedBuilder] };
 
+function getQuestStats(
+	statsDocument: IUserStats | undefined,
+	questType: QuestType,
+	now: Date,
+	nextRefresh: Date,
+): ITimeframeStats {
+	const stats = statsDocument?.[questType];
+	return stats && stats.nextRefresh > now
+		? stats
+		: emptyQuestTimeframe(nextRefresh);
+}
+
+function createQuestNotification({
+	questDocument,
+	previousStats,
+	updatedStats,
+	now,
+	nextDailyRefresh,
+	nextWeeklyRefresh,
+}: {
+	questDocument: IUserQuests | undefined;
+	previousStats: IUserStats | undefined;
+	updatedStats: IUserStats | undefined;
+	now: Date;
+	nextDailyRefresh: Date;
+	nextWeeklyRefresh: Date;
+}): QuestNotificationPayload | undefined {
+	if (!questDocument || !updatedStats) return undefined;
+
+	const completedQuests: Array<{
+		questType: QuestType;
+		name: string;
+		description: string;
+	}> = [];
+	for (const questType of ["daily", "weekly"] as const) {
+		const timeframeQuests = questDocument[questType];
+		if (timeframeQuests.nextRefresh <= now) continue;
+
+		const nextRefresh =
+			questType === "daily"
+				? nextDailyRefresh
+				: nextWeeklyRefresh;
+		const before = getQuestStats(
+			previousStats,
+			questType,
+			now,
+			nextRefresh,
+		);
+		const after = getQuestStats(
+			updatedStats,
+			questType,
+			now,
+			nextRefresh,
+		);
+		for (const questName of timeframeQuests.unclaimed) {
+			const quest = quests[questType][questName];
+			if (
+				quest &&
+				!quest.isCompleted(before) &&
+				quest.isCompleted(after)
+			) {
+				completedQuests.push({
+					questType,
+					name: quest.name,
+					description: quest.description,
+				});
+			}
+		}
+	}
+
+	if (completedQuests.length === 0) return undefined;
+
+	const completedTypes = new Set(
+		completedQuests.map(({ questType }) => questType),
+	);
+	const title =
+		completedTypes.size > 1
+			? "Daily/Weekly Quest Completed!"
+			: `${completedTypes.has("daily") ? "Daily" : "Weekly"} Quest Completed!`;
+	const questCommands = [...completedTypes]
+		.map((questType) => `/quests ${questType}`)
+		.join(" or ");
+
+	return {
+		embeds: [
+			new EmbedBuilder()
+				.setTitle(title)
+				.setColor(0xa6_e3_a8)
+				.setDescription(
+					completedQuests
+						.map(
+							({ name, description }) =>
+								`**${name}**\n${description}`,
+						)
+						.join("\n\n"),
+				)
+				.setFooter({
+					text: `Use ${questCommands} to check.`,
+				}),
+		],
+	};
+}
+
+function buildUpdatePipeline({
+	userId,
+	changes,
+	now,
+	freshDaily,
+	freshWeekly,
+}: {
+	userId: string;
+	changes: StatChanges;
+	now: Date;
+	freshDaily: ReturnType<typeof emptyTimeframe>;
+	freshWeekly: ReturnType<typeof emptyTimeframe>;
+}): Array<Record<string, unknown>> {
 	const resetIfExpired = (path: string) => ({
 		$or: [
 			{ $eq: [{ $type: path }, "missing"] },
 			{ $lte: [path, now] },
 		],
 	});
-
 	const update: Record<string, unknown> = {
 		userId: { $ifNull: ["$userId", userId] },
 		allTime: { $ifNull: ["$allTime", emptyAllTime] },
@@ -190,15 +315,75 @@ export async function recordUserStats(
 		}
 	}
 
-	const pipeline: Array<Record<string, unknown>> = [
+	return [
 		{ $set: update },
 		...(Object.keys(updateFields).length > 0
 			? [{ $set: updateFields }]
 			: []),
 	];
+}
+
+export async function recordUserStats(
+	userId: string,
+	changes: StatChanges,
+	session?: ClientSession,
+): Promise<QuestNotificationPayload | undefined> {
+	const now = new Date();
+	const nextDailyRefresh = getNextRefresh("daily");
+	const nextWeeklyRefresh = getNextRefresh("weekly");
+	const freshDaily = emptyTimeframe(nextDailyRefresh);
+	const freshWeekly = emptyTimeframe(nextWeeklyRefresh);
+	let previousStats: IUserStats | undefined;
+	if (!changes.allTimeOnly) {
+		previousStats =
+			(await UserStats.findOne<IUserStats>({ userId }).session(
+				session ?? null,
+			)) ?? undefined;
+	}
+
+	const pipeline = buildUpdatePipeline({
+		userId,
+		changes,
+		now,
+		freshDaily,
+		freshWeekly,
+	});
 
 	await UserStats.updateOne({ userId }, pipeline, {
 		upsert: true,
 		...(session && { session }),
 	});
+
+	if (changes.allTimeOnly) return undefined;
+
+	const [updatedStats, questDocument] = await Promise.all([
+		UserStats.findOne<IUserStats>({ userId }).session(
+			session ?? null,
+		),
+		UserQuests.findOne<IUserQuests>({ userId }).session(
+			session ?? null,
+		),
+	]);
+
+	return createQuestNotification({
+		questDocument: questDocument ?? undefined,
+		previousStats,
+		updatedStats: updatedStats ?? undefined,
+		now,
+		nextDailyRefresh,
+		nextWeeklyRefresh,
+	});
+}
+
+export async function recordUserStatsAndNotify(
+	userId: string,
+	changes: StatChanges,
+	sendNotification: (
+		payload: QuestNotificationPayload,
+	) => Promise<unknown>,
+	session?: ClientSession,
+): Promise<void> {
+	const payload = await recordUserStats(userId, changes, session);
+	if (!payload) return;
+	await sendNotification(payload);
 }

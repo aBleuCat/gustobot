@@ -241,7 +241,7 @@ export async function execute(
 
 	const applied = await applyTradeResult(result);
 
-	void interaction.editReply({
+	await interaction.editReply({
 		embeds: [
 			applied.success
 				? buildAcceptedEmbed(result)
@@ -249,4 +249,11 @@ export async function execute(
 		],
 		components: [],
 	});
+	if (!applied.success) return;
+
+	await Promise.all(
+		applied.notifications.map((notification) =>
+			interaction.followUp(notification),
+		),
+	);
 }

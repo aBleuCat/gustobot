@@ -3,7 +3,7 @@ import { EmbedBuilder, type Message } from "discord.js";
 import { config } from "../../lib/config.js";
 import type { ITrainedHorsesProps } from "../../lib/models.js";
 import { randItem } from "../../lib/helpers/random-helpers.js";
-import { recordUserStats } from "../../lib/helpers/user-stats.js";
+import { recordUserStatsAndNotify } from "../../lib/helpers/user-stats.js";
 import type { ReadyRaceChallenge } from "./horse-race-challenge.js";
 
 const {
@@ -301,9 +301,13 @@ export async function executeRace(
 	if (final) {
 		await Promise.all(
 			final.map(async (horse) =>
-				recordUserStats(horse.userId, {
-					increments: { "races.racesParticipated": 1 },
-				}),
+				recordUserStatsAndNotify(
+					horse.userId,
+					{
+						increments: { "races.racesParticipated": 1 },
+					},
+					(payload) => message.reply(payload),
+				),
 			),
 		);
 	}
@@ -320,13 +324,17 @@ export async function executeRace(
 
 		await Promise.all(
 			final.map(async (horse) =>
-				recordUserStats(horse.userId, {
-					increments: {
-						...(horse.userId === winnerId
-							? { "races.racesWon": 1 }
-							: { "races.racesLost": 1 }),
+				recordUserStatsAndNotify(
+					horse.userId,
+					{
+						increments: {
+							...(horse.userId === winnerId
+								? { "races.racesWon": 1 }
+								: { "races.racesLost": 1 }),
+						},
 					},
-				}),
+					(payload) => message.reply(payload),
+				),
 			),
 		);
 	}

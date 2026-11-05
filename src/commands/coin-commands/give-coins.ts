@@ -74,7 +74,7 @@ export async function execute(
 
 	await sender.save();
 	await receiver.save();
-	await Promise.all([
+	const questNotifications = await Promise.all([
 		recordUserStats(sender.userId, {
 			increments: { "donations.totalGiven": amount },
 			maxima: { "donations.highestGiven": amount },
@@ -85,7 +85,12 @@ export async function execute(
 		}),
 	]);
 
-	return interaction.reply(
+	await interaction.reply(
 		`<@${interaction.user.id}> gave 🪙 **${amount}** Horse Coin${amount === 1 ? "" : "s"} to <@${target.id}>!`,
+	);
+	await Promise.all(
+		questNotifications.flatMap((notification) =>
+			notification ? [interaction.followUp(notification)] : [],
+		),
 	);
 }

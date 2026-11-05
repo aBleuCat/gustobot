@@ -195,7 +195,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 	}
 
 	if (isBegClaimable) {
-		await recordUserStats(userId, {
+		const questNotification = await recordUserStats(userId, {
 			increments: { "begs.begs": 1 },
 		});
 		const streakResetMessage = didLoseBegStreak
@@ -204,6 +204,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 		await interaction.reply({ 
 			content: `${streakResetMessage}${describeReward(reward, rewardQuality)}\n\n${describeStreakReward(streakReward, begStreak)}` 
 		});
+		if (questNotification) {
+			await interaction.followUp(questNotification);
+		}
 		return;
 	}
 

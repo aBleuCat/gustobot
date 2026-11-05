@@ -141,7 +141,7 @@ export async function execute(
 	await giverInv.save();
 	await receiverInv.save();
 	const donatedValue = horseItemValue(horseSlug) * amount;
-	await Promise.all([
+	const questNotifications = await Promise.all([
 		recordUserStats(giverInv.userId, {
 			increments: {
 				"donations.totalGiven": donatedValue,
@@ -169,6 +169,11 @@ export async function execute(
 			? `You offered **${horseCount}** to me! Nom nom nom.`
 			: `You gave **${horseCount}** to <@${targetUser.id}>!`;
 	await interaction.reply({ content: message });
+	await Promise.all(
+		questNotifications.flatMap((notification) =>
+			notification ? [interaction.followUp(notification)] : [],
+		),
+	);
 
 	logToModChannel(
 		interaction.guild,

@@ -14,7 +14,10 @@ import { config } from "../../lib/config.js";
 import dictToEmbed from "../../lib/helpers/embed-helpers.js";
 import { horseName } from "../../lib/helpers/horse-funcs.js";
 import { horseItemValue } from "../../lib/helpers/horse-leaderboard.js";
-import { recordUserStats } from "../../lib/helpers/user-stats.js";
+import {
+	recordUserStats,
+	type QuestNotificationPayload,
+} from "../../lib/helpers/user-stats.js";
 
 export type TradeMember = {
 	readonly id: string;
@@ -349,7 +352,8 @@ class ActiveTrade {
 }
 
 export type TradeApplyResult =
-	{ success: true } | { success: false; reason: string };
+	| { success: true; notifications: QuestNotificationPayload[] }
+	| { success: false; reason: string };
 
 function buildIncAndFilter(
 	userId: string,
@@ -389,12 +393,14 @@ export async function applyTradeResult(
 	const blueUpdate = buildIncAndFilter(blue.id, blue, red);
 
 	const session = await mongoose.startSession();
+	const notifications: QuestNotificationPayload[] = [];
 
 	try {
 		let redResult;
 		let blueResult;
 
 		await session.withTransaction(async () => {
+			notifications.length = 0;
 			redResult = await UserHorses.findOneAndUpdate(
 				redUpdate.filter,
 				{ $inc: redUpdate.inc },
@@ -428,7 +434,7 @@ export async function applyTradeResult(
 						total + horseItemValue(slug) * count,
 					0,
 				);
-				await recordUserStats(
+				const notification = await recordUserStats(
 					member.id,
 					{
 						increments: {
@@ -444,11 +450,16 @@ export async function applyTradeResult(
 					},
 					session,
 				);
+				if (notification) notifications.push(notification);
 			}
 		});
 
-		return { success: true };
-	} catch {
+		return { success: true, notifications };
+	} catch (error: unknown) {
+		if (!(error instanceof Error && error.message === "insufficient balance")) {
+			throw error;
+		}
+
 		return {
 			success: false,
 			reason: "One or both users no longer have enough coins or horses to cover this trade.",

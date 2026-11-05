@@ -23,7 +23,7 @@ import devLog from "../helpers/dev-log.js";
 import queueMessage from "../helpers/message-queue.js";
 import type { HorseData } from "../../types.js";
 import { randItem } from "../helpers/random-helpers.js";
-import { recordUserStats } from "../helpers/user-stats.js";
+import { recordUserStatsAndNotify } from "../helpers/user-stats.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
@@ -83,6 +83,7 @@ function forceSingleHorse(slug: string): {
 async function applySpawnInventory(
 	userId: string,
 	spawnedCounts: Record<string, number>,
+	channel: GuildTextBasedChannel,
 ): Promise<{
 	inventory: IUserHorses;
 	coinDropSize: number | undefined;
@@ -143,7 +144,7 @@ async function applySpawnInventory(
 
 	if (!inventory) return null;
 	const spawnedEntries = Object.entries(spawnedCounts);
-	await recordUserStats(userId, {
+	await recordUserStatsAndNotify(userId, {
 		increments: {
 			"spawns.totalSpawns": spawnedEntries.reduce(
 				(total, [, count]) => total + count,
@@ -162,7 +163,7 @@ async function applySpawnInventory(
 				),
 			),
 		},
-	});
+	}, (payload) => channel.send(payload));
 	return { inventory, coinDropSize, newHorseSlugs };
 }
 
@@ -317,9 +318,9 @@ async function cacheAndCheckMessage(
 		},
 		{ upsert: true },
 	);
-	await recordUserStats(message.author.id, {
+	await recordUserStatsAndNotify(message.author.id, {
 		increments: { "spawns.messagesCounted": 1 },
-	});
+	}, (payload) => message.reply(payload));
 
 	return true;
 }
@@ -356,7 +357,7 @@ async function forceSpawnHorse(
 				);
 
 	const result = anySpawned
-		? await applySpawnInventory(userId, spawnedCounts)
+		? await applySpawnInventory(userId, spawnedCounts, channel)
 		: null;
 	const { horsesSpawnPing } = (await Settings.findOne(
 		{ userId },
@@ -446,7 +447,11 @@ async function handleHorseSpawn(message: Message) {
 	if (castedChannel instanceof Error) return;
 
 	const result = anySpawned
-		? await applySpawnInventory(message.author.id, spawnedCounts)
+		? await applySpawnInventory(
+				message.author.id,
+				spawnedCounts,
+				castedChannel,
+			)
 		: null;
 
 	sendSpawnMessages(

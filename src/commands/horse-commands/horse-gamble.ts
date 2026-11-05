@@ -16,7 +16,7 @@ import {
 	horseName,
 } from "../../lib/helpers/horse-funcs.js";
 import { UserHorses } from "../../lib/models.js";
-import { recordUserStats } from "../../lib/helpers/user-stats.js";
+import { recordUserStatsAndNotify } from "../../lib/helpers/user-stats.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 const HOUSE_USER_ID = "1469509600561729710";
@@ -44,7 +44,7 @@ function rollCoinPayout(): number {
  * isNetWin = true if net value change > 0.
  * Returns { newStreak, awarded } — awarded=true means user hit STREAK_REQUIRED.
  */
-async function updateStreak(userId, isNetWin) {
+async function updateStreak(userId, isNetWin, interaction) {
 	if (!isNetWin) {
 		await UserHorses.updateOne(
 			{ userId },
@@ -96,13 +96,13 @@ async function updateStreak(userId, isNetWin) {
 	const previousStreak =
 		previousInventory?.gamblingStreak ?? 0;
 	const awarded = previousStreak + 1 >= STREAK_REQUIRED;
-	await recordUserStats(userId, {
+	await recordUserStatsAndNotify(userId, {
 		maxima: {
 			"gambling.highestGamblingStreak": awarded
 				? STREAK_REQUIRED
 				: previousStreak + 1,
 		},
-	});
+	}, (payload) => interaction.followUp(payload));
 	return {
 		newStreak: awarded ? 0 : previousStreak + 1,
 		awarded,
@@ -638,7 +638,7 @@ const gambleCommand = {
 					inventory.horseCoins =
 						inventory.horseCoins - COIN_GAMBLE_COST + winAmount;
 					await inventory.save();
-					await recordUserStats(interaction.user.id, {
+					await recordUserStatsAndNotify(interaction.user.id, {
 						increments: {
 							"gambling.totalGambles": 1,
 							"gambling.wins": Number(coinChange > 0),
@@ -654,7 +654,7 @@ const gambleCommand = {
 								coinChange,
 							),
 						},
-					});
+					}, (payload) => interaction.followUp(payload));
 					devLog(
 						`/horsegamble: Saved user ${interaction.user.id} coin balance: ${inventory.horseCoins}`,
 						"micro",
@@ -710,7 +710,7 @@ const gambleCommand = {
 				inventory.horseCoins =
 					(inventory.horseCoins || 0) + coinsDelta;
 				await inventory.save();
-				await recordUserStats(interaction.user.id, {
+				await recordUserStatsAndNotify(interaction.user.id, {
 					increments: {
 						"gambling.totalGambles": gamblesCount,
 						"gambling.wins": wins,
@@ -720,7 +720,7 @@ const gambleCommand = {
 						"gambling.totalCoinsWon": totalCoinsWon,
 						"gambling.totalCoinsLost": totalCoinsLost,
 					},
-				});
+				}, (payload) => interaction.followUp(payload));
 				devLog(
 					`/horsegamble: Saved user ${interaction.user.id} bulk coin balance: ${inventory.horseCoins}`,
 				);
@@ -1157,8 +1157,9 @@ const gambleCommand = {
 				} = await updateStreak(
 					interaction.user.id,
 					totalNetChange > 0,
+					interaction,
 				);
-				await recordUserStats(interaction.user.id, {
+				await recordUserStatsAndNotify(interaction.user.id, {
 					increments: {
 						"gambling.totalGambles": cycleGambles,
 						"gambling.wins": cycleWins,
@@ -1177,7 +1178,7 @@ const gambleCommand = {
 					minima: {
 						"gambling.highestLoss": cycleHighestLoss,
 					},
-				});
+				}, (payload) => interaction.followUp(payload));
 				if (cycleAwarded) {
 					inventory.horses.set(
 						STREAK_HORSE,
@@ -1320,8 +1321,8 @@ const gambleCommand = {
 						(houseInv.horses.get(slug) || 0) + 1,
 					);
 					await houseInv.save();
-					await updateStreak(interaction.user.id, false);
-					await recordUserStats(interaction.user.id, {
+					await updateStreak(interaction.user.id, false, interaction);
+					await recordUserStatsAndNotify(interaction.user.id, {
 						increments: {
 							"gambling.totalGambles": 1,
 							"gambling.losses": 1,
@@ -1336,7 +1337,7 @@ const gambleCommand = {
 							"gambling.highestLoss":
 								-HORSE_VALUES[slug].value,
 						},
-					});
+					}, (payload) => interaction.followUp(payload));
 					return interaction.editReply(
 						`🚔 You gambled into debt and the **police confiscated your ${horseName(slug)}**!`,
 					);
@@ -1446,7 +1447,7 @@ const gambleCommand = {
 					);
 					await houseInv.save();
 					await inventory.save();
-					await recordUserStats(interaction.user.id, {
+					await recordUserStatsAndNotify(interaction.user.id, {
 						increments: {
 							"gambling.totalGambles": 1 + frenzyGambles,
 							"gambling.losses": 1,
@@ -1459,12 +1460,12 @@ const gambleCommand = {
 						minima: {
 							"gambling.highestLoss": -startValue,
 						},
-					});
+					}, (payload) => interaction.followUp(payload));
 				}
 
 				const testTag = isTest ? " *(test)*" : "";
 				if (!isTest) {
-					await updateStreak(interaction.user.id, false);
+					await updateStreak(interaction.user.id, false, interaction);
 				}
 				if (!isTest)
 					conditionHorse(inventory, { interaction }).catch(
@@ -1536,7 +1537,7 @@ const gambleCommand = {
 
 				inventory.lastGamble = Date.now();
 				await inventory.save();
-				await recordUserStats(interaction.user.id, {
+				await recordUserStatsAndNotify(interaction.user.id, {
 					increments: {
 						"gambling.totalGambles": 1 + frenzyGambles,
 						"gambling.wins": Number(actualDiff > 0),
@@ -1564,7 +1565,7 @@ const gambleCommand = {
 							actualDiff,
 						),
 					},
-				});
+				}, (payload) => interaction.followUp(payload));
 			}
 
 			let outcomeMessage = "";
@@ -1587,6 +1588,7 @@ const gambleCommand = {
 				const { newStreak, awarded } = await updateStreak(
 					interaction.user.id,
 					isNetWin,
+					interaction,
 				);
 				if (awarded) {
 					inventory.horses.set(
@@ -1789,8 +1791,9 @@ const gambleCommand = {
 			const { newStreak, awarded } = await updateStreak(
 				interaction.user.id,
 				netValueChange > 0,
+				interaction,
 			);
-			await recordUserStats(interaction.user.id, {
+			await recordUserStatsAndNotify(interaction.user.id, {
 				increments: {
 					"gambling.totalGambles":
 						totalWins +
@@ -1808,7 +1811,7 @@ const gambleCommand = {
 				},
 				maxima: { "gambling.highestWin": highestWin },
 				minima: { "gambling.highestLoss": highestLoss },
-			});
+			}, (payload) => interaction.followUp(payload));
 			if (awarded) {
 				inventory.horses.set(
 					STREAK_HORSE,
