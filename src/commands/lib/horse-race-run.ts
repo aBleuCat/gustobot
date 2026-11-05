@@ -1,10 +1,10 @@
-import {setTimeout as sleep} from 'node:timers/promises';
-import {EmbedBuilder, type Message} from 'discord.js';
-import {config} from '../../lib/config.js';
-import type {ITrainedHorsesProps} from '../../lib/models.js';
-import type {ReadyRaceChallenge} from './horse-race-challenge.js';
+import { setTimeout as sleep } from "node:timers/promises";
+import { EmbedBuilder, type Message } from "discord.js";
+import { config } from "../../lib/config.js";
+import type { ITrainedHorsesProps } from "../../lib/models.js";
 import { randItem } from "../../lib/helpers/random-helpers.js";
 import { recordUserStats } from "../../lib/helpers/user-stats.js";
+import type { ReadyRaceChallenge } from "./horse-race-challenge.js";
 
 const {
 	RACE_RANDOM_JITTER,
@@ -22,18 +22,21 @@ type RacingHorse = {
 };
 
 const specialHorseIcons: Record<string, string> = {
-	unicorn: '🦄',
-	dung_beetle: '🪲',
+	unicorn: "🦄",
+	dung_beetle: "🪲",
 };
 
 function createTrackDisplay(
 	users: RacingHorse[],
 	commentary: string,
 ): EmbedBuilder {
-	const tracks = Array.from({length: users.length}, () => [
-		'🚦',
-		...Array.from({length: RACE_TRACK_VISUAL_LENGTH}, () => '◻️'),
-		'🏁',
+	const tracks = Array.from({ length: users.length }, () => [
+		"🚦",
+		...Array.from(
+			{ length: RACE_TRACK_VISUAL_LENGTH },
+			() => "◻️",
+		),
+		"🏁",
 	]);
 	for (const [index, user] of users.entries()) {
 		const position =
@@ -41,41 +44,42 @@ function createTrackDisplay(
 				? RACE_TRACK_VISUAL_LENGTH
 				: Math.floor(
 						user.position /
-							(RACE_TRACK_LENGTH / RACE_TRACK_VISUAL_LENGTH),
+							(RACE_TRACK_LENGTH /
+								RACE_TRACK_VISUAL_LENGTH),
 					);
 		if (!tracks[index]) {
 			continue;
 		}
 
 		tracks[index][position + 1] =
-			specialHorseIcons[user.horse.breed] ?? '🏇';
+			specialHorseIcons[user.horse.breed] ?? "🏇";
 	}
 
 	return new EmbedBuilder()
-		.setTitle('Horse Race')
+		.setTitle("Horse Race")
 		.setDescription(commentary)
 		.addFields(
-			Array.from({length: users.length}).map((_, i) => ({
-				name: users[i]?.horse.name ?? 'Horse',
+			Array.from({ length: users.length }, (_, i) => ({
+				name: users[i]?.horse.name ?? "Horse",
 				value:
-					tracks[i]?.join('') ??
+					tracks[i]?.join("") ??
 					[
-						'🚦',
+						"🚦",
 						...Array.from(
 							{
 								length: RACE_TRACK_VISUAL_LENGTH,
 							},
-							() => '◻️',
+							() => "◻️",
 						),
-						'🏁',
-					].join(''),
+						"🏁",
+					].join(""),
 			})),
 		);
 }
 
 const commentaryStrings = {
 	lead: [
-		'$horse is in the lead!',
+		"$horse is in the lead!",
 		"$horse is first, but it's fine, first is the worst anyway",
 		"$horse has the high ground!",
 		"$horse came, $horse saw, $horse conquered",
@@ -85,10 +89,10 @@ const commentaryStrings = {
 		"$horse finds a way, or they make one!",
 	],
 	significantLead: [
-		'$horse is leaving everyone else in the dust!',
-		'$horse is humbling the competition!',
-		'Why are we just letting $horse win?',
-		'$horse is mogging their competitors',
+		"$horse is leaving everyone else in the dust!",
+		"$horse is humbling the competition!",
+		"Why are we just letting $horse win?",
+		"$horse is mogging their competitors",
 		"$horse's enemies are many, their equals are none",
 		"$horse is running like he runs from the cops!",
 		"Everyone fights for second place while $horse takes the crown",
@@ -99,8 +103,8 @@ const commentaryStrings = {
 		"$horse is a punishment from God Himself",
 	],
 	overtake: [
-		'$horse overtakes $horse2 and takes first!',
-		'$horse gallops ahead of $horse2 and takes the lead!',
+		"$horse overtakes $horse2 and takes first!",
+		"$horse gallops ahead of $horse2 and takes the lead!",
 		"It's like taking candy from a baby - $horse, to $horse2",
 		"$horse2 has lost the Mandate of Heaven. $horse takes the crown!",
 		"$horse does unto $horse2 as Brutus did unto Caesar",
@@ -111,7 +115,7 @@ function getCommentary(raceTimeline: RacingHorse[][]) {
 	const commentaryArray: string[] = [];
 	for (const [i, tick] of raceTimeline.entries()) {
 		if (i === 0) {
-			commentaryArray.push('Go!');
+			commentaryArray.push("Go!");
 			continue;
 		}
 
@@ -130,10 +134,10 @@ function getCommentary(raceTimeline: RacingHorse[][]) {
 
 		if (firstPlace.position - secondPlace.position > 300) {
 			commentaryArray.push(
-				randItem(commentaryStrings.significantLead)?.replaceAll(
-					'$horse',
-					firstPlace.horse.name,
-				) ?? 'woah',
+				randItem(
+					commentaryStrings.significantLead,
+				)?.replaceAll("$horse", firstPlace.horse.name) ??
+					"woah",
 			);
 		} else if (
 			previousFirstPlace &&
@@ -141,16 +145,19 @@ function getCommentary(raceTimeline: RacingHorse[][]) {
 		) {
 			commentaryArray.push(
 				randItem(commentaryStrings.overtake)
-					?.replaceAll('$horse', firstPlace.horse.name)
-					.replaceAll('$horse2', previousFirstPlace.horse.name) ??
-					'woah',
+					?.replaceAll(
+						"$horse2",
+						previousFirstPlace.horse.name,
+					)
+					.replaceAll("$horse", firstPlace.horse.name) ??
+					"woah",
 			);
 		} else {
 			commentaryArray.push(
 				randItem(commentaryStrings.lead)?.replaceAll(
-					'$horse',
+					"$horse",
 					firstPlace.horse.name,
-				) ?? 'woah',
+				) ?? "woah",
 			);
 		}
 	}
@@ -161,7 +168,7 @@ function getCommentary(raceTimeline: RacingHorse[][]) {
 function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 	let isExistsWinner = false;
 	const computedRace: RacingHorse[][] = [
-		horses.participants.map(({id, horse}): RacingHorse => ({
+		horses.participants.map(({ id, horse }): RacingHorse => ({
 			position: 0,
 			userId: id,
 			horse,
@@ -183,13 +190,17 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 		}
 
 		const newTick: RacingHorse[] = [];
-		for (const {position, userId, horse} of lastTick) {
+		for (const { position, userId, horse } of lastTick) {
 			const positionDelta =
 				horse.speed +
-				Math.round((Math.random() - 0.5) * 2 * RACE_RANDOM_JITTER) +
+				Math.round(
+					(Math.random() - 0.5) * 2 * RACE_RANDOM_JITTER,
+				) +
 				(morale[userId] ?? 0);
 			const newPosition =
-				positionDelta <= 0 ? position : position + positionDelta;
+				positionDelta <= 0
+					? position
+					: position + positionDelta;
 			newTick.push({
 				position: newPosition,
 				userId,
@@ -199,7 +210,9 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 
 		computedRace.push(newTick);
 		if (
-			newTick.some((horse) => horse.position >= RACE_TRACK_LENGTH)
+			newTick.some(
+				(horse) => horse.position >= RACE_TRACK_LENGTH,
+			)
 		) {
 			isExistsWinner = true;
 		}
@@ -208,34 +221,53 @@ function computeRace(horses: ReadyRaceChallenge): RacingHorse[][] {
 	return computedRace;
 }
 
-/** Calculate the amount of XP each horse deserves. Do not use this version.
- * @param final The final tick. Should be sorted from first place to last place.
+/**
+ Calculate the amount of XP each horse deserves. Do not use this version.
+ @param finalTick The final tick. Should be sorted from first place to last place.
+ @param ticksElapsed Self-explanatory
  */
 function calculateXp(finalTick: RacingHorse[], ticksElapsed: number) {
 	const xpResults: Array<RacingHorse & { xp: number }> = [];
 	const raceResults = finalTick.map((racer) => ({
 		...racer,
-		avgSpeed: ticksElapsed > 0
-			? (racer.position / ticksElapsed)
-			: 0,
+		avgSpeed:
+			ticksElapsed > 0 ? racer.position / ticksElapsed : 0,
 	}));
 	for (const [i, racer] of raceResults.entries()) {
 		const { horse, avgSpeed } = racer;
 		let xpSum = 0;
-		if (avgSpeed > horse.speed + 10) xpSum += avgSpeed - horse.speed - 10;
+		if (avgSpeed > horse.speed + 10) {
+			xpSum += avgSpeed - horse.speed - 10;
+		}
+
 		const beatenRacers = raceResults.slice(i + 1);
 		for (const beatenRacer of beatenRacers) {
 			if (beatenRacer.horse.speed <= horse.speed - 15) continue;
 			xpSum += (beatenRacer.horse.speed - horse.speed + 15) * 2;
 		}
+
 		for (const competitor of raceResults) {
-			if (competitor === racer) continue;
-			if (competitor.horse.speed <= horse.speed - 15) continue;
+			if (
+				competitor === racer ||
+				competitor.horse.speed <= horse.speed - 15
+			) {
+				continue;
+			}
+
 			xpSum += competitor.horse.speed - horse.speed + 15;
 		}
-		if (!raceResults.some((user) => user.position > racer.position)) xpSum *= 1.2;
+
+		if (
+			raceResults.every(
+				(user) => !(user.position > racer.position),
+			)
+		) {
+			xpSum *= 1.2;
+		}
+
 		xpResults.push({ ...racer, xp: xpSum });
 	}
+
 	return xpResults;
 }
 
@@ -250,12 +282,12 @@ export async function executeRace(
 		?.toSorted((a, b) => b.position - a.position);
 	const winner = final?.[0];
 	for (const [i, tick] of race.entries()) {
-		/* eslint-disable no-await-in-loop */
+		/* eslint-disable no-await-in-loop -- You need await in loop because these updates shouldn't happen at once */
 		await message.edit({
 			embeds: [
 				createTrackDisplay(
 					tick,
-					commentary[i] ?? 'exciting race, innit?',
+					commentary[i] ?? "exciting race, innit?",
 				),
 			],
 		});
@@ -268,13 +300,14 @@ export async function executeRace(
 	);
 	if (final) {
 		await Promise.all(
-			final.map((horse) =>
+			final.map(async (horse) =>
 				recordUserStats(horse.userId, {
 					increments: { "races.racesParticipated": 1 },
 				}),
 			),
 		);
 	}
+
 	if (final && hasRaceCompleted) {
 		const winnerId = final.find(
 			(horse) => horse.position >= RACE_TRACK_LENGTH,
@@ -284,8 +317,9 @@ export async function executeRace(
 				"Completed race has no horse at the finish line.",
 			);
 		}
+
 		await Promise.all(
-			final.map((horse) =>
+			final.map(async (horse) =>
 				recordUserStats(horse.userId, {
 					increments: {
 						...(horse.userId === winnerId
@@ -298,11 +332,11 @@ export async function executeRace(
 	}
 
 	const resultsEmbed = new EmbedBuilder()
-		.setTitle('Results')
+		.setTitle("Results")
 		.setDescription(
-			`The winner is...\n**${winner?.horse.name ?? 'no one?'}**`,
+			`The winner is...\n**${winner?.horse.name ?? "no one?"}**`,
 		);
-	const statsEmbed = new EmbedBuilder().setTitle('Speed Stats');
+	const statsEmbed = new EmbedBuilder().setTitle("Speed Stats");
 	if (final) {
 		const players = final.map((player) => player.horse.name);
 		const finalPositions = final.map((player) =>
@@ -310,13 +344,13 @@ export async function executeRace(
 		);
 		resultsEmbed.addFields(
 			{
-				name: 'Players',
-				value: players.join('\n'),
+				name: "Players",
+				value: players.join("\n"),
 				inline: true,
 			},
 			{
-				name: 'Final Position',
-				value: finalPositions.join('\n'),
+				name: "Final Position",
+				value: finalPositions.join("\n"),
 				inline: true,
 			},
 		);
@@ -328,22 +362,22 @@ export async function executeRace(
 		const averageSpeeds = final.map((player) =>
 			ticksElapsed > 0
 				? (player.position / ticksElapsed).toFixed(2)
-				: '0.00',
+				: "0.00",
 		);
 		statsEmbed.addFields(
 			{
-				name: 'Players',
-				value: players.join('\n'),
+				name: "Players",
+				value: players.join("\n"),
 				inline: true,
 			},
 			{
-				name: 'Nominal Speed',
-				value: nominalSpeeds.join('\n'),
+				name: "Nominal Speed",
+				value: nominalSpeeds.join("\n"),
 				inline: true,
 			},
 			{
-				name: 'Average Speed',
-				value: averageSpeeds.join('\n'),
+				name: "Average Speed",
+				value: averageSpeeds.join("\n"),
 				inline: true,
 			},
 		);
@@ -351,8 +385,8 @@ export async function executeRace(
 
 	await message.edit({
 		content: hasRaceCompleted
-			? 'The race has ended.'
-			: 'This race was taking too long, so it ended.',
+			? "The race has ended."
+			: "This race was taking too long, so it ended.",
 		embeds: [resultsEmbed, statsEmbed],
 	});
 }
