@@ -9,11 +9,19 @@ import {
 function sumNumericStats(
 	totals: Record<string, unknown>,
 	stats: Record<string, unknown>,
+	maximumKeys: readonly string[] = [],
+	minimumKeys: readonly string[] = [],
 ): void {
 	for (const [key, total] of Object.entries(totals)) {
 		const stat = stats[key];
 		if (typeof total === "number" && typeof stat === "number") {
-			totals[key] = total + stat;
+			if (maximumKeys.includes(key)) {
+				totals[key] = Math.max(total, stat);
+			} else if (minimumKeys.includes(key)) {
+				totals[key] = Math.min(total, stat);
+			} else {
+				totals[key] = total + stat;
+			}
 		}
 	}
 }
@@ -67,10 +75,20 @@ function addDailyStats(
 	totals: IDailyStatsArchive["stats"],
 	stats: ITimeframeStats,
 ): void {
-	sumNumericStats(totals.gambling, stats.gambling);
-	sumNumericStats(totals.spawns, stats.spawns);
+	sumNumericStats(
+		totals.gambling,
+		stats.gambling,
+		["highestWin", "highestGamblingStreak"],
+		["highestLoss"],
+	);
+	sumNumericStats(totals.spawns, stats.spawns, [
+		"highestValueSpawn",
+	]);
 	sumNumericStats(totals.begs, stats.begs);
-	sumNumericStats(totals.donations, stats.donations);
+	sumNumericStats(totals.donations, stats.donations, [
+		"highestGiven",
+		"highestRecieved",
+	]);
 	sumNumericStats(totals.races, stats.races);
 	sumNumericStats(totals.trades, stats.trades);
 }
