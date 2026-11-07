@@ -136,6 +136,7 @@ export type IDonationUserStats = {
 	totalHorseValueRecieved: number;
 };
 export type ILeaderboardUserStats = {
+	// eslint-disable-next-line @typescript-eslint/no-restricted-types
 	highestPosition: number | null;
 };
 export type IRacesUserStats = {
@@ -190,6 +191,13 @@ export type IUserQuests = {
 	daily: ITimeframeQuests;
 	weekly: ITimeframeQuests;
 };
+export type ICatchRiddles = {
+	riddle: string;
+	answer: RegExp;
+	highestValue: number;
+	lowestValue: number;
+	weight: number;
+} & mongoose.Document;
 
 const ruleSchema = new mongoose.Schema<IRule>({
 	ruleId: String,
@@ -541,14 +549,15 @@ const userStatsSchema = new mongoose.Schema<IUserStats>({
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserStats = mongoose.model("UserStats", userStatsSchema);
 
-const dailyStatsArchiveSchema = new mongoose.Schema<IDailyStatsArchive>({
-	day: { type: String, required: true, unique: true },
-	stats: {
-		type: allTimeSubSchema,
-		required: true,
-		default: () => ({}),
-	},
-});
+const dailyStatsArchiveSchema =
+	new mongoose.Schema<IDailyStatsArchive>({
+		day: { type: String, required: true, unique: true },
+		stats: {
+			type: allTimeSubSchema,
+			required: true,
+			default: () => ({}),
+		},
+	});
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const DailyStatsArchive = mongoose.model(
 	"DailyStatsArchive",
@@ -584,6 +593,27 @@ const userQuestsSchema = new mongoose.Schema<IUserQuests>({
 export const UserQuests = mongoose.model(
 	"UserQuests",
 	userQuestsSchema,
+);
+
+const catchRiddlesSchema = new mongoose.Schema<ICatchRiddles>({
+	riddle: { type: String, required: true },
+	answer: {
+		type: mongoose.Schema.Types.Mixed,
+		required: true,
+		validate: {
+			validator: (v: unknown) => v instanceof RegExp,
+			message: "Must be a valid RegExp instance!",
+		},
+	},
+	highestValue: { type: Number, required: true },
+	lowestValue: { type: Number, required: true },
+	weight: { type: Number, default: 1 },
+});
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const CatchRiddles = mongoose.model(
+	"CatchRiddles",
+	catchRiddlesSchema,
 );
 
 // Ensure indexes are created in MongoDB
