@@ -10,14 +10,15 @@ import {
 	TextInputBuilder,
 	TextInputStyle,
 	AttachmentBuilder,
+	type ButtonInteraction,
 	type Client,
 	type Interaction,
-	type ButtonInteraction,
-	type ModalSubmitInteraction,
 	type StringSelectMenuInteraction,
+	type ModalSubmitInteraction,
 } from "discord.js";
 import { config, immutConfig } from "../config.js";
 import devLog from "../helpers/dev-log.js";
+import { activeHorseCatches } from "../helpers/horse-catch-helper.js";
 import logToModChannel, { init } from "../helpers/mod-log.js";
 import { isOrbitalOwner } from "../helpers/orbital-identity.js";
 import {
@@ -30,6 +31,7 @@ import {
 import { OrbitalScript } from "../models.js";
 import { handleCommandError } from "../helpers/error-handlers.js";
 import { castAsWebhookable } from "../../type-utils.js";
+import { randItem } from "../helpers/random-helpers.js";
 /* eslint-disable id-denylist -- Catch data uses the legacy `type` field name. */
 // Catch data store
 type CatchDataStoreValue = {
@@ -47,6 +49,25 @@ type OrbitalUiInteraction =
 	| StringSelectMenuInteraction
 	| ButtonInteraction
 	| ModalSubmitInteraction;
+const incorrectRiddleAnswerResponses = [
+	"Your lack of intelligence is spectacle in itself.",
+	"You're an idiot, my friend. But that's okay.",
+	"Some people take more time to understand these things. It's okay.",
+	"Don't worry, you'll fail next time as well. But don't give up! Your loss is funny.",
+	"Incorrecto!",
+	"Estupido!",
+	"I pity you.",
+	"I pity your mother.",
+];
+const expiredRiddleResponses = [
+	"The horse has galloped away!",
+	"No don't worry, take your time, take your time. It's just that the horse is gone.",
+];
+const beatenRiddleResponses = [
+	"Everyone is slow sometimes. But some are slower than others",
+	"Someone caught the horse before you! Better luck next time.",
+	"The horse has already found its new home. You should go home too.",
+];
 
 function startCatchDataCleanup(): void {
 	setInterval(() => {
@@ -95,6 +116,13 @@ async function handleInteraction(
 	}
 
 	if (
+		interaction.isButton() &&
+		interaction.customId.startsWith("catch_horse_")
+	) {
+		return handleHorseCatchButton(interaction);
+	}
+
+	if (
 		interaction.isStringSelectMenu() &&
 		interaction.customId === "orbital_cat"
 	) {
@@ -130,20 +158,24 @@ async function handleInteraction(
 		);
 	}
 
-	if (interaction.isModalSubmit()) {
-		if (interaction.customId.startsWith("orbital_modal:")) {
-			return handleOrbitalUiInteraction(interaction, async () =>
-				handleOrbitalModal(interaction),
-			);
-		}
+	if (!interaction.isModalSubmit()) return;
 
-		if (interaction.customId === "orbital_nuke_modal") {
-			return handleModalOrbitalNuke(interaction);
-		}
+	if (interaction.customId.startsWith("orbital_modal:")) {
+		return handleOrbitalUiInteraction(interaction, async () =>
+			handleOrbitalModal(interaction),
+		);
+	}
 
-		if (interaction.customId === "modal") {
-			return handleModalCatchAnswer(client, interaction);
-		}
+	if (interaction.customId === "orbital_nuke_modal") {
+		return handleModalOrbitalNuke(interaction);
+	}
+
+	if (interaction.customId === "modal") {
+		return handleModalCatchAnswer(client, interaction);
+	}
+
+	if (interaction.customId.startsWith("horse_catch_answer:")) {
+		return handleHorseCatchAnswer(interaction);
 	}
 }
 
@@ -155,9 +187,12 @@ async function handleOrbitalUiInteraction(
 		await handler();
 	} catch (error: unknown) {
 		console.error("Orbital UI interaction error:", error);
-		const content = "❌ An orbital action failed. Check the bot logs.";
+		const content =
+			"❌ An orbital action failed. Check the bot logs.";
 		if (interaction.deferred || interaction.replied) {
-			await interaction.editReply({ content }).catch(() => undefined);
+			await interaction
+				.editReply({ content })
+				.catch(() => undefined);
 			return;
 		}
 
@@ -259,6 +294,79 @@ async function handleButtonCatch(interaction: Interaction) {
 		);
 	modal.addLabelComponents(answerInput);
 	await interaction.showModal(modal);
+}
+
+async function handleHorseCatchButton(
+	interaction: ButtonInteraction,
+): Promise<void> {
+	const catchId = interaction.customId.slice("catch_horse_".length);
+	const activeCatch = activeHorseCatches.get(catchId);
+	if (!activeCatch || activeCatch.isExpired) {
+		await interaction.reply({
+			content: randItem(expiredRiddleResponses) ?? "The horse has galloped away.",
+		});
+		return;
+	}
+
+	const modal = new ModalBuilder()
+		.setCustomId(`horse_catch_answer:${catchId}`)
+		.setTitle("Catch the Horsey");
+	const answerInput = new LabelBuilder()
+		.setLabel("Your answer to the riddle")
+		.setTextInputComponent(
+			new TextInputBuilder()
+				.setCustomId("horse_catch_user_answer")
+				.setStyle(TextInputStyle.Short)
+				.setRequired(true),
+		);
+	modal.addLabelComponents(answerInput);
+	await interaction.showModal(modal);
+}
+
+async function handleHorseCatchAnswer(
+	interaction: ModalSubmitInteraction,
+): Promise<void> {
+	const catchId = interaction.customId.slice(
+		"horse_catch_answer:".length,
+	);
+	const userId = interaction.user.id;
+	const activeCatch = activeHorseCatches.get(catchId);
+	if (!activeCatch || activeCatch.isExpired) {
+		await interaction.reply({
+			content: `<@${userId}> ${randItem(expiredRiddleResponses) ?? "The horse has galloped away."}`,
+		});
+		return;
+	}
+
+	const userAnswer = interaction.fields
+		.getTextInputValue("horse_catch_user_answer")
+		.trim();
+	activeCatch.answer.lastIndex = 0;
+	if (!activeCatch.answer.test(userAnswer)) {
+		await interaction.reply({
+			content: `<@${userId}> ${randItem(incorrectRiddleAnswerResponses) ?? "That answer is incorrect. Try again!"}`,
+		});
+		return;
+	}
+
+	await interaction.deferReply();
+	try {
+		const claimReply = await activeCatch.claim(interaction.user.id);
+		if (claimReply) {
+			await interaction.editReply(claimReply);
+		} else {
+			await interaction.editReply(
+				activeCatch.isExpired
+					? `<@${userId}> ${randItem(expiredRiddleResponses) ?? "This horse catch has expired."}`
+					: `<@${userId}> ${randItem(beatenRiddleResponses) ?? "Someone else has already caught this horse."}`,
+			); 
+		}
+	} catch (error: unknown) {
+		console.error("Failed to claim horse", error);
+		await interaction.editReply(
+			"The horse could not be claimed. Please try again.",
+		);
+	}
 }
 
 async function handleModalOrbitalNuke(

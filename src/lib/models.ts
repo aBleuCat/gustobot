@@ -71,6 +71,7 @@ export type ISettings = {
 	horsesOptIn: boolean;
 	horsesSpawnPing: HorsesSpawnPingSetting;
 	questsAutoclaim: boolean;
+	autoRelease: boolean;
 };
 export type IMessageCache = {
 	userId: string;
@@ -122,6 +123,11 @@ export type ISpawnUserStats = {
 	highestValueSpawn: number;
 	messagesCounted: number;
 };
+export type ICatchUserStats = {
+	totalCatches: number;
+	totalCatchValue: number;
+	highestCatchValue: number;
+};
 export type IBegUserStats = {
 	begs: number;
 };
@@ -136,6 +142,7 @@ export type IDonationUserStats = {
 	totalHorseValueRecieved: number;
 };
 export type ILeaderboardUserStats = {
+	// eslint-disable-next-line @typescript-eslint/no-restricted-types
 	highestPosition: number | null;
 };
 export type IRacesUserStats = {
@@ -153,6 +160,7 @@ export type ITradeUserStats = {
 export type ITimeframeStats = {
 	gambling: IGamblingUserStats;
 	spawns: ISpawnUserStats;
+	catches: ICatchUserStats;
 	begs: IBegUserStats;
 	donations: IDonationUserStats;
 	races: IRacesUserStats;
@@ -190,6 +198,13 @@ export type IUserQuests = {
 	daily: ITimeframeQuests;
 	weekly: ITimeframeQuests;
 };
+export type ICatchRiddles = {
+	riddle: string;
+	answer: RegExp;
+	highestRarity: number;
+	lowestRarity: number;
+	weight: number;
+} & mongoose.Document;
 
 const ruleSchema = new mongoose.Schema<IRule>({
 	ruleId: String,
@@ -316,6 +331,7 @@ const settingsSchema = new mongoose.Schema<ISettings>({
 		default: horsesSpawnPingSetting.Never,
 	},
 	questsAutoclaim: { type: Boolean, default: true },
+	autoRelease: { type: Boolean, default: true },
 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const Settings = mongoose.model("Settings", settingsSchema);
@@ -406,6 +422,15 @@ const spawnStatsSubSchema = new mongoose.Schema<ISpawnUserStats>(
 	{ _id: false },
 );
 
+const catchStatsSubSchema = new mongoose.Schema<ICatchUserStats>(
+	{
+		totalCatches: { type: Number, default: 0, min: 0 },
+		totalCatchValue: { type: Number, default: 0, min: 0 },
+		highestCatchValue: { type: Number, default: 0, min: 0 },
+	},
+	{ _id: false },
+);
+
 const begStatsSubSchema = new mongoose.Schema<IBegUserStats>(
 	{
 		begs: { type: Number, default: 0, min: 0 },
@@ -483,6 +508,7 @@ const timeframeSubSchema = new mongoose.Schema<ITimeframeStats>(
 			default: () => ({}),
 		},
 		spawns: { type: spawnStatsSubSchema, default: () => ({}) },
+		catches: { type: catchStatsSubSchema, default: () => ({}) },
 		begs: { type: begStatsSubSchema, default: () => ({}) },
 		donations: {
 			type: donationStatsSubSchema,
@@ -516,6 +542,7 @@ const allTimeSubSchema = new mongoose.Schema<
 			default: () => ({}),
 		},
 		spawns: { type: spawnStatsSubSchema, default: () => ({}) },
+		catches: { type: catchStatsSubSchema, default: () => ({}) },
 		begs: { type: begStatsSubSchema, default: () => ({}) },
 		donations: {
 			type: donationStatsSubSchema,
@@ -541,14 +568,15 @@ const userStatsSchema = new mongoose.Schema<IUserStats>({
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const UserStats = mongoose.model("UserStats", userStatsSchema);
 
-const dailyStatsArchiveSchema = new mongoose.Schema<IDailyStatsArchive>({
-	day: { type: String, required: true, unique: true },
-	stats: {
-		type: allTimeSubSchema,
-		required: true,
-		default: () => ({}),
-	},
-});
+const dailyStatsArchiveSchema =
+	new mongoose.Schema<IDailyStatsArchive>({
+		day: { type: String, required: true, unique: true },
+		stats: {
+			type: allTimeSubSchema,
+			required: true,
+			default: () => ({}),
+		},
+	});
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const DailyStatsArchive = mongoose.model(
 	"DailyStatsArchive",
@@ -584,6 +612,27 @@ const userQuestsSchema = new mongoose.Schema<IUserQuests>({
 export const UserQuests = mongoose.model(
 	"UserQuests",
 	userQuestsSchema,
+);
+
+const catchRiddlesSchema = new mongoose.Schema<ICatchRiddles>({
+	riddle: { type: String, required: true },
+	answer: {
+		type: mongoose.Schema.Types.Mixed,
+		required: true,
+		validate: {
+			validator: (v: unknown) => v instanceof RegExp,
+			message: "Must be a valid RegExp instance!",
+		},
+	},
+	highestRarity: { type: Number, required: true },
+	lowestRarity: { type: Number, required: true },
+	weight: { type: Number, default: 1, min: 0 },
+});
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const CatchRiddles = mongoose.model(
+	"CatchRiddles",
+	catchRiddlesSchema,
 );
 
 // Ensure indexes are created in MongoDB

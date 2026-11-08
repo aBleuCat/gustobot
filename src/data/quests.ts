@@ -13,6 +13,7 @@ type Quest = {
 	category:
 		| "gambling"
 		| "spawns"
+		| "catches"
 		| "begs"
 		| "donations"
 		| "races"
@@ -285,6 +286,30 @@ const dailyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.highestValueSpawn,
 		150,
+	),
+	catchHorse: thresholdQuest(
+		"Catch a Horse",
+		"Solve a horse riddle and catch a horse today.",
+		"easy",
+		"catches",
+		({ catches }) => catches.totalCatches,
+		1,
+	),
+	catchValue50: thresholdQuest(
+		"Catch $50 Worth of Horses",
+		"Catch horses worth a total of at least $50 today.",
+		"medium",
+		"catches",
+		({ catches }) => catches.totalCatchValue,
+		50,
+	),
+	catchHorseValue50: thresholdQuest(
+		"Catch a Horse Worth $50",
+		"Catch a horse worth at least $50 today.",
+		"medium",
+		"catches",
+		({ catches }) => catches.highestCatchValue,
+		50,
 	),
 	donateHorse: thresholdQuest(
 		"Donate a Horse",
@@ -625,6 +650,30 @@ const weeklyQuests: Record<string, Quest> = {
 		"spawns",
 		({ spawns }) => spawns.highestValueSpawn,
 		300,
+	),
+	catchThreeHorses: thresholdQuest(
+		"Catch 3 Horses",
+		"Solve horse riddles and catch 3 horses this week.",
+		"medium",
+		"catches",
+		({ catches }) => catches.totalCatches,
+		3,
+	),
+	catchValue150: thresholdQuest(
+		"Catch $150 Worth of Horses",
+		"Catch horses worth a total of at least $150 this week.",
+		"hard",
+		"catches",
+		({ catches }) => catches.totalCatchValue,
+		150,
+	),
+	catchHorseValue100: thresholdQuest(
+		"Catch a Horse Worth $100",
+		"Catch a horse worth at least $100 this week.",
+		"hard",
+		"catches",
+		({ catches }) => catches.highestCatchValue,
+		100,
 	),
 	donateFiveHorses: thresholdQuest(
 		"Donate 5 Horses",

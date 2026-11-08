@@ -15,7 +15,8 @@ function isHorse(item: unknown): item is Horse {
 		"value" in item &&
 		typeof (item as Record<string, unknown>).value === "number" &&
 		"rarity" in item &&
-		typeof (item as Record<string, unknown>).rarity === "number" &&
+		typeof (item as Record<string, unknown>).rarity ===
+			"number" &&
 		"link" in item &&
 		typeof (item as Record<string, unknown>).link === "string"
 	);
@@ -61,7 +62,7 @@ export function castAsHorseData(
 	return data;
 }
 
-function isGuildTextBased(
+export function isGuildTextBased(
 	channel: AnyChannel,
 ): channel is GuildTextBasedChannel {
 	return channel.isTextBased() && !channel.isDMBased();

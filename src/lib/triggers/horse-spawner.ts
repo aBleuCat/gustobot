@@ -20,6 +20,7 @@ import {
 	returnAsTextBased,
 } from "../../type-utils.js";
 import devLog from "../helpers/dev-log.js";
+import { createHorseCatch } from "../helpers/horse-catch-helper.js";
 import queueMessage from "../helpers/message-queue.js";
 import type { HorseData } from "../../types.js";
 import { randItem } from "../helpers/random-helpers.js";
@@ -27,9 +28,70 @@ import { recordUserStatsAndNotify } from "../helpers/user-stats.js";
 
 const HORSE_VALUES = castAsHorseData(rawHorseValues);
 
+function rollHorseCoinReward(): number {
+	const minDrop = config.COIN_DROP_MIN ?? config.COIN_DROP_SIZE;
+	const maxDrop = config.COIN_DROP_MAX ?? config.COIN_DROP_SIZE;
+	return (
+		Math.floor(Math.random() * (maxDrop - minDrop + 1)) + minDrop
+	);
+}
+
+async function applyAutoRelease(
+	userId: string,
+	channel: GuildTextBasedChannel,
+	spawnedCounts: Record<string, number>,
+	spawnedHorses: HorseData,
+	isAutoRelease: boolean,
+): Promise<{
+	spawnedCounts: Record<string, number>;
+	spawnedHorses: HorseData;
+}> {
+	if (!isAutoRelease) return { spawnedCounts, spawnedHorses };
+
+	const releasedHorses = new Set<string>();
+	for (const slug of Object.keys(spawnedCounts)) {
+		const horse = spawnedHorses[slug];
+		if (!horse || Math.random() >= 0.5) continue;
+
+		try {
+			// Catch creation stays sequential because catch IDs are allocated per channel.
+			// eslint-disable-next-line no-await-in-loop
+			await createHorseCatch(
+				channel,
+				{ hasJustSpawned: true, releaser: userId },
+				{
+					horse: [slug, horse],
+					coins: rollHorseCoinReward(),
+				},
+			);
+		} catch (error: unknown) {
+			console.error(
+				`Failed to auto-release ${horse.name}; keeping it for the original recipient`,
+				error,
+			);
+			continue;
+		}
+
+		releasedHorses.add(slug);
+	}
+
+	return {
+		spawnedCounts: Object.fromEntries(
+			Object.entries(spawnedCounts).filter(
+				([slug]) => !releasedHorses.has(slug),
+			),
+		),
+		spawnedHorses: Object.fromEntries(
+			Object.entries(spawnedHorses).filter(
+				([slug]) => !releasedHorses.has(slug),
+			),
+		),
+	};
+}
+
 const rareFlavorText = [
 	"You should feed it to me! Use `/horses give` to give it to me and you won't get it back!",
-	"This one is feelin' gambleable. Use `/horsegamble` to gamble. It is obligatory to do so."
+	"This one is feelin' gambleable. Use `/horsegamble` to gamble. It is obligatory to do so.",
 ];
 const flavorTextChance = 0.01;
 
@@ -54,11 +116,13 @@ function rollHorseSpawns(
 			Math.floor(data.rarity * spawnCoefficient * antiinflator),
 		);
 
-		if (Math.floor(Math.random() * chance) === 0) {
-			spawnedCounts[slug] = (spawnedCounts[slug] ?? 0) + 1;
-			isAnySpawned = true;
-			spawnedHorses[slug] = data;
+		if (Math.floor(Math.random() * chance) !== 0) {
+			continue;
 		}
+
+		spawnedCounts[slug] = (spawnedCounts[slug] ?? 0) + 1;
+		isAnySpawned = true;
+		spawnedHorses[slug] = data;
 	}
 
 	return { spawnedCounts, spawnedHorses, anySpawned: isAnySpawned };
@@ -114,13 +178,7 @@ async function applySpawnInventory(
 
 	let coinDropSize: number | undefined;
 	if (Math.floor(Math.random() * config.COIN_CHANCE) === 0) {
-		const minDrop: number =
-			config.COIN_DROP_MIN ?? config.COIN_DROP_SIZE;
-		const maxDrop: number =
-			config.COIN_DROP_MAX ?? config.COIN_DROP_SIZE;
-		const dropSize =
-			Math.floor(Math.random() * (maxDrop - minDrop + 1)) +
-			minDrop;
+		const dropSize = rollHorseCoinReward();
 		inc.horseCoins = dropSize;
 		coinDropSize = dropSize;
 	}
@@ -144,26 +202,31 @@ async function applySpawnInventory(
 
 	if (!inventory) return null;
 	const spawnedEntries = Object.entries(spawnedCounts);
-	await recordUserStatsAndNotify(userId, {
-		increments: {
-			"spawns.totalSpawns": spawnedEntries.reduce(
-				(total, [, count]) => total + count,
-				0,
-			),
-			"spawns.totalSpawnsValue": spawnedEntries.reduce(
-				(total, [slug, count]) =>
-					total + (HORSE_VALUES[slug]?.value ?? 0) * count,
-				0,
-			),
-		},
-		maxima: {
-			"spawns.highestValueSpawn": Math.max(
-				...spawnedEntries.map(
-					([slug]) => HORSE_VALUES[slug]?.value ?? 0,
+	await recordUserStatsAndNotify(
+		userId,
+		{
+			increments: {
+				"spawns.totalSpawns": spawnedEntries.reduce(
+					(total, [, count]) => total + count,
+					0,
 				),
-			),
+				"spawns.totalSpawnsValue": spawnedEntries.reduce(
+					(total, [slug, count]) =>
+						total +
+						(HORSE_VALUES[slug]?.value ?? 0) * count,
+					0,
+				),
+			},
+			maxima: {
+				"spawns.highestValueSpawn": Math.max(
+					...spawnedEntries.map(
+						([slug]) => HORSE_VALUES[slug]?.value ?? 0,
+					),
+				),
+			},
 		},
-	}, (payload) => channel.send(payload));
+		async (payload) => channel.send(payload),
+	);
 	return { inventory, coinDropSize, newHorseSlugs };
 }
 
@@ -208,9 +271,7 @@ function sendSpawnMessages(
 		let prefix = "found the";
 		let decoration = "";
 		let hint = "";
-		if (
-			data.value > config.FLAIR_THRESHOLD_VALUE
-		) {
+		if (data.value > config.FLAIR_THRESHOLD_VALUE) {
 			prefix = "found the ✨";
 			decoration = "✨";
 		}
@@ -318,9 +379,13 @@ async function cacheAndCheckMessage(
 		},
 		{ upsert: true },
 	);
-	await recordUserStatsAndNotify(message.author.id, {
-		increments: { "spawns.messagesCounted": 1 },
-	}, (payload) => message.reply(payload));
+	await recordUserStatsAndNotify(
+		message.author.id,
+		{
+			increments: { "spawns.messagesCounted": 1 },
+		},
+		async (payload) => message.reply(payload),
+	);
 
 	return true;
 }
@@ -356,31 +421,44 @@ async function forceSpawnHorse(
 					config.ANTIINFLATOR,
 				);
 
-	const result = anySpawned
-		? await applySpawnInventory(userId, spawnedCounts, channel)
-		: null;
-	const { horsesSpawnPing } = (await Settings.findOne(
+	const settings = await Settings.findOne(
 		{ userId },
-		{ horsesSpawnPing: 1 },
-	).lean()) ?? { horsesSpawnPing: "never" as const };
-
-	sendSpawnMessages(
+		{ horsesSpawnPing: 1, autoRelease: 1 },
+	).lean();
+	const horsesSpawnPing = settings?.horsesSpawnPing ?? "never";
+	const isAutoRelease = settings?.autoRelease ?? true;
+	const remainingSpawn = await applyAutoRelease(
 		userId,
 		channel,
+		spawnedCounts,
 		spawnedHorses,
-		{
-			pingSetting: horsesSpawnPing,
-			coinDropSize: result?.coinDropSize,
-			newHorseSlugs: result?.newHorseSlugs,
-		},
+		isAutoRelease,
 	);
+
+	const result = anySpawned
+		? await applySpawnInventory(
+				userId,
+				remainingSpawn.spawnedCounts,
+				channel,
+			)
+		: null;
+
+	sendSpawnMessages(userId, channel, remainingSpawn.spawnedHorses, {
+		pingSetting: horsesSpawnPing,
+		coinDropSize: result?.coinDropSize,
+		newHorseSlugs: result?.newHorseSlugs,
+	});
 
 	if (result?.inventory) {
 		await conditionHorse(result.inventory, { channel });
 	}
 
-	// Explicitly track forced horse slug
-	if (result?.inventory && options?.horseSlug) {
+	// Explicitly track the forced horse only when it was awarded normally.
+	if (
+		result?.inventory &&
+		options?.horseSlug &&
+		Object.hasOwn(remainingSpawn.spawnedHorses, options.horseSlug)
+	) {
 		await UserHorses.findOneAndUpdate(
 			{ userId },
 			{ $set: { lastHorse: options.horseSlug } },
@@ -388,7 +466,7 @@ async function forceSpawnHorse(
 	}
 
 	return {
-		spawnedHorses,
+		spawnedHorses: remainingSpawn.spawnedHorses,
 		inventory: result?.inventory ?? null,
 		coinDropSize: result?.coinDropSize,
 	};
@@ -410,15 +488,15 @@ async function handleHorseSpawn(message: Message) {
 		return;
 	}
 
-	const { horsesOptIn, horsesSpawnPing } = (await Settings.findOne(
+	const settings = await Settings.findOne(
 		{ userId: message.author.id },
-		{ horsesOptIn: 1, horsesSpawnPing: 1 },
-	).lean()) ?? {
-		horsesOptIn: true,
-		horsesSpawnPing: "never" as const,
-	};
+		{ horsesOptIn: 1, horsesSpawnPing: 1, autoRelease: 1 },
+	).lean();
+	const isHorsesOptIn = settings?.horsesOptIn ?? true;
+	const horsesSpawnPing = settings?.horsesSpawnPing ?? "never";
+	const isAutoRelease = settings?.autoRelease ?? true;
 
-	if (!horsesOptIn) {
+	if (!isHorsesOptIn) {
 		console.log(
 			`Horse did not spawn because ${message.author.displayName} was opted out`,
 		);
@@ -446,10 +524,18 @@ async function handleHorseSpawn(message: Message) {
 	const castedChannel = returnAsTextBased(targetChannel);
 	if (castedChannel instanceof Error) return;
 
+	const remainingSpawn = await applyAutoRelease(
+		message.author.id,
+		castedChannel,
+		spawnedCounts,
+		spawnedHorses,
+		isAutoRelease,
+	);
+
 	const result = anySpawned
 		? await applySpawnInventory(
 				message.author.id,
-				spawnedCounts,
+				remainingSpawn.spawnedCounts,
 				castedChannel,
 			)
 		: null;
@@ -457,7 +543,7 @@ async function handleHorseSpawn(message: Message) {
 	sendSpawnMessages(
 		message.author.id,
 		castedChannel,
-		spawnedHorses,
+		remainingSpawn.spawnedHorses,
 		{
 			pingSetting: horsesSpawnPing,
 			coinDropSize: result?.coinDropSize,
