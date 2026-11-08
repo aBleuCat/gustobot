@@ -56,7 +56,7 @@ class ActiveHorseCatch {
 				{
 					$inc: {
 						[`horses.${horseSlug}`]: 1,
-						...(coins && { coins }),
+						...(coins && { horseCoins: coins }),
 					},
 				},
 				{ upsert: true, setDefaultsOnInsert: true },
