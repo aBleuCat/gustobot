@@ -27,7 +27,10 @@ const pingSettings = [
 function buildSettingsPanel(
 	settings: Pick<
 		ISettings,
-		"horsesOptIn" | "horsesSpawnPing" | "questsAutoclaim"
+		| "horsesOptIn"
+		| "horsesSpawnPing"
+		| "questsAutoclaim"
+		| "autoRelease"
 	>,
 ): ContainerBuilder {
 	const optInButtons =
@@ -103,6 +106,25 @@ function buildSettingsPanel(
 						: ButtonStyle.Danger,
 				),
 		);
+	const autoReleaseButtons =
+		new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("settings:autorelease:yes")
+				.setLabel("On")
+				.setStyle(
+					settings.autoRelease
+						? ButtonStyle.Success
+						: ButtonStyle.Secondary,
+				),
+			new ButtonBuilder()
+				.setCustomId("settings:autorelease:no")
+				.setLabel("Off")
+				.setStyle(
+					settings.autoRelease
+						? ButtonStyle.Secondary
+						: ButtonStyle.Danger,
+				),
+		);
 
 	return new ContainerBuilder()
 		.addTextDisplayComponents(
@@ -136,7 +158,16 @@ function buildSettingsPanel(
 				"## Quest autoclaim\nAutomatically claim completed daily and weekly quests when you open them.",
 			),
 		)
-		.addActionRowComponents(autoclaimButtons);
+		.addActionRowComponents(autoclaimButtons)
+		.addSeparatorComponents(
+			new SeparatorBuilder().setDivider(true),
+		)
+		.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				"## Auto-Release\nHalf of your horses will automatically be released for someone else to catch.",
+			),
+		)
+		.addActionRowComponents(autoReleaseButtons);
 }
 
 async function updateSettings(
@@ -149,7 +180,10 @@ async function updateSettings(
 	let update: Partial<
 		Pick<
 			ISettings,
-			"horsesOptIn" | "horsesSpawnPing" | "questsAutoclaim"
+			| "horsesOptIn"
+			| "horsesSpawnPing"
+			| "questsAutoclaim"
+			| "autoRelease"
 		>
 	>;
 
@@ -168,6 +202,11 @@ async function updateSettings(
 		(settingValue === "yes" || settingValue === "no")
 	) {
 		update = { questsAutoclaim: settingValue === "yes" };
+	} else if (
+		settingName === "autorelease" &&
+		(settingValue === "yes" || settingValue === "no")
+	) {
+		update = { autoRelease: settingValue === "yes" };
 	} else {
 		return;
 	}
@@ -203,11 +242,13 @@ const settingsCommand = {
 				horsesOptIn: 1,
 				horsesSpawnPing: 1,
 				questsAutoclaim: 1,
+				autoRelease: 1,
 			},
 		).lean()) ?? {
 			horsesOptIn: true,
 			horsesSpawnPing: "never" as const,
 			questsAutoclaim: true,
+			autoRelease: true,
 		};
 		const response = await interaction.editReply({
 			components: [buildSettingsPanel(settings)],

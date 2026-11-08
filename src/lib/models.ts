@@ -71,6 +71,7 @@ export type ISettings = {
 	horsesOptIn: boolean;
 	horsesSpawnPing: HorsesSpawnPingSetting;
 	questsAutoclaim: boolean;
+	autoRelease: boolean;
 };
 export type IMessageCache = {
 	userId: string;
@@ -194,8 +195,8 @@ export type IUserQuests = {
 export type ICatchRiddles = {
 	riddle: string;
 	answer: RegExp;
-	highestValue: number;
-	lowestValue: number;
+	highestRarity: number;
+	lowestRarity: number;
 	weight: number;
 } & mongoose.Document;
 
@@ -324,6 +325,7 @@ const settingsSchema = new mongoose.Schema<ISettings>({
 		default: horsesSpawnPingSetting.Never,
 	},
 	questsAutoclaim: { type: Boolean, default: true },
+	autoRelease: { type: Boolean, default: true },
 });
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const Settings = mongoose.model("Settings", settingsSchema);
@@ -605,9 +607,9 @@ const catchRiddlesSchema = new mongoose.Schema<ICatchRiddles>({
 			message: "Must be a valid RegExp instance!",
 		},
 	},
-	highestValue: { type: Number, required: true },
-	lowestValue: { type: Number, required: true },
-	weight: { type: Number, default: 1 },
+	highestRarity: { type: Number, required: true },
+	lowestRarity: { type: Number, required: true },
+	weight: { type: Number, default: 1, min: 0 },
 });
 
 // eslint-disable-next-line @typescript-eslint/naming-convention

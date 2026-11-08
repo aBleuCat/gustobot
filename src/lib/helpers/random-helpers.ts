@@ -33,6 +33,7 @@ export function randSample<T>(array: T[], sampleSize: number): T[] {
 	// Return the first 'size' elements
 	return shuffled.slice(0, size);
 }
+
 /**
 Returns a pseudorandom number based on a seed.
 @param seed Any value used to seed the generator.
@@ -56,4 +57,42 @@ export function seededRandom(seed: unknown) {
 
 	return (h >>> 0) / 4_294_967_296;
 	/* eslint-enable no-bitwise */
+}
+
+/**
+ Uses roulette wheel algorithm to select a random item from a list based on weights
+ @param items The array of items to choose from
+ @param weightFn Callback function to determine the weight of each item
+ @returns The item, or undefined if the list is empty
+ */
+export function weightedRandom<T>(
+	items: T[],
+	weightFn: (item: T) => number,
+): T | undefined {
+	if (items.length === 0) return undefined;
+
+	const totalWeight = items.reduce(
+		(sum, item) => sum + weightFn(item),
+		0,
+	);
+
+	if (totalWeight <= 0) return undefined;
+
+	let randomValue = Math.random() * totalWeight;
+
+	for (const item of items) {
+		const weight = weightFn(item);
+		if (!(weight > 0)) {
+			continue;
+		}
+
+		if (randomValue < weight) {
+			return item;
+		}
+
+		randomValue -= weight;
+	}
+
+	// Fallback to the last item in case of rounding errors
+	return items.at(-1);
 }

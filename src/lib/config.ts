@@ -126,6 +126,9 @@ export const config = {
 	WEEKLY_HARD_QUESTS: 1,
 	QUESTS_PER_PAGE: 3,
 
+	// For catching
+	CATCH_DURATION_MS: 4 * MINUTE_MS,
+
 	// Changeable with /hacks lists
 	lists: {
 		// Triggers for message-handler.ts
@@ -244,4 +247,6 @@ export const descriptions: Record<keyof typeof config, string> = {
 	WEEKLY_HARD_QUESTS:
 		"The number of hard weekly quests that are available to be completed",
 	QUESTS_PER_PAGE: "The number of quests to be displayed per page",
+	CATCH_DURATION_MS:
+		"How long should a horse be available to be caught",
 };
