@@ -123,6 +123,11 @@ export type ISpawnUserStats = {
 	highestValueSpawn: number;
 	messagesCounted: number;
 };
+export type ICatchUserStats = {
+	totalCatches: number;
+	totalCatchValue: number;
+	highestCatchValue: number;
+};
 export type IBegUserStats = {
 	begs: number;
 };
@@ -155,6 +160,7 @@ export type ITradeUserStats = {
 export type ITimeframeStats = {
 	gambling: IGamblingUserStats;
 	spawns: ISpawnUserStats;
+	catches: ICatchUserStats;
 	begs: IBegUserStats;
 	donations: IDonationUserStats;
 	races: IRacesUserStats;
@@ -416,6 +422,15 @@ const spawnStatsSubSchema = new mongoose.Schema<ISpawnUserStats>(
 	{ _id: false },
 );
 
+const catchStatsSubSchema = new mongoose.Schema<ICatchUserStats>(
+	{
+		totalCatches: { type: Number, default: 0, min: 0 },
+		totalCatchValue: { type: Number, default: 0, min: 0 },
+		highestCatchValue: { type: Number, default: 0, min: 0 },
+	},
+	{ _id: false },
+);
+
 const begStatsSubSchema = new mongoose.Schema<IBegUserStats>(
 	{
 		begs: { type: Number, default: 0, min: 0 },
@@ -493,6 +508,7 @@ const timeframeSubSchema = new mongoose.Schema<ITimeframeStats>(
 			default: () => ({}),
 		},
 		spawns: { type: spawnStatsSubSchema, default: () => ({}) },
+		catches: { type: catchStatsSubSchema, default: () => ({}) },
 		begs: { type: begStatsSubSchema, default: () => ({}) },
 		donations: {
 			type: donationStatsSubSchema,
@@ -526,6 +542,7 @@ const allTimeSubSchema = new mongoose.Schema<
 			default: () => ({}),
 		},
 		spawns: { type: spawnStatsSubSchema, default: () => ({}) },
+		catches: { type: catchStatsSubSchema, default: () => ({}) },
 		begs: { type: begStatsSubSchema, default: () => ({}) },
 		donations: {
 			type: donationStatsSubSchema,

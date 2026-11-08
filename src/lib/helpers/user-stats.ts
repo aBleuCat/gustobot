@@ -52,6 +52,11 @@ function emptyStats() {
 			highestValueSpawn: 0,
 			messagesCounted: 0,
 		},
+		catches: {
+			totalCatches: 0,
+			totalCatchValue: 0,
+			highestCatchValue: 0,
+		},
 		begs: { begs: 0 },
 		donations: {
 			totalGiven: 0,

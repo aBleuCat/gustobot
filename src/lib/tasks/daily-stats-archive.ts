@@ -48,6 +48,11 @@ function createEmptyStats(): IDailyStatsArchive["stats"] {
 			highestValueSpawn: 0,
 			messagesCounted: 0,
 		},
+		catches: {
+			totalCatches: 0,
+			totalCatchValue: 0,
+			highestCatchValue: 0,
+		},
 		begs: { begs: 0 },
 		donations: {
 			totalGiven: 0,
@@ -83,6 +88,9 @@ function addDailyStats(
 	);
 	sumNumericStats(totals.spawns, stats.spawns, [
 		"highestValueSpawn",
+	]);
+	sumNumericStats(totals.catches, stats.catches, [
+		"highestCatchValue",
 	]);
 	sumNumericStats(totals.begs, stats.begs);
 	sumNumericStats(totals.donations, stats.donations, [

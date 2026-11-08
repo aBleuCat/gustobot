@@ -9,6 +9,7 @@ import type { Horse } from "../../types.js";
 import { CatchRiddles, UserHorses } from "../models.js";
 import { config } from "../config.js";
 import { weightedRandom } from "./random-helpers.js";
+import { recordUserStatsAndNotify } from "./user-stats.js";
 
 const { CATCH_DURATION_MS } = config;
 
@@ -64,6 +65,27 @@ class ActiveHorseCatch {
 		} catch (error: unknown) {
 			this.claimed = false;
 			throw error;
+		}
+
+		try {
+			await recordUserStatsAndNotify(
+				userId,
+				{
+					increments: {
+						"catches.totalCatches": 1,
+						"catches.totalCatchValue": horse.value,
+					},
+					maxima: {
+						"catches.highestCatchValue": horse.value,
+					},
+				},
+				async (payload) => this.message.reply(payload),
+			);
+		} catch (error: unknown) {
+			console.error(
+				"Failed to record horse catch stats",
+				error,
+			);
 		}
 
 		let content = `<@${userId}> has caught the **${horse.name}**!`;

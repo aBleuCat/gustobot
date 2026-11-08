@@ -54,7 +54,7 @@ const incorrectRiddleAnswerResponses = [
 	"You're an idiot, my friend. But that's okay.",
 	"Some people take more time to understand these things. It's okay.",
 	"Don't worry, you'll fail next time as well. But don't give up! Your loss is funny.",
-	"Incorecto!",
+	"Incorrecto!",
 	"Estupido!",
 	"I pity you.",
 	"I pity your mother.",

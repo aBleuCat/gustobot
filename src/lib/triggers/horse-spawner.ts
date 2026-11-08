@@ -91,7 +91,7 @@ async function applyAutoRelease(
 
 const rareFlavorText = [
 	"You should feed it to me! Use `/horses give` to give it to me and you won't get it back!",
-	"This one is feelin' gambleable. Use `/horsegamble` to gamble. It is obligatory to do so."
+	"This one is feelin' gambleable. Use `/horsegamble` to gamble. It is obligatory to do so.",
 ];
 const flavorTextChance = 0.01;
 
@@ -116,11 +116,13 @@ function rollHorseSpawns(
 			Math.floor(data.rarity * spawnCoefficient * antiinflator),
 		);
 
-		if (Math.floor(Math.random() * chance) === 0) {
-			spawnedCounts[slug] = (spawnedCounts[slug] ?? 0) + 1;
-			isAnySpawned = true;
-			spawnedHorses[slug] = data;
+		if (Math.floor(Math.random() * chance) !== 0) {
+			continue;
 		}
+
+		spawnedCounts[slug] = (spawnedCounts[slug] ?? 0) + 1;
+		isAnySpawned = true;
+		spawnedHorses[slug] = data;
 	}
 
 	return { spawnedCounts, spawnedHorses, anySpawned: isAnySpawned };
@@ -200,26 +202,31 @@ async function applySpawnInventory(
 
 	if (!inventory) return null;
 	const spawnedEntries = Object.entries(spawnedCounts);
-	await recordUserStatsAndNotify(userId, {
-		increments: {
-			"spawns.totalSpawns": spawnedEntries.reduce(
-				(total, [, count]) => total + count,
-				0,
-			),
-			"spawns.totalSpawnsValue": spawnedEntries.reduce(
-				(total, [slug, count]) =>
-					total + (HORSE_VALUES[slug]?.value ?? 0) * count,
-				0,
-			),
-		},
-		maxima: {
-			"spawns.highestValueSpawn": Math.max(
-				...spawnedEntries.map(
-					([slug]) => HORSE_VALUES[slug]?.value ?? 0,
+	await recordUserStatsAndNotify(
+		userId,
+		{
+			increments: {
+				"spawns.totalSpawns": spawnedEntries.reduce(
+					(total, [, count]) => total + count,
+					0,
 				),
-			),
+				"spawns.totalSpawnsValue": spawnedEntries.reduce(
+					(total, [slug, count]) =>
+						total +
+						(HORSE_VALUES[slug]?.value ?? 0) * count,
+					0,
+				),
+			},
+			maxima: {
+				"spawns.highestValueSpawn": Math.max(
+					...spawnedEntries.map(
+						([slug]) => HORSE_VALUES[slug]?.value ?? 0,
+					),
+				),
+			},
 		},
-	}, (payload) => channel.send(payload));
+		async (payload) => channel.send(payload),
+	);
 	return { inventory, coinDropSize, newHorseSlugs };
 }
 
@@ -264,9 +271,7 @@ function sendSpawnMessages(
 		let prefix = "found the";
 		let decoration = "";
 		let hint = "";
-		if (
-			data.value > config.FLAIR_THRESHOLD_VALUE
-		) {
+		if (data.value > config.FLAIR_THRESHOLD_VALUE) {
 			prefix = "found the ✨";
 			decoration = "✨";
 		}
@@ -374,9 +379,13 @@ async function cacheAndCheckMessage(
 		},
 		{ upsert: true },
 	);
-	await recordUserStatsAndNotify(message.author.id, {
-		increments: { "spawns.messagesCounted": 1 },
-	}, (payload) => message.reply(payload));
+	await recordUserStatsAndNotify(
+		message.author.id,
+		{
+			increments: { "spawns.messagesCounted": 1 },
+		},
+		async (payload) => message.reply(payload),
+	);
 
 	return true;
 }
@@ -483,11 +492,11 @@ async function handleHorseSpawn(message: Message) {
 		{ userId: message.author.id },
 		{ horsesOptIn: 1, horsesSpawnPing: 1, autoRelease: 1 },
 	).lean();
-	const horsesOptIn = settings?.horsesOptIn ?? true;
+	const isHorsesOptIn = settings?.horsesOptIn ?? true;
 	const horsesSpawnPing = settings?.horsesSpawnPing ?? "never";
 	const isAutoRelease = settings?.autoRelease ?? true;
 
-	if (!horsesOptIn) {
+	if (!isHorsesOptIn) {
 		console.log(
 			`Horse did not spawn because ${message.author.displayName} was opted out`,
 		);
