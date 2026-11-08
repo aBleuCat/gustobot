@@ -81,6 +81,24 @@ export async function execute(
 
 	await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
+	const inventory = await UserHorses.findOne({
+		userId: interaction.user.id,
+	});
+	const owned = inventory?.horses.get(horseSlug) ?? 0;
+	if (!inventory || owned < 1) {
+		return interaction.editReply({
+			content: `You don't have a **${horseName(horseSlug)}** to release.`,
+		});
+	}
+
+	if (owned === 1) {
+		inventory.horses.delete(horseSlug);
+	} else {
+		inventory.horses.set(horseSlug, owned - 1);
+	}
+	inventory.markModified("horses");
+	await inventory.save();
+
 	await createHorseCatch(
 		channel,
 		{ hasJustSpawned: false, releaser: interaction.user.id },
