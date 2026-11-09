@@ -188,7 +188,7 @@ export async function createHorseCatch(
 	const catchId = `${channelId}:${catchIdNumber}`;
 
 	const spawnMessageBeginning = hasJustSpawned
-		? `<@${releaser ?? "unknown"}> found a horse, but he let it go.`
+		? `<@${releaser ?? "unknown"}> found a horse, but they let it go.`
 		: releaser
 			? `<@${releaser}> has released this horse back into the wild.`
 			: "A horse was spotted prancing in the wild.";
