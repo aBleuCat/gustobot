@@ -8,10 +8,12 @@ import {
 
 function sumNumericStats(
 	totals: Record<string, unknown>,
-	stats: Record<string, unknown>,
+	stats: Record<string, unknown> | undefined,
 	maximumKeys: readonly string[] = [],
 	minimumKeys: readonly string[] = [],
 ): void {
+	if (!stats) return;
+
 	for (const [key, total] of Object.entries(totals)) {
 		const stat = stats[key];
 		if (typeof total === "number" && typeof stat === "number") {
@@ -78,8 +80,10 @@ function createEmptyStats(): IDailyStatsArchive["stats"] {
 
 function addDailyStats(
 	totals: IDailyStatsArchive["stats"],
-	stats: ITimeframeStats,
+	stats: ITimeframeStats | undefined,
 ): void {
+	if (!stats) return;
+
 	sumNumericStats(
 		totals.gambling,
 		stats.gambling,

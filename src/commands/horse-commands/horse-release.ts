@@ -96,6 +96,7 @@ export async function execute(
 	} else {
 		inventory.horses.set(horseSlug, owned - 1);
 	}
+
 	inventory.markModified("horses");
 	await inventory.save();
 
