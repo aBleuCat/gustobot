@@ -1,0 +1,14 @@
+{
+	"jsc": {
+	  "parser": {
+		"syntax": "typescript"
+	  },
+	  "target": "es2022",
+	  "experimental": {
+		"keepImportAttributes": true
+	  }
+	},
+	"module": {
+	  "type": "es6"
+	}
+}

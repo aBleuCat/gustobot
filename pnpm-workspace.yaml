@@ -1,3 +1,4 @@
 allowBuilds:
-    esbuild: true
-    unrs-resolver: true
+  '@swc/core': false
+  esbuild: true
+  unrs-resolver: true
