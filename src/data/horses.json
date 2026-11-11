@@ -240,6 +240,14 @@
 		"speed": 150,
 		"link": "https://cdn.discordapp.com/attachments/1470989449772142592/1562285936140619836/togif.gif?ex=6ad96fa9&is=6ad81e29&hm=59f9d5695c7eb60c7a0c072f751d881f14a2fe63e875294583e78109268f4318&"
 	},
+	"hatsune_miku": {
+		"name": "Horse of Hatsune and Miku",
+		"value": 150,
+		"rarity": 150,
+		"speed": 145,
+		"link": "https://tenor.com/view/miku-justan-oval-horse-meme-horse-miku-hatsune-miku-gif-6177060005119848839",
+		"thumbnail": "https://i.imgur.com/d2RDk7c.png"
+	},
 	"gaming_streaming": {
 		"name": "Horse of Gaming and Twitch Streaming",
 		"value": 125,
@@ -267,6 +275,13 @@
 		"rarity": 125,
 		"speed": 130,
 		"link": "https://i.imgur.com/XbMAqUH.png"
+	},
+	"jettwo_holiday": {
+		"name": "Horse of Jet2 and Holiday",
+		"value": 125,
+		"rarity": 125,
+		"speed": 135,
+		"link": "https://i.imgur.com/bsmeVS7.png"
 	},
 	"gymnastics_acrobatics": {
 		"name": "Horse of Gymnastics and Acrobatics",
@@ -302,6 +317,13 @@
 		"rarity": 125,
 		"speed": 130,
 		"link": "https://i.imgur.com/hDYnLjg.png"
+	},
+	"preaching_evangelism": {
+		"name": "Horse of Preaching and Evangelism",
+		"value": 125,
+		"rarity": 125,
+		"speed": 130,
+		"link": "https://i.imgur.com/crlXvll.png"
 	},
 	"amusement_rollercoasters": {
 		"name": "Horse of Amusement and Rollercoasters",
@@ -368,6 +390,13 @@
 		"rarity": 75,
 		"speed": 120,
 		"link": "https://i.imgur.com/zu0Y04g.png"
+	},
+	"carrots_veggies": {
+		"name": "Horse of Carrots and Veggies",
+		"value": 75,
+		"rarity": 75,
+		"speed": 120,
+		"link": "https://i.imgur.com/wfnnkky.png"
 	},
 	"construction_building": {
 		"name": "Horse of Construction and Building",
