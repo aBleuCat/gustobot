@@ -84,7 +84,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 		components: [buildButtons(0, totalPages)],
 	});
 
-	const collector = response.createMessageComponentCollector({
+	const message = await response.fetch();
+	const collector = message.createMessageComponentCollector({
+		filter: (buttonInteraction) =>
+			buttonInteraction.customId.startsWith(
+				"trained_collection_prev_",
+			) ||
+			buttonInteraction.customId.startsWith(
+				"trained_collection_next_",
+			),
 		time: immutConfig.MINUTE_MS,
 	});
 

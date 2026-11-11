@@ -151,7 +151,11 @@ export async function execute(
 		content: `This will cost ${price} horse coin${price === 1 ? "" : "s"}. You have ${userCoins}. The horse's speed will be around ${speed}. Click button to confirm`,
 		components: [payForTrainingButtonRow],
 	});
-	const collector = response.createMessageComponentCollector({
+	const message = await response.fetch();
+	const collector = message.createMessageComponentCollector({
+		filter: (buttonInteraction) =>
+			buttonInteraction.customId === "train_pay_reject" ||
+			buttonInteraction.customId === `train_pay_${price}`,
 		time: TRAINING_DURATION_BEFORE_EXPIRATION,
 	});
 	const embed = new EmbedBuilder()

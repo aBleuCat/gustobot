@@ -72,7 +72,11 @@ const actionsList = {
 			flags: [MessageFlags.Ephemeral],
 		});
 
-		const collector = response.createMessageComponentCollector({
+		const message = await response.fetch();
+		const collector = message.createMessageComponentCollector({
+			filter: (i) =>
+				i.customId.startsWith("act_prev_") ||
+				i.customId.startsWith("act_next_"),
 			time: immutConfig.MINUTE_MS,
 		});
 

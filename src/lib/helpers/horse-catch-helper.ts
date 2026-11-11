@@ -40,6 +40,10 @@ class ActiveHorseCatch {
 		);
 	}
 
+	public isForMessage(messageId: string | undefined) {
+		return this.message.id === messageId;
+	}
+
 	public async claim(userId: string) {
 		if (this.claimed || this.isExpired) {
 			return false;

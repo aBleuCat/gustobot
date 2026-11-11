@@ -70,7 +70,11 @@ const adviceListCommand = {
 		});
 
 		// Collector to handle button clicks
-		const collector = response.createMessageComponentCollector({
+		const message = await response.fetch();
+		const collector = message.createMessageComponentCollector({
+			filter: (i) =>
+				i.customId.startsWith("adv_prev_") ||
+				i.customId.startsWith("adv_next_"),
 			time: immutConfig.MINUTE_MS,
 		});
 

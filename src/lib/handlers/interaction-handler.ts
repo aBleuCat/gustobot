@@ -301,7 +301,11 @@ async function handleHorseCatchButton(
 ): Promise<void> {
 	const catchId = interaction.customId.slice("catch_horse_".length);
 	const activeCatch = activeHorseCatches.get(catchId);
-	if (!activeCatch || activeCatch.isExpired) {
+	if (
+		!activeCatch ||
+		activeCatch.isExpired ||
+		!activeCatch.isForMessage(interaction.message.id)
+	) {
 		await interaction.reply({
 			content: randItem(expiredRiddleResponses) ?? "The horse has galloped away.",
 		});
@@ -331,7 +335,11 @@ async function handleHorseCatchAnswer(
 	);
 	const userId = interaction.user.id;
 	const activeCatch = activeHorseCatches.get(catchId);
-	if (!activeCatch || activeCatch.isExpired) {
+	if (
+		!activeCatch ||
+		activeCatch.isExpired ||
+		!activeCatch.isForMessage(interaction.message?.id)
+	) {
 		await interaction.reply({
 			content: `<@${userId}> ${randItem(expiredRiddleResponses) ?? "The horse has galloped away."}`,
 		});

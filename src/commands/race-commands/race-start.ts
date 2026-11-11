@@ -99,7 +99,7 @@ export async function execute(
 				.setLabel("Accept")
 				.setStyle(ButtonStyle.Success),
 		);
-	const response = await interaction.reply({
+	await interaction.reply({
 		content: `## Horse Race Challenge\n${participantMentions} are about to race!\n-# Accept if you want to join`,
 		components: [challengeButtonRow],
 	});
@@ -107,7 +107,9 @@ export async function execute(
 	const message = await interaction.fetchReply();
 	const acceptedUsers = new Set<string>();
 
-	const collector = response.createMessageComponentCollector({
+	const collector = message.createMessageComponentCollector({
+		filter: (buttonInteraction) =>
+			buttonInteraction.customId === "race_accept",
 		time: RACE_CHALLENGE_DURATION,
 	});
 
