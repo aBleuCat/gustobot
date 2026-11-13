@@ -532,7 +532,7 @@ export function buildOverviewContainer(
 			)
 			.addTextDisplayComponents(
 				new TextDisplayBuilder().setContent(
-					`You've been completing your quests for ${questStreak} ${questType}${questStreak === 1 ? "" : "s"} in a row. Keep it up!`,
+					`You've been completing your quests for ${questStreak} ${questType}${questStreak === 1 ? "" : "s"}. Keep it up!`,
 				),
 			);
 	}
