@@ -361,7 +361,7 @@ async function cacheAndCheckMessage(
 	// Similarity check
 	const isTooSimilar = cache.recentMessages.some(
 		(previous) =>
-			stringSimilarity(previous, messageText) >=
+			(stringSimilarity(previous, messageText) ?? 1) >=
 			config.SIMILARITY_THRESHOLD,
 	);
 	if (isTooSimilar) {

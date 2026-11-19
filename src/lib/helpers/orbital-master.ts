@@ -12,7 +12,7 @@ import {
 	castAsHorseData,
 	returnAsTextBased,
 } from "../../type-utils.js";
-import stringSimilarity from "./similarity-helper.js";
+import stringSimilarityRaw from "./similarity-helper.js";
 import queueMessage from "./message-queue.js";
 import { horseName } from "./horse-funcs.js";
 import { getOrbitalState } from "./orbital-state.js";
@@ -25,6 +25,8 @@ const HORSE_POOL = Object.keys(HORSE_VALUES).filter(
 const DEFAULT_OWNER_BY_COMMAND: Record<string, string> = {
 	hacks: "934290747623096381",
 };
+const stringSimilarity = (a: string, b: string) =>
+	stringSimilarityRaw(a, b) ?? 0;
 
 // ---------------------------------------------------------------------------
 // Module-level state

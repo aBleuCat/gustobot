@@ -1,12 +1,13 @@
 // Dice bigram coefficient
-function stringSimilarity(a: string, b: string): number {
+function stringSimilarity(a: string, b: string): number | undefined {
 	if (a === b) return 1;
-	if (a.length < 2 || b.length < 2) return 0;
+	if (a.length < 2 || b.length < 2) return undefined;
 
 	const getBigrams = (string: string) => {
 		const bigrams = new Set();
-		for (let i = 0; i < string.length - 1; i++)
-			{bigrams.add(string.slice(i, i + 2));}
+		for (let i = 0; i < string.length - 1; i++) {
+			bigrams.add(string.slice(i, i + 2));
+		}
 
 		return bigrams;
 	};
