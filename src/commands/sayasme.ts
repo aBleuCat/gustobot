@@ -23,11 +23,11 @@ const sayAsMeCommand = {
 				.setDescription("What should I say?")
 				.setRequired(true),
 		)
-		.addAttachmentOption((option) => 
+		.addAttachmentOption((option) =>
 			option
 				.setName("attachment")
 				.setDescription("Attach something to the message")
-				.setRequired(false)
+				.setRequired(false),
 		)
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
@@ -45,7 +45,8 @@ const sayAsMeCommand = {
 		}
 
 		const text = interaction.options.getString("message");
-		const attachment = interaction.options.getAttachment("attachment");
+		const attachment =
+			interaction.options.getAttachment("attachment");
 		const { channel } = interaction;
 
 		if (
