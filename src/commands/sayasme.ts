@@ -8,6 +8,7 @@ import {
 import { immutConfig } from "../lib/config.js";
 import { init } from "../lib/helpers/mod-log.js";
 import { isOrbitalOwner } from "../lib/helpers/orbital-identity.js";
+import { isGuildTextBased } from "../type-utils.js";
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const { Guild } = InteractionContextType;
@@ -22,6 +23,12 @@ const sayAsMeCommand = {
 				.setDescription("What should I say?")
 				.setRequired(true),
 		)
+		.addAttachmentOption((option) => 
+			option
+				.setName("attachment")
+				.setDescription("Attach something to the message")
+				.setRequired(false)
+		)
 		.setDefaultMemberPermissions(
 			PermissionFlagsBits.Administrator,
 		)
@@ -29,10 +36,8 @@ const sayAsMeCommand = {
 
 	async execute(interaction: ChatInputCommandInteraction) {
 		const isOwner = immutConfig.ADMINS.has(interaction.user.id);
-		const isAdmin = interaction.memberPermissions?.has(
-			PermissionFlagsBits.Administrator,
-		);
-		if (!isOwner && !isAdmin) {
+
+		if (!isOwner) {
 			return interaction.reply({
 				content: "You don't have permission to make me talk.",
 				flags: [MessageFlags.Ephemeral],
@@ -40,6 +45,8 @@ const sayAsMeCommand = {
 		}
 
 		const text = interaction.options.getString("message");
+		const attachment = interaction.options.getAttachment("attachment");
+		const { channel } = interaction;
 
 		if (
 			isOrbitalOwner(interaction.user.id) &&
@@ -49,13 +56,24 @@ const sayAsMeCommand = {
 			return;
 		}
 
-		if (
-			interaction.channel &&
-			"send" in interaction.channel &&
-			text !== null
-		) {
-			await interaction.channel.send(text);
+		if (!channel || !isGuildTextBased(channel)) {
+			return interaction.reply({
+				content: "I cant speak here.",
+				flags: [MessageFlags.Ephemeral],
+			});
 		}
+
+		if (!text) {
+			return interaction.reply({
+				content: "Couldn't find your inputs.",
+				flags: [MessageFlags.Ephemeral],
+			});
+		}
+
+		await channel.send({
+			content: text,
+			...(attachment && { files: [attachment] }),
+		});
 
 		return interaction.reply({
 			content: "Message sent.",
